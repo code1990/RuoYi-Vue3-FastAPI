@@ -31,6 +31,9 @@ const sideTheme = computed(() => settingsStore.sideTheme);
 
 // 获取Logo背景色
 const getLogoBackground = computed(() => {
+  if (settingsStore.navType == 2) {
+    return '#ffffff'
+  }
   if (settingsStore.isDark) {
     return 'var(--sidebar-bg)';
   }
@@ -42,6 +45,9 @@ const getLogoBackground = computed(() => {
 
 // 获取Logo文字颜色
 const getLogoTextColor = computed(() => {
+  if (settingsStore.navType == 2) {
+    return '#111827'
+  }
   if (settingsStore.isDark) {
     return 'var(--sidebar-text)';
   }
@@ -67,6 +73,7 @@ const getLogoTextColor = computed(() => {
   height: 50px;
   line-height: 50px;
   background: v-bind(getLogoBackground);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
   text-align: center;
   overflow: hidden;
 

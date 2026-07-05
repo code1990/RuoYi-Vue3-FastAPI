@@ -1,6 +1,9 @@
 <template>
   <div :class="{ 'has-logo': showLogo }" class="sidebar-container">
     <logo v-if="showLogo" :collapse="isCollapse" />
+    <div v-if="showModuleHeader" class="sidebar-module-header">
+      <span class="module-title">{{ sidebarParentTitle }}</span>
+    </div>
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <el-menu
         :default-active="activeMenu"
@@ -32,46 +35,71 @@ import useAppStore from '@/store/modules/app'
 import useSettingsStore from '@/store/modules/settings'
 import usePermissionStore from '@/store/modules/permission'
 
-const route = useRoute();
+const route = useRoute()
 const appStore = useAppStore()
 const settingsStore = useSettingsStore()
 const permissionStore = usePermissionStore()
 
-const sidebarRouters = computed(() => permissionStore.sidebarRouters);
-const showLogo = computed(() => settingsStore.sidebarLogo);
-const sideTheme = computed(() => settingsStore.sideTheme);
-const theme = computed(() => settingsStore.theme);
-const isCollapse = computed(() => !appStore.sidebar.opened);
+const sidebarRouters = computed(() => permissionStore.sidebarRouters)
+const sidebarParentTitle = computed(() => permissionStore.sidebarParentTitle)
+const showLogo = computed(() => settingsStore.sidebarLogo)
+const sideTheme = computed(() => settingsStore.sideTheme)
+const theme = computed(() => settingsStore.theme)
+const isCollapse = computed(() => !appStore.sidebar.opened)
+const showModuleHeader = computed(() => settingsStore.navType === 2 && !isCollapse.value && !!sidebarParentTitle.value)
+const isMixedNav = computed(() => settingsStore.navType === 2)
+const mixedMenuBackground = computed(() => '#ffffff')
+const mixedMenuTextColor = computed(() => '#1f2937')
 
-// 获取菜单背景色
 const getMenuBackground = computed(() => {
-  if (settingsStore.isDark) {
-    return 'var(--sidebar-bg)';
+  if (isMixedNav.value) {
+    return mixedMenuBackground.value
   }
-  return sideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBg;
-});
+  if (settingsStore.isDark) {
+    return 'var(--sidebar-bg)'
+  }
+  return sideTheme.value === 'theme-dark' ? variables.menuBg : variables.menuLightBg
+})
 
-// 获取菜单文字颜色
 const getMenuTextColor = computed(() => {
-  if (settingsStore.isDark) {
-    return 'var(--sidebar-text)';
+  if (isMixedNav.value) {
+    return mixedMenuTextColor.value
   }
-  return sideTheme.value === 'theme-dark' ? variables.menuText : variables.menuLightText;
-});
+  if (settingsStore.isDark) {
+    return 'var(--sidebar-text)'
+  }
+  return sideTheme.value === 'theme-dark' ? variables.menuText : variables.menuLightText
+})
 
 const activeMenu = computed(() => {
-  const { meta, path } = route;
+  const { meta, path } = route
   if (meta.activeMenu) {
-    return meta.activeMenu;
+    return meta.activeMenu
   }
-  return path;
-});
+  return path
+})
 </script>
 
 <style lang="scss" scoped>
 .sidebar-container {
   background-color: v-bind(getMenuBackground);
-  
+
+  .sidebar-module-header {
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    background:
+      linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(255, 255, 255, 0)),
+      color-mix(in srgb, #ffffff 96%, #f3f4f6 4%);
+
+    .module-title {
+      display: block;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+  }
+
   .scrollbar-wrapper {
     background-color: v-bind(getMenuBackground);
   }
@@ -80,24 +108,53 @@ const activeMenu = computed(() => {
     border: none;
     height: 100%;
     width: 100% !important;
-    
-    .el-menu-item, .el-sub-menu__title {
+    padding: 10px 8px 18px;
+    background-color: transparent;
+
+    :deep(.el-menu-item),
+    :deep(.el-sub-menu__title) {
+      height: 42px;
+      line-height: 42px;
+      margin: 4px 0;
+      border-radius: 10px;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    :deep(.el-menu-item) {
+      padding-left: 14px !important;
+      color: #1f2937 !important;
+
       &:hover {
-        background-color: var(--menu-hover, rgba(0, 0, 0, 0.06)) !important;
+        background: #f3f4f6 !important;
       }
-    }
 
-    .el-menu-item {
-      color: v-bind(getMenuTextColor);
-      
       &.is-active {
-        color: var(--menu-active-text, #409eff);
-        background-color: var(--menu-hover, rgba(0, 0, 0, 0.06)) !important;
+        color: var(--menu-active-text, #409eff) !important;
+        font-weight: 600;
+        background: color-mix(in srgb, var(--menu-active-text, #409eff) 12%, #ffffff 88%) !important;
+        box-shadow: inset 3px 0 0 var(--menu-active-text, #409eff);
       }
     }
 
-    .el-sub-menu__title {
-      color: v-bind(getMenuTextColor);
+    :deep(.el-sub-menu__title) {
+      padding-left: 14px !important;
+      color: #111827 !important;
+      font-weight: 600;
+
+      &:hover {
+        background: #f3f4f6 !important;
+      }
+    }
+
+    :deep(.el-sub-menu .el-menu-item) {
+      margin-left: 10px;
+      padding-left: 18px !important;
+      opacity: 0.96;
+    }
+
+    :deep(.svg-icon) {
+      margin-right: 10px !important;
+      opacity: 0.88;
     }
   }
 }

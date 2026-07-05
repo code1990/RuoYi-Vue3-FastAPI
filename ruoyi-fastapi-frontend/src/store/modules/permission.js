@@ -16,7 +16,8 @@ const usePermissionStore = defineStore(
       addRoutes: [],
       defaultRoutes: [],
       topbarRouters: [],
-      sidebarRouters: []
+      sidebarRouters: [],
+      sidebarParentTitle: ''
     }),
     actions: {
       setRoutes(routes) {
@@ -31,6 +32,9 @@ const usePermissionStore = defineStore(
       },
       setSidebarRouters(routes) {
         this.sidebarRouters = routes
+      },
+      setSidebarParentTitle(title) {
+        this.sidebarParentTitle = title
       },
       generateRoutes(roles) {
         return new Promise(resolve => {

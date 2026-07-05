@@ -27,12 +27,14 @@ const sidebar = computed(() => useAppStore().sidebar);
 const device = computed(() => useAppStore().device);
 const needTagsView = computed(() => settingsStore.tagsView);
 const fixedHeader = computed(() => settingsStore.fixedHeader);
+const isTopMenu = computed(() => settingsStore.navType === 3);
 
 const classObj = computed(() => ({
   hideSidebar: !sidebar.value.opened,
   openSidebar: sidebar.value.opened,
   withoutAnimation: sidebar.value.withoutAnimation,
-  mobile: device.value === 'mobile'
+  mobile: device.value === 'mobile',
+  topmenu: isTopMenu.value
 }))
 
 const { width, height } = useWindowSize();
@@ -112,6 +114,10 @@ function setLayout() {
 }
 
 .mobile .fixed-header {
+  width: 100%;
+}
+
+.topmenu .fixed-header {
   width: 100%;
 }
 </style>

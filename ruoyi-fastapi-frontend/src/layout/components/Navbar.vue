@@ -2,13 +2,13 @@
   <div class="navbar" :class="'nav' + settingsStore.navType">
     <hamburger id="hamburger-container" :is-active="appStore.sidebar.opened" class="hamburger-container" @toggleClick="toggleSideBar" />
     <breadcrumb v-if="settingsStore.navType == 1" id="breadcrumb-container" class="breadcrumb-container" />
-    <top-nav v-if="settingsStore.navType == 2" id="topmenu-container" class="topmenu-container" />
+    <top-nav v-if="settingsStore.navType == 2" id="topmenu-container" class="topmenu-container mixed-topmenu-container" />
     <template v-if="settingsStore.navType == 3">
-      <logo v-show="settingsStore.sidebarLogo" :collapse="false"></logo>
-      <top-bar id="topbar-container" class="topbar-container" />
+      <logo v-show="settingsStore.sidebarLogo" :collapse="false" class="topmenu-logo"></logo>
+      <top-nav id="topmenu-container-pure" class="topmenu-container pure-topmenu-container" />
     </template>
 
-    <div class="right-menu">
+    <div class="right-menu" :class="{ compact: settingsStore.navType == 2 }">
       <template v-if="appStore.device !== 'mobile'">
         <header-search id="header-search" class="right-menu-item" />
 
@@ -25,7 +25,7 @@
         <el-tooltip content="主题模式" effect="dark" placement="bottom">
           <div class="right-menu-item hover-effect theme-switch-wrapper" @click="toggleTheme">
             <svg-icon v-if="settingsStore.isDark" icon-class="sunny" />
-            <svg-icon v-if="!settingsStore.isDark" icon-class="moon" />
+            <svg-icon v-else icon-class="moon" />
           </div>
         </el-tooltip>
 
@@ -37,7 +37,7 @@
       <el-dropdown @command="handleCommand" class="avatar-container right-menu-item hover-effect" trigger="hover">
         <div class="avatar-wrapper">
           <img :src="userStore.avatar" class="user-avatar" />
-          <span class="user-nickname"> {{ userStore.nickName }} </span>
+          <span class="user-nickname">{{ userStore.nickName }}</span>
         </div>
         <template #dropdown>
           <el-dropdown-menu>
@@ -45,8 +45,8 @@
               <el-dropdown-item>个人中心</el-dropdown-item>
             </router-link>
             <el-dropdown-item command="setLayout" v-if="settingsStore.showSettings">
-                <span>布局设置</span>
-              </el-dropdown-item>
+              <span>布局设置</span>
+            </el-dropdown-item>
             <el-dropdown-item divided command="logout">
               <span>退出登录</span>
             </el-dropdown-item>
@@ -61,7 +61,6 @@
 import { ElMessageBox } from 'element-plus'
 import Breadcrumb from '@/components/Breadcrumb'
 import TopNav from '@/components/TopNav'
-import TopBar from './TopBar'
 import Logo from './Sidebar/Logo'
 import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
@@ -83,10 +82,10 @@ function toggleSideBar() {
 
 function handleCommand(command) {
   switch (command) {
-    case "setLayout":
+    case 'setLayout':
       setLayout()
       break
-    case "logout":
+    case 'logout':
       logout()
       break
     default:
@@ -103,7 +102,7 @@ function logout() {
     userStore.logOut().then(() => {
       location.href = '/index'
     })
-  }).catch(() => { })
+  }).catch(() => {})
 }
 
 const emits = defineEmits(['setLayout'])
@@ -116,7 +115,7 @@ async function toggleTheme(event) {
   const y = event?.clientY || window.innerHeight / 2
   const wasDark = settingsStore.isDark
 
-  const isReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const isSupported = document.startViewTransition && !isReducedMotion
 
   if (!isSupported) {
@@ -137,25 +136,53 @@ async function toggleTheme(event) {
     document.documentElement.animate(
       {
         clipPath: !wasDark ? [...clipPath].reverse() : clipPath
-      }, {
+      },
+      {
         duration: 650,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-        fill: "forwards",
-        pseudoElement: !wasDark ? "::view-transition-old(root)" : "::view-transition-new(root)"
+        easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        fill: 'forwards',
+        pseudoElement: !wasDark ? '::view-transition-old(root)' : '::view-transition-new(root)'
       }
     )
     await transition.finished
   } catch (error) {
-    console.warn("View transition failed, falling back to immediate toggle:", error)
+    console.warn('View transition failed, falling back to immediate toggle:', error)
     settingsStore.toggleTheme()
   }
 }
 </script>
 
-<style lang='scss' scoped>
+<style lang="scss" scoped>
+.navbar.nav2 {
+  .topmenu-container {
+    position: static;
+    flex: 1;
+    min-width: 0;
+    margin-left: 8px;
+    overflow: hidden;
+  }
+
+  .right-menu.compact {
+    padding-right: 8px;
+
+    .right-menu-item {
+      padding: 0 6px;
+    }
+
+    :deep(.header-search) {
+      margin-right: 2px;
+    }
+  }
+}
+
 .navbar.nav3 {
   .hamburger-container {
     display: none !important;
+  }
+
+  .topmenu-logo {
+    flex-shrink: 0;
+    border-right: 1px solid rgba(5, 5, 5, 0.06);
   }
 }
 
@@ -167,8 +194,8 @@ async function toggleTheme(event) {
   box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
   display: flex;
   align-items: center;
-  // padding: 0 8px;
   box-sizing: border-box;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
 
   .hamburger-container {
     line-height: 46px;
@@ -179,7 +206,8 @@ async function toggleTheme(event) {
     display: flex;
     align-items: center;
     flex-shrink: 0;
-    margin-right: 8px;
+    margin-right: 6px;
+    padding: 0 10px;
 
     &:hover {
       background: rgba(0, 0, 0, 0.025);
@@ -195,18 +223,12 @@ async function toggleTheme(event) {
     left: 50px;
   }
 
-  .topbar-container {
+  .pure-topmenu-container {
+    position: static;
     flex: 1;
     min-width: 0;
-    display: flex;
-    align-items: center;
     overflow: hidden;
-    margin-left: 8px;
-  }
-
-  .errLog-container {
-    display: inline-block;
-    vertical-align: top;
+    margin-left: 12px;
   }
 
   .right-menu {
@@ -243,7 +265,7 @@ async function toggleTheme(event) {
 
         svg {
           transition: transform 0.3s;
-          
+
           &:hover {
             transform: scale(1.15);
           }
@@ -252,8 +274,8 @@ async function toggleTheme(event) {
     }
 
     .avatar-container {
-      margin-right: 0px;
-      padding-right: 0px;
+      margin-right: 0;
+      padding-right: 0;
 
       .avatar-wrapper {
         margin-top: 10px;
@@ -270,10 +292,9 @@ async function toggleTheme(event) {
           border-style: none;
         }
 
-        .user-nickname{
+        .user-nickname {
           position: relative;
-          left: 0px;
-          // bottom: 10px;
+          left: 0;
           font-size: 14px;
           font-weight: bold;
         }

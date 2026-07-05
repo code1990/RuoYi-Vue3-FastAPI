@@ -48,14 +48,22 @@ export const constantRoutes = [
     hidden: true
   },
   {
-    path: "/:pathMatch(.*)*",
-    component: () => import('@/views/error/404'),
-    hidden: true
-  },
-  {
     path: '/401',
     component: () => import('@/views/error/401'),
     hidden: true
+  },
+  {
+    path: '/main',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/stock/main.vue'),
+        name: 'StockNightSuperMain',
+        meta: { title: '选股卡片看板', breadcrumb: false }
+      }
+    ]
   },
   {
     path: '',
@@ -83,6 +91,11 @@ export const constantRoutes = [
         meta: { title: '个人中心', icon: 'user' }
       }
     ]
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    component: () => import('@/views/error/404'),
+    hidden: true
   }
 ]
 
