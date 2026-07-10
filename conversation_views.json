@@ -1,0 +1,52 @@
+{
+  "code": 200,
+  "msg": "查询成功",
+  "rows": [
+    {
+      "conversation": {
+        "conversationId": "conv-1",
+        "workspaceId": "ws-1",
+        "threadId": "thread-1",
+        "title": "Fix login redirect",
+        "requirement": "Inspect the repo and fix the redirect bug.",
+        "status": "running",
+        "operator": "alice",
+        "lastMessagePreview": "Investigating the redirect middleware.",
+        "finalSummary": null,
+        "lastError": null,
+        "createdAtMs": 1760000000000,
+        "updatedAtMs": 1760000005000
+      },
+      "currentState": {
+        "status": "running",
+        "phase": "conversation.streaming",
+        "isRunning": true,
+        "hasError": false,
+        "activeTaskCount": 1,
+        "latestTaskId": "task-2",
+        "latestTaskStatus": "running",
+        "latestEventType": "conversation.streaming",
+        "latestEventStatus": "ok",
+        "currentTurnId": "turn-2",
+        "lastActivityAtMs": 1760000005000
+      },
+      "historySummary": {
+        "messageCount": 8,
+        "userMessageCount": 3,
+        "assistantMessageCount": 5,
+        "eventCount": 12,
+        "taskCount": 2,
+        "completedTaskCount": 1,
+        "failedTaskCount": 0,
+        "latestMessagePreview": "Investigating the redirect middleware.",
+        "latestMessageAtMs": 1760000005000,
+        "startedAtMs": 1760000000000,
+        "finishedAtMs": null
+      }
+    }
+  ],
+  "pageNum": 1,
+  "pageSize": 10,
+  "total": 1,
+  "hasNext": false
+}
