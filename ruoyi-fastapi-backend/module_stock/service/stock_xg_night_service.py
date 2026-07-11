@@ -41,6 +41,14 @@ class StockXgNightService:
             return StockXgNightSuperCardsModel(trade_date=None, limit=limit, dimensions=dimensions, rows=[])
 
         source_rows = await StockXgNightDao.get_super_stat_rows(query_db, resolved_trade_date)
+        if not source_rows:
+            return StockXgNightSuperCardsModel(
+                trade_date=resolved_trade_date,
+                limit=limit,
+                dimensions=dimensions,
+                rows=[],
+            )
+
         grouped: dict[str, dict[int, dict[str, Any]]] = defaultdict(dict)
         for row in source_rows:
             signal_name = str(row['signal_name'] or '').strip()

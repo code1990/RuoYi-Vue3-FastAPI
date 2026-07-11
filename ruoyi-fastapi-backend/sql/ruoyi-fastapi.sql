@@ -811,3 +811,108 @@ create table ai_chat_config (
   update_time             datetime                                   comment '更新时间',
   primary key (chat_config_id)
 ) engine=innodb auto_increment=1 comment = 'AI对话配置表';
+
+
+-- ----------------------------
+-- 22、Codex 对话主表
+-- ----------------------------
+-- Current v1 role:
+-- these conversation* tables are the external history/read-side store for FastAPI/Web.
+-- CodexMonitor daemon still boots its conversation/task state from local JSON snapshots,
+-- so MySQL is not yet the daemon's primary fact store.
+-- Constraint policy:
+-- child tables only enforce database-level linkage on conversation_id.
+-- workspace_id/thread_id remain plain columns because they reference external runtime identifiers.
+
+drop table if exists conversation;
+create table conversation (
+  id                   bigint(20)    not null auto_increment    comment '主键ID',
+  conversation_id      varchar(64)   not null                   comment '会话ID',
+  workspace_id         varchar(128)  default null               comment '工作区ID',
+  thread_id            varchar(128)  default null               comment '线程ID',
+  title                varchar(255)  default null               comment '标题',
+  requirement          text                                     comment '需求内容',
+  status               varchar(32)   default null               comment '会话状态',
+  operator             varchar(64)   default null               comment '操作者',
+  last_message_preview text                                     comment '最后一条消息预览',
+  final_summary        text                                     comment '最终总结',
+  last_error           text                                     comment '最后错误',
+  created_at_ms        bigint(20)    default null               comment '创建时间毫秒时间戳',
+  updated_at_ms        bigint(20)    default null               comment '更新时间毫秒时间戳',
+  primary key (id),
+  unique key uk_conversation_id (conversation_id),
+  key idx_conversation_workspace_updated (workspace_id, updated_at_ms),
+  key idx_conversation_thread_id (thread_id)
+) engine=innodb auto_increment=1 comment = 'Codex 对话主表';
+
+
+-- ----------------------------
+-- 23、Codex 对话消息表
+-- ----------------------------
+drop table if exists conversation_message;
+create table conversation_message (
+  id            bigint(20)    not null auto_increment    comment '主键ID',
+  conversation_id varchar(64) not null                  comment '会话ID',
+  thread_id     varchar(128)  default null              comment '线程ID',
+  turn_id       varchar(128)  default null              comment '轮次ID',
+  role          varchar(32)   default null              comment '消息角色',
+  message_type  varchar(64)   default null              comment '消息类型',
+  content       text                                    comment '消息内容',
+  payload_json  text                                    comment '扩展负载JSON',
+  sequence_no   bigint(20)    default null              comment '消息顺序号',
+  created_at_ms bigint(20)    default null              comment '创建时间毫秒时间戳',
+  primary key (id),
+  key idx_conversation_message_conversation_seq (conversation_id, sequence_no),
+  key idx_conversation_message_thread_turn (thread_id, turn_id),
+  constraint fk_conversation_message_conversation_id
+    foreign key (conversation_id) references conversation (conversation_id)
+    on update cascade on delete cascade
+) engine=innodb auto_increment=1 comment = 'Codex 对话消息表';
+
+
+-- ----------------------------
+-- 24、Codex 对话事件表
+-- ----------------------------
+drop table if exists conversation_event;
+create table conversation_event (
+  id            bigint(20)    not null auto_increment    comment '主键ID',
+  conversation_id varchar(64) not null                  comment '会话ID',
+  thread_id     varchar(128)  default null              comment '线程ID',
+  turn_id       varchar(128)  default null              comment '轮次ID',
+  event_type    varchar(64)   default null              comment '事件类型',
+  event_status  varchar(32)   default null              comment '事件状态',
+  payload_json  text                                    comment '事件负载JSON',
+  created_at_ms bigint(20)    default null              comment '创建时间毫秒时间戳',
+  primary key (id),
+  key idx_conversation_event_conversation_time (conversation_id, created_at_ms),
+  key idx_conversation_event_thread_turn (thread_id, turn_id),
+  constraint fk_conversation_event_conversation_id
+    foreign key (conversation_id) references conversation (conversation_id)
+    on update cascade on delete cascade
+) engine=innodb auto_increment=1 comment = 'Codex 对话事件表';
+
+
+-- ----------------------------
+-- 25、Codex 对话任务表
+-- ----------------------------
+drop table if exists conversation_task;
+create table conversation_task (
+  id               bigint(20)    not null auto_increment    comment '主键ID',
+  conversation_id  varchar(64)   not null                   comment '会话ID',
+  task_id          varchar(128)  not null                   comment '任务ID',
+  workspace_id     varchar(128)  default null               comment '工作区ID',
+  thread_id        varchar(128)  default null               comment '线程ID',
+  turn_id          varchar(128)  default null               comment '轮次ID',
+  status           varchar(32)   default null               comment '任务状态',
+  created_thread   tinyint(1)    default null               comment '是否为本次任务新建线程；1=新建，0=复用',
+  submitted_at_ms  bigint(20)    default null               comment '提交时间毫秒时间戳',
+  completed_at_ms  bigint(20)    default null               comment '完成时间毫秒时间戳',
+  last_error       text                                     comment '最后错误',
+  primary key (id),
+  unique key uk_conversation_task_id (task_id),
+  key idx_conversation_task_conversation_submitted (conversation_id, submitted_at_ms),
+  key idx_conversation_task_task_id (task_id),
+  constraint fk_conversation_task_conversation_id
+    foreign key (conversation_id) references conversation (conversation_id)
+    on update cascade on delete cascade
+) engine=innodb auto_increment=1 comment = 'Codex 对话任务表';
