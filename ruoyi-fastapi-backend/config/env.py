@@ -144,6 +144,16 @@ class TransportCryptoSettings(BaseSettings):
     )
 
 
+class CodexChatProxySettings(BaseSettings):
+    """
+    Codex chat代理配置
+    """
+
+    codex_chat_proxy_base_url: str = 'http://127.0.0.1:4733'
+    codex_chat_proxy_token: str = ''
+    codex_chat_proxy_timeout_seconds: float = 300.0
+
+
 class GenSettings:
     """
     代码生成配置
@@ -265,6 +275,12 @@ class GetConfig:
         """
         return TransportCryptoSettings()
 
+    def get_codex_chat_proxy_config(self) -> CodexChatProxySettings:
+        """
+        获取Codex chat代理配置
+        """
+        return CodexChatProxySettings()
+
     def get_gen_config(self) -> GenSettings:
         """
         获取代码生成配置
@@ -328,6 +344,8 @@ RedisConfig = get_config.get_redis_config()
 LogConfig = get_config.get_log_config()
 # 传输层加解密配置
 TransportCryptoConfig = get_config.get_transport_crypto_config()
+# Codex chat代理配置
+CodexChatProxyConfig = get_config.get_codex_chat_proxy_config()
 # 代码生成配置
 GenConfig = get_config.get_gen_config()
 # 上传配置
