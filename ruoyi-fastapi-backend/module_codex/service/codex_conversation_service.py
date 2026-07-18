@@ -19,6 +19,22 @@ class CodexConversationService:
     ERROR_STATUS_SET = {'error', 'failed', 'failure', 'cancelled', 'canceled', 'timeout'}
 
     @classmethod
+    def _safe_dict(cls, value: Any) -> dict[str, Any]:
+        return value if isinstance(value, dict) else {}
+
+    @classmethod
+    def _safe_items(cls, items: list[Any] | None) -> list[dict[str, Any]]:
+        if not items:
+            return []
+        return [item for item in items if isinstance(item, dict)]
+
+    @classmethod
+    def _safe_conversation_rows(cls, rows: list[Any] | None) -> list[dict[str, Any]]:
+        if not rows:
+            return []
+        return [row for row in rows if isinstance(row, dict)]
+
+    @classmethod
     def _normalize_status(cls, value: str | None) -> str | None:
         return value.lower() if value else None
 
@@ -36,9 +52,10 @@ class CodexConversationService:
 
     @classmethod
     def _latest_by(cls, items: list[dict[str, Any]], *keys: str) -> dict[str, Any] | None:
-        if not items:
+        safe_items = cls._safe_items(items)
+        if not safe_items:
             return None
-        return max(items, key=lambda item: tuple(item.get(key) or 0 for key in keys))
+        return max(safe_items, key=lambda item: tuple(item.get(key) or 0 for key in keys))
 
     @classmethod
     def _build_conversation_view(
@@ -48,6 +65,10 @@ class CodexConversationService:
         events: list[dict[str, Any]],
         tasks: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        conversation = cls._safe_dict(conversation)
+        messages = cls._safe_items(messages)
+        events = cls._safe_items(events)
+        tasks = cls._safe_items(tasks)
         latest_message = cls._latest_by(messages, 'sequenceNo', 'id')
         latest_event = cls._latest_by(events, 'createdAtMs', 'id')
         latest_task = cls._latest_by(tasks, 'submittedAtMs', 'id')
@@ -131,7 +152,7 @@ class CodexConversationService:
         cls, query_db: AsyncSession, query_object: CodexConversationPageQueryModel, is_page: bool = False
     ) -> PageModel | list[dict[str, Any]]:
         result = await CodexConversationDao.get_conversation_list(query_db, query_object, is_page)
-        rows = result.rows if is_page else result
+        rows = cls._safe_conversation_rows(result.rows if is_page else result)
         conversation_ids = [row['conversationId'] for row in rows]
         messages = await CodexConversationDao.get_conversation_messages_by_ids(query_db, conversation_ids)
         events = await CodexConversationDao.get_conversation_events_by_ids(query_db, conversation_ids)
@@ -141,11 +162,23 @@ class CodexConversationService:
         events_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
         tasks_map: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for item in messages:
-            messages_map[item['conversationId']].append(item)
+            if not isinstance(item, dict):
+                continue
+            conversation_id = item.get('conversationId')
+            if conversation_id:
+                messages_map[conversation_id].append(item)
         for item in events:
-            events_map[item['conversationId']].append(item)
+            if not isinstance(item, dict):
+                continue
+            conversation_id = item.get('conversationId')
+            if conversation_id:
+                events_map[conversation_id].append(item)
         for item in tasks:
-            tasks_map[item['conversationId']].append(item)
+            if not isinstance(item, dict):
+                continue
+            conversation_id = item.get('conversationId')
+            if conversation_id:
+                tasks_map[conversation_id].append(item)
 
         view_rows = [
             cls._build_conversation_view(
@@ -174,17 +207,20 @@ class CodexConversationService:
         cls, query_db: AsyncSession, conversation_id: str
     ) -> list[dict[str, Any]]:
         await cls.get_conversation_detail_services(query_db, conversation_id)
-        return await CodexConversationDao.get_conversation_messages(query_db, conversation_id)
+        messages = await CodexConversationDao.get_conversation_messages(query_db, conversation_id)
+        return cls._safe_items(messages)
 
     @classmethod
     async def get_conversation_events_services(cls, query_db: AsyncSession, conversation_id: str) -> list[dict[str, Any]]:
         await cls.get_conversation_detail_services(query_db, conversation_id)
-        return await CodexConversationDao.get_conversation_events(query_db, conversation_id)
+        events = await CodexConversationDao.get_conversation_events(query_db, conversation_id)
+        return cls._safe_items(events)
 
     @classmethod
     async def get_conversation_tasks_services(cls, query_db: AsyncSession, conversation_id: str) -> list[dict[str, Any]]:
         await cls.get_conversation_detail_services(query_db, conversation_id)
-        return await CodexConversationDao.get_conversation_tasks(query_db, conversation_id)
+        tasks = await CodexConversationDao.get_conversation_tasks(query_db, conversation_id)
+        return cls._safe_items(tasks)
 
     @classmethod
     async def get_conversation_read_model_services(

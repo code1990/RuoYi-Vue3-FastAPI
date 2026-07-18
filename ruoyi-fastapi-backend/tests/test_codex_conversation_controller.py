@@ -390,6 +390,21 @@ async def test_controller_returns_aggregated_conversation_view_list(db_session):
     assert payload['rows'][1]['historySummary']['messageCount'] == 0
 
 
+def test_service_build_conversation_view_tolerates_non_dict_items():
+    result = CodexConversationService._build_conversation_view(
+        {'conversationId': 'conv-1', 'status': 'running', 'updatedAtMs': 3000},
+        ['bad-message', {'conversationId': 'conv-1', 'role': 'user', 'createdAtMs': 1000, 'content': 'hello'}],
+        ['bad-event', {'conversationId': 'conv-1', 'eventType': 'started', 'createdAtMs': 1100}],
+        ['bad-task', {'conversationId': 'conv-1', 'taskId': 'task-1', 'status': 'running', 'submittedAtMs': 1200}],
+    )
+
+    assert result['currentState']['status'] == 'running'
+    assert result['historySummary']['messageCount'] == 1
+    assert result['historySummary']['eventCount'] == 1
+    assert result['historySummary']['taskCount'] == 1
+    assert result['messages'][0]['content'] == 'hello'
+
+
 class _DisconnectedRequest:
     def __init__(self) -> None:
         self._checks = 0

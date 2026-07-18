@@ -21,3 +21,24 @@ export function getConversationDetail(conversationId) {
     method: 'get'
   })
 }
+
+export function getConversationMessages(conversationId) {
+  return request({
+    url: `/codex/conversations/${conversationId}/messages`,
+    method: 'get'
+  })
+}
+
+export function getConversationEvents(conversationId) {
+  return request({
+    url: `/codex/conversations/${conversationId}/events`,
+    method: 'get'
+  })
+}
+
+export function getConversationTasks(conversationId) {
+  return request({
+    url: `/codex/conversations/${conversationId}/tasks`,
+    method: 'get'
+  })
+}

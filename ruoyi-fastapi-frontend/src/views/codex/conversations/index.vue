@@ -132,7 +132,7 @@ const queryParams = reactive({
   status: undefined,
   hasError: undefined,
   orderByColumn: 'updatedAtMs',
-  isAsc: 'desc'
+  isAsc: 'descending'
 })
 
 function getList() {
@@ -182,12 +182,12 @@ function resetQuery() {
   queryParams.pageNum = 1
   queryParams.pageSize = 10
   queryParams.orderByColumn = 'updatedAtMs'
-  queryParams.isAsc = 'desc'
+  queryParams.isAsc = 'descending'
   getList()
 }
 
 function goDetail(row) {
-  router.push(`/codex/conversations/${row.conversationId}`)
+  router.push(`/conversations/${row.conversationId}`)
 }
 
 onMounted(() => {

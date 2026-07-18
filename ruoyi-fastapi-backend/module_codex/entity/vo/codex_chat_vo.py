@@ -8,7 +8,7 @@ class CodexChatConversationStartModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     workspace_id: str = Field(description='workspace id')
-    title: str | None = Field(default=None, description='conversation title')
+    title: str = Field(description='conversation title')
     requirement: str = Field(description='conversation requirement')
     operator: str | None = Field(default=None, description='operator')
     model: str | None = Field(default=None, description='model')
@@ -16,8 +16,8 @@ class CodexChatConversationStartModel(BaseModel):
     service_tier: str | None = Field(default=None, description='service tier')
     access_mode: str | None = Field(default=None, description='access mode')
     images: list[str] | None = Field(default=None, description='images')
-    app_mentions: list[dict[str, Any]] | None = Field(default=None, description='app mentions')
-    collaboration_mode: dict[str, Any] | None = Field(default=None, description='collaboration mode')
+    app_mentions: list[str] | None = Field(default=None, description='app mentions')
+    collaboration_mode: str | None = Field(default=None, description='collaboration mode')
     codex_profile: str | None = Field(default=None, description='codex profile')
     default_prompt_template: str | None = Field(default=None, description='default prompt template')
 
@@ -31,8 +31,8 @@ class CodexChatConversationMessageModel(BaseModel):
     service_tier: str | None = Field(default=None, description='service tier')
     access_mode: str | None = Field(default=None, description='access mode')
     images: list[str] | None = Field(default=None, description='images')
-    app_mentions: list[dict[str, Any]] | None = Field(default=None, description='app mentions')
-    collaboration_mode: dict[str, Any] | None = Field(default=None, description='collaboration mode')
+    app_mentions: list[str] | None = Field(default=None, description='app mentions')
+    collaboration_mode: str | None = Field(default=None, description='collaboration mode')
 
 
 class CodexChatConversationQueryModel(BaseModel):

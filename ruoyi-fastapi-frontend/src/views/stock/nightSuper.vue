@@ -29,6 +29,7 @@
     <div class="toolbar">
       <div class="toolbar-meta">
         <span>Trade Date: {{ displayTradeDate }}</span>
+        <span>Limit: {{ responseLimit }}</span>
         <span>Rows: {{ rows.length }}</span>
       </div>
     </div>
@@ -62,7 +63,10 @@
                 {{ formatPercent(row.cards[dimension.sourceType].superRate) }}
               </div>
               <div class="dimension-note">
-                ok {{ formatPercent(row.cards[dimension.sourceType].okRate) }} / total {{ formatNumber(row.cards[dimension.sourceType].totalCount) }}
+                okRate {{ formatPercent(row.cards[dimension.sourceType].okRate) }} / superRate {{ formatPercent(row.cards[dimension.sourceType].superRate) }}
+              </div>
+              <div class="dimension-note">
+                ok {{ formatNumber(row.cards[dimension.sourceType].okCount) }} / super {{ formatNumber(row.cards[dimension.sourceType].superCount) }} / total {{ formatNumber(row.cards[dimension.sourceType].totalCount) }}
               </div>
               <div class="dimension-note">
                 updated {{ row.cards[dimension.sourceType].updatedAt || '--' }}
@@ -90,6 +94,7 @@ import { getNightSuperCards } from '@/api/stock/nightSuper'
 const loading = ref(false)
 const tradeDateValue = ref('')
 const responseTradeDate = ref('')
+const responseLimit = ref(3)
 const limit = ref(3)
 const rows = ref([])
 const dimensions = ref([])
@@ -112,6 +117,7 @@ function loadCards() {
     .then((response) => {
       const data = response?.data || {}
       responseTradeDate.value = String(data.tradeDate || '')
+      responseLimit.value = Number(data.limit || limit.value)
       dimensions.value = normalizeDimensions(data.dimensions)
       rows.value = Array.isArray(data.rows) ? data.rows.map(normalizeRow) : []
     })

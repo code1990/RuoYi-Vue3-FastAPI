@@ -43,24 +43,68 @@ export const constantRoutes = [
     ]
   },
   {
-    path: '/codex',
+    path: '/chart',
     component: Layout,
-    redirect: '/codex/conversations',
+    hidden: true,
     children: [
       {
-        path: 'conversations',
+        path: '',
+        component: () => import('@/views/chart/index.vue'),
+        name: 'ChartPage',
+        meta: { title: 'Chart', breadcrumb: false }
+      }
+    ]
+  },
+  {
+    path: '/chat',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/codex/chat/index.vue'),
+        name: 'CodexChat',
+        meta: { title: 'Codex Chat', icon: 'monitor' }
+      }
+    ]
+  },
+  {
+    path: '/conversations',
+    component: Layout,
+    children: [
+      {
+        path: '',
         component: () => import('@/views/codex/conversations/index.vue'),
         name: 'CodexConversations',
         meta: { title: 'Codex Conversations', icon: 'monitor' }
       },
       {
-        path: 'conversations/:conversationId',
+        path: ':conversationId',
         component: () => import('@/views/codex/conversations/detail.vue'),
         name: 'CodexConversationDetail',
         hidden: true,
-        meta: { title: 'Conversation Detail', activeMenu: '/codex/conversations' }
+        meta: { title: 'Conversation Detail', activeMenu: '/conversations' }
       }
     ]
+  },
+  {
+    path: '/codex',
+    redirect: '/chat',
+    hidden: true
+  },
+  {
+    path: '/codex/chat',
+    redirect: '/chat',
+    hidden: true
+  },
+  {
+    path: '/codex/conversations',
+    redirect: '/conversations',
+    hidden: true
+  },
+  {
+    path: '/codex/conversations/:conversationId',
+    redirect: to => `/conversations/${to.params.conversationId}`,
+    hidden: true
   },
   {
     path: '/stock',

@@ -149,6 +149,18 @@ service.interceptors.response.use(async res => {
     const responseStatus = response?.status
     const responseCode = response?.data?.code
     const responseMsg = response?.data?.msg
+    const responseDetail = response?.data?.detail
+    if (responseStatus === 422 && Array.isArray(responseDetail) && responseDetail.length) {
+      const message = responseDetail
+        .map((item) => {
+          const path = Array.isArray(item?.loc) ? item.loc.slice(1).join('.') : ''
+          const detail = typeof item?.msg === 'string' ? item.msg : 'Invalid request'
+          return path ? `${path}: ${detail}` : detail
+        })
+        .join('; ')
+      ElMessage({ message, type: 'error', duration: 5 * 1000 })
+      return Promise.reject(new Error(message))
+    }
     if (responseMsg) {
       const messageType = responseStatus === 429 || responseCode === 429 ? 'warning' : 'error'
       ElMessage({ message: responseMsg, type: messageType, duration: 5 * 1000 })
