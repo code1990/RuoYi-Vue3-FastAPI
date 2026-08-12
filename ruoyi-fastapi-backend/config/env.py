@@ -18,7 +18,7 @@ class AppSettings(BaseSettings):
     app_name: str = 'RuoYi-FasAPI'
     app_root_path: str = '/dev-api'
     app_host: str = '0.0.0.0'
-    app_port: int = 9099
+    app_port: int = 9100
     app_version: str = '1.0.0'
     app_reload: bool = True
     app_workers: int = 1
@@ -29,6 +29,29 @@ class AppSettings(BaseSettings):
     app_disable_redoc: bool = False
     app_trusted_proxy_ips: str = '127.0.0.1,::1'
     app_trusted_proxy_hops: int = 1
+    test_captcha_enabled: bool = True
+    test_auto_login_enabled: bool = False
+    test_auto_login_username: str = ''
+    test_auto_login_password: str = ''
+    stock_stat_db_path: str = ''
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env == 'prod'
+
+    def is_captcha_enabled(self, system_captcha_enabled: bool) -> bool:
+        if self.is_production:
+            return system_captcha_enabled
+        return system_captcha_enabled and self.test_captcha_enabled
+
+    @property
+    def test_auto_login_available(self) -> bool:
+        return (
+            not self.is_production
+            and self.test_auto_login_enabled
+            and bool(self.test_auto_login_username)
+            and bool(self.test_auto_login_password)
+        )
 
 
 class JwtSettings(BaseSettings):

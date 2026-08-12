@@ -59,3 +59,14 @@ export function getCodeImg() {
     timeout: 20000
   })
 }
+
+// 获取仅限非生产环境的测试自动登录凭据
+export function getTestLoginConfig() {
+  return request({
+    url: '/test-login-config',
+    headers: {
+      isToken: false
+    },
+    method: 'get'
+  })
+}

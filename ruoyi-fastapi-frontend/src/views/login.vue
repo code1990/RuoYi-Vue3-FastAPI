@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { getCodeImg } from "@/api/login";
+import { getCodeImg, getTestLoginConfig } from "@/api/login";
 import Cookies from "js-cookie";
 import { encrypt, decrypt } from "@/utils/jsencrypt";
 import useUserStore from '@/store/modules/user'
@@ -99,6 +99,7 @@ const captchaEnabled = ref(true);
 // 注册开关
 const register = ref(false);
 const redirect = ref(undefined);
+const testAutoLoginEnabled = import.meta.env.DEV && import.meta.env.VITE_TEST_AUTO_LOGIN_ENABLED === 'true';
 
 watch(route, (newRoute) => {
     redirect.value = newRoute.query && newRoute.query.redirect;
@@ -141,7 +142,7 @@ function handleLogin() {
 }
 
 function getCode() {
-  getCodeImg().then(res => {
+  return getCodeImg().then(res => {
     captchaEnabled.value = res.captchaEnabled === undefined ? true : res.captchaEnabled;
     register.value = res.registerEnabled === undefined ? false : res.registerEnabled;
     if (captchaEnabled.value) {
@@ -149,6 +150,20 @@ function getCode() {
       loginForm.value.uuid = res.uuid;
     }
   });
+}
+
+async function autoLoginForTest() {
+  if (!testAutoLoginEnabled) {
+    return;
+  }
+  try {
+    const { username, password } = await getTestLoginConfig();
+    loginForm.value.username = username;
+    loginForm.value.password = password;
+    handleLogin();
+  } catch {
+    // The endpoint is unavailable in production or when test login is disabled.
+  }
 }
 
 function getCookie() {
@@ -162,7 +177,7 @@ function getCookie() {
   };
 }
 
-getCode();
+getCode().then(autoLoginForTest);
 getCookie();
 </script>
 

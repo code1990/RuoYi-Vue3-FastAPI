@@ -8,6 +8,7 @@ from common.constant import ApiNamespace
 from common.enums import RedisInitKeyConfig
 from common.router import APIRouterPro
 from common.vo import DynamicResponseModel
+from config.env import AppConfig
 from module_admin.entity.vo.login_vo import CaptchaCode
 from module_admin.service.captcha_service import CaptchaService
 from utils.log_util import logger
@@ -24,12 +25,18 @@ captcha_controller = APIRouterPro(order_num=2, tags=['验证码模块'])
 )
 @ApiRateLimit(namespace=ApiNamespace.CAPTCHA_IMAGE, preset=ApiRateLimitPreset.ANON_AUTH_CAPTCHA)
 async def get_captcha_image(request: Request) -> Response:
-    captcha_enabled = (
+    system_captcha_enabled = (
         await request.app.state.redis.get(f'{RedisInitKeyConfig.SYS_CONFIG.key}:sys.account.captchaEnabled') == 'true'
     )
+    captcha_enabled = AppConfig.is_captcha_enabled(system_captcha_enabled)
     register_enabled = (
         await request.app.state.redis.get(f'{RedisInitKeyConfig.SYS_CONFIG.key}:sys.account.registerUser') == 'true'
     )
+    if not captcha_enabled:
+        return ResponseUtil.success(
+            model_content=CaptchaCode(captchaEnabled=False, registerEnabled=register_enabled, img='', uuid='')
+        )
+
     session_id = str(uuid.uuid4())
     captcha_result = await CaptchaService.create_captcha_image_service()
     image = captcha_result[0]

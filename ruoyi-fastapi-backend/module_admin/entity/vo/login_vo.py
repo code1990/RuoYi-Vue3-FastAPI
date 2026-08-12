@@ -46,6 +46,13 @@ class LoginToken(BaseModel):
     token: str = Field(description='token信息')
 
 
+class TestLoginConfig(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel)
+
+    username: str = Field(description='测试登录用户名')
+    password: str = Field(description='测试登录密码')
+
+
 class CaptchaCode(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel)
 

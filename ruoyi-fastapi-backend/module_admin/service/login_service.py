@@ -435,10 +435,11 @@ class LoginService:
         register_enabled = (
             await request.app.state.redis.get(f'{RedisInitKeyConfig.SYS_CONFIG.key}:sys.account.registerUser') == 'true'
         )
-        captcha_enabled = (
+        system_captcha_enabled = (
             await request.app.state.redis.get(f'{RedisInitKeyConfig.SYS_CONFIG.key}:sys.account.captchaEnabled')
             == 'true'
         )
+        captcha_enabled = AppConfig.is_captcha_enabled(system_captcha_enabled)
         if user_register.password == user_register.confirm_password:
             if register_enabled:
                 if captcha_enabled:

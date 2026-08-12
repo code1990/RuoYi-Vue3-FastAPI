@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, Request, Response
+from fastapi import Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.annotation.cache_annotation import ApiCache, ApiCacheEvict
@@ -16,7 +16,7 @@ from common.enums import BusinessType, RedisInitKeyConfig
 from common.router import APIRouterPro
 from common.vo import CrudResponseModel, DataResponseModel, DynamicResponseModel, ResponseBaseModel
 from config.env import AppConfig, JwtConfig
-from module_admin.entity.vo.login_vo import LoginToken, RouterModel, Token, UserLogin, UserRegister
+from module_admin.entity.vo.login_vo import LoginToken, RouterModel, TestLoginConfig, Token, UserLogin, UserRegister
 from module_admin.entity.vo.user_vo import CurrentUserModel, EditUserModel
 from module_admin.service.login_service import CustomOAuth2PasswordRequestForm, LoginService, oauth2_scheme
 from module_admin.service.user_service import UserService
@@ -40,9 +40,10 @@ async def login(
     form_data: Annotated[CustomOAuth2PasswordRequestForm, Depends()],
     query_db: Annotated[AsyncSession, DBSessionDependency()],
 ) -> Response:
-    captcha_enabled = (
+    system_captcha_enabled = (
         await request.app.state.redis.get(f'{RedisInitKeyConfig.SYS_CONFIG.key}:sys.account.captchaEnabled') == 'true'
     )
+    captcha_enabled = AppConfig.is_captcha_enabled(system_captcha_enabled)
     user = UserLogin(
         userName=form_data.username,
         password=form_data.password,
@@ -87,6 +88,22 @@ async def login(
     if request_from_swagger or request_from_redoc:
         return {'access_token': access_token, 'token_type': 'Bearer'}
     return ResponseUtil.success(msg='登录成功', dict_content={'token': access_token})
+
+
+@login_controller.get(
+    '/test-login-config',
+    summary='获取测试自动登录配置',
+    response_model=DynamicResponseModel[TestLoginConfig],
+)
+async def get_test_login_config() -> Response:
+    if not AppConfig.test_auto_login_available:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Not Found')
+    return ResponseUtil.success(
+        model_content=TestLoginConfig(
+            username=AppConfig.test_auto_login_username,
+            password=AppConfig.test_auto_login_password,
+        )
+    )
 
 
 @login_controller.get(
