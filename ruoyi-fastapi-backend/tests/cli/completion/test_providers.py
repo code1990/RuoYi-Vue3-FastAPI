@@ -436,7 +436,7 @@ def test_run_completion_coroutine_clears_scoped_app_env_when_original_missing(mo
     async def _read_env() -> str | None:
         return os.environ.get('APP_ENV')
 
-    result = completion_registry.dynamic_service.run_completion_coroutine(_read_env(), env='dockerpg')
+    result = completion_registry.dynamic_service.run_completion_coroutine(_read_env(), env='prod')
 
-    assert result == 'dockerpg'
+    assert result == 'prod'
     assert 'APP_ENV' not in os.environ

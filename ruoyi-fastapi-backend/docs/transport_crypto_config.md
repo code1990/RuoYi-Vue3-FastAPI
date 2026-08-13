@@ -59,30 +59,6 @@ TRANSPORT_CRYPTO_MAX_GET_URL_LENGTH=4096
 - `TRANSPORT_CRYPTO_MAX_GET_URL_LENGTH` 用于限制 GET/DELETE 请求加密后的 URL 长度，前端会通过 `/transport/crypto/frontend-config` 自动同步该值，超限时直接提示改用 POST 或精简查询条件。
 - 传输层加密主要面向查询参数、`application/json` 与 `application/x-www-form-urlencoded` 请求；`multipart/form-data` 上传和下载接口默认排除。
 
-## Docker 环境
-
-当前项目的 Docker 部署使用：
-
-- `docker-compose.my.yml` + `Dockerfile.my`
-- `docker-compose.pg.yml` + `Dockerfile.pg`
-
-后端容器启动命令分别是：
-
-- `python app.py --env=dockermy`
-- `python app.py --env=dockerpg`
-
-所以 Docker 环境需要直接在以下文件中配置传输层密钥：
-
-- `ruoyi-fastapi-backend/.env.dockermy`
-- `ruoyi-fastapi-backend/.env.dockerpg`
-
-配置方式与生产环境相同；`.env.dockermy` / `.env.dockerpg` 里也已经默认提供一套可用示例值，正式部署前请替换为正式密钥。
-
-使用时只需要：
-
-1. 修改对应的 `.env.dockermy` 或 `.env.dockerpg`
-2. 重新构建并启动 Docker 服务
-
 ## 密钥生成
 
 使用 `openssl` 生成一套 RSA 密钥：
