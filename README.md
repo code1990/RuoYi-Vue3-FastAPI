@@ -140,3 +140,15 @@ nginx -t && systemctl reload nginx
 - `stock_cron` 与本仓库分别提交、分别推送。
 - 后端 API、MySQL 菜单迁移和前端 API 定义保持同一提交语义。
 - 发布前确认工作区干净，使用 `git pull --ff-only`，避免服务器上产生合并提交。
+
+### 服务端提交范围
+
+服务器工作副本可提交 `ruoyi-fastapi-backend/**`（含测试）、`ruoyi-fastapi-frontend/**` 及根目录、`.github/**`、`scripts/**` 等服务器配置。前端源码在服务器开发和提交，Windows 仅负责构建并发布 `dist`；`ruoyi-fastapi-app/**`、`ruoyi-fastapi-test/**` 仍在 Windows 工作副本开发和提交。
+
+首次在服务器安装提交检查：
+
+```bash
+./scripts/install-server-git-hooks.sh
+```
+
+该检查只阻止受限目录进入提交，不阻止查看或临时编辑。紧急修复需要明确绕过时使用 `git commit --no-verify`。

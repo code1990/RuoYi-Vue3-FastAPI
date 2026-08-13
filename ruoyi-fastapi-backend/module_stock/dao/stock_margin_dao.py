@@ -31,7 +31,7 @@ class StockMarginDao:
                            t5_max_return_pct, performance_updated_at
                     FROM t_stock_margin_combo_signal
                     WHERE {where_sql}
-                    ORDER BY signal_date DESC, avg_rank ASC, stock_code ASC
+                    ORDER BY signal_date DESC, total_score DESC, stock_code ASC
                     LIMIT :limit OFFSET :offset''', params
             ).fetchall()
         return [dict(row) for row in rows], total
@@ -57,13 +57,15 @@ class StockMarginDao:
         database_uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(database_uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
+            columns = {row[1] for row in connection.execute('PRAGMA table_info(t_stock_margin_long_performance)')}
+            entry_change_sql = 'entry_change_pct' if 'entry_change_pct' in columns else 'NULL AS entry_change_pct'
             total = connection.execute(
                 f'SELECT COUNT(*) FROM t_stock_margin_long_performance WHERE {where_sql}', params
             ).fetchone()[0]
             rows = connection.execute(
                 f'''
                 SELECT stock_code, margin_trade_date, signal_date, stock_name, rank_no, score,
-                       participation_ratio, balance_change_ratio, entry_price, industry_name,
+                       participation_ratio, balance_change_ratio, entry_price, {entry_change_sql}, industry_name,
                        close_return_pct, t1_max_return_pct, t2_max_return_pct, t3_max_return_pct,
                        t4_max_return_pct, t5_max_return_pct
                 FROM t_stock_margin_long_performance

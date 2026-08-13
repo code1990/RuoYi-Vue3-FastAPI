@@ -14,6 +14,7 @@ class StockMarginLongPerformanceModel(BaseModel):
     participation_ratio: float = Field(description='融资买入成交参与度')
     balance_change_ratio: float = Field(description='融资余额变化强度')
     entry_price: float = Field(description='买入价')
+    entry_change_pct: float | None = Field(default=None, description='早盘开盘涨幅')
     industry_name: str = Field(description='行业')
     close_return_pct: float | None = Field(default=None, description='尾盘涨幅')
     t1_max_return_pct: float | None = Field(default=None, description='T+1最高涨幅')
