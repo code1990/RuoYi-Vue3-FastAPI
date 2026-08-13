@@ -52,9 +52,9 @@ SELECT menu_name, @quant_menu_id, order_num, path, component, query, route_name,
        1, 0, 'C', '0', '0', perms, 'money', 'admin', NOW(), 'admin', NOW(), remark
 FROM (
     SELECT '融资2天' AS menu_name, 4 AS order_num, 'margin-2d' AS path, 'stock/marginTrading' AS component,
-           'windowDays=2' AS query, 'StockMargin2d' AS route_name, 'stock:margin:combo:list' AS perms, '2天综合融资排名' AS remark
-    UNION ALL SELECT '融资3天', 5, 'margin-3d', 'stock/marginTrading', 'windowDays=3', 'StockMargin3d', 'stock:margin:combo:list', '3天综合融资排名'
-    UNION ALL SELECT '融资5天', 6, 'margin-5d', 'stock/marginTrading', 'windowDays=5', 'StockMargin5d', 'stock:margin:combo:list', '5天综合融资排名'
+           '{"windowDays":2}' AS query, 'StockMargin2d' AS route_name, 'stock:margin:combo:list' AS perms, '2天综合融资排名' AS remark
+    UNION ALL SELECT '融资3天', 5, 'margin-3d', 'stock/marginTrading', '{"windowDays":3}', 'StockMargin3d', 'stock:margin:combo:list', '3天综合融资排名'
+    UNION ALL SELECT '融资5天', 6, 'margin-5d', 'stock/marginTrading', '{"windowDays":5}', 'StockMargin5d', 'stock:margin:combo:list', '5天综合融资排名'
 ) AS combo_menus
 WHERE @quant_menu_id IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE parent_id = @quant_menu_id AND menu_name = combo_menus.menu_name);

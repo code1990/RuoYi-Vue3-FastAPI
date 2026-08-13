@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import HTTPException, Query, Response, status
 
@@ -35,12 +35,14 @@ async def get_stock_margin_long_performance_list(
     response_model=DataResponseModel[StockMarginComboPageModel],
 )
 async def get_stock_margin_combo_list(
-    window_days: Annotated[Literal[2, 3, 5], Query(alias='windowDays')],
+    window_days: Annotated[int, Query(alias='windowDays', ge=2, le=5)],
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
     page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 20,
 ) -> Response:
+    if window_days not in (2, 3, 5):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='windowDays must be 2, 3, or 5')
     try:
         result = await StockMarginService.get_combo_page_services(window_days, start_date, end_date, page_num, page_size)
     except FileNotFoundError as error:
