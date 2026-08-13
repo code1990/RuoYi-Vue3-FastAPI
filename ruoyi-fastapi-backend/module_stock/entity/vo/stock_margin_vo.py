@@ -31,3 +31,38 @@ class StockMarginLongPerformancePageModel(BaseModel):
     page_num: int
     page_size: int
     has_next: bool
+
+
+class StockMarginComboModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    signal_date: int
+    window_days: int
+    stock_code: str
+    stock_name: str
+    latest_rank: int
+    avg_rank: float
+    total_score: float
+    avg_score: float
+    avg_participation_ratio: float
+    avg_balance_change_ratio: float
+    entry_trade_date: int | None = None
+    entry_price: float | None = None
+    entry_open_return_pct: float | None = None
+    close_return_pct: float | None = None
+    t1_max_return_pct: float | None = None
+    t2_max_return_pct: float | None = None
+    t3_max_return_pct: float | None = None
+    t4_max_return_pct: float | None = None
+    t5_max_return_pct: float | None = None
+    performance_updated_at: str | None = None
+
+
+class StockMarginComboPageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[StockMarginComboModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool

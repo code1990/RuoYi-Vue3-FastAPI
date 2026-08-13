@@ -4,6 +4,39 @@ from pathlib import Path
 
 class StockMarginDao:
     @staticmethod
+    def get_combo_page(
+        database_path: str, window_days: int, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+    ) -> tuple[list[dict], int]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ['window_days = :window_days']
+        params: dict[str, str | int] = {'window_days': window_days, 'limit': page_size, 'offset': (page_num - 1) * page_size}
+        if start_date:
+            clauses.append('signal_date >= :start_date')
+            params['start_date'] = int(start_date)
+        if end_date:
+            clauses.append('signal_date <= :end_date')
+            params['end_date'] = int(end_date)
+        where_sql = ' AND '.join(clauses)
+        uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        with sqlite3.connect(uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            total = connection.execute(f'SELECT COUNT(*) FROM t_stock_margin_combo_signal WHERE {where_sql}', params).fetchone()[0]
+            rows = connection.execute(
+                f'''SELECT signal_date, window_days, stock_code, stock_name, latest_rank, avg_rank,
+                           total_score, avg_score, avg_participation_ratio, avg_balance_change_ratio,
+                           entry_trade_date, entry_price, entry_open_return_pct, close_return_pct,
+                           t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct,
+                           t5_max_return_pct, performance_updated_at
+                    FROM t_stock_margin_combo_signal
+                    WHERE {where_sql}
+                    ORDER BY signal_date DESC, avg_rank ASC, stock_code ASC
+                    LIMIT :limit OFFSET :offset''', params
+            ).fetchall()
+        return [dict(row) for row in rows], total
+
+    @staticmethod
     def get_long_performance_page(
         database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
     ) -> tuple[list[dict], int]:
