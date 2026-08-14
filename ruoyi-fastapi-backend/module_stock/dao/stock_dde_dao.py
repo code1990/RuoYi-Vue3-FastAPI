@@ -79,7 +79,9 @@ class StockDdeDao:
             rows = connection.execute(
                 f'''SELECT signal_date, previous_signal_date, stock_code, stock_name, previous_signal_count,
                            today_signal_count, today_morning_count, today_noon_count, today_close_count,
-                           today_best_rank, today_main_net_ratio, previous_main_net_ratio, entry_price, combo_rank
+                           today_best_rank, today_main_net_ratio, previous_main_net_ratio, entry_price, combo_rank,
+                           close_return_pct, t1_max_return_pct, t2_max_return_pct, t3_max_return_pct,
+                           t4_max_return_pct, t5_max_return_pct
                     FROM t_stock_dde_combo_signal WHERE {where_sql}
                     ORDER BY signal_date DESC, combo_rank ASC LIMIT :limit OFFSET :offset''', params
             ).fetchall()

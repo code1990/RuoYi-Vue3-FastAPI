@@ -14,8 +14,8 @@ def stock_database(tmp_path):
     with sqlite3.connect(database_path) as connection:
         connection.execute('''CREATE TABLE t_stock_dde_signal_performance (stock_code TEXT NOT NULL, trade_date TEXT NOT NULL, stock_name TEXT NOT NULL, signal_slot TEXT NOT NULL, signal_rank_no INTEGER, entry_price REAL NOT NULL, signal_change_pct REAL, large_net_amount REAL, market_cap REAL, main_net_ratio REAL, industry_name TEXT NOT NULL, close_return_pct REAL, t1_max_return_pct REAL, t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL, PRIMARY KEY (stock_code, trade_date))''')
         connection.execute("""INSERT INTO t_stock_dde_signal_performance VALUES ('000001','20260806','平安银行','noon',2,10,1.2,100000000,2000000000,0.05,'银行',2,3,4,5,6,7), ('603459','20260806','红板科技','morning',1,105.58,9.5,1310000000,6800000000,0.1941,'电子',1,2,3,4,5,6), ('600000','20260805','浦发银行','close',1,8,-0.2,20000000,1000000000,0.01,'银行',NULL,NULL,NULL,NULL,NULL,NULL)""")
-        connection.execute('''CREATE TABLE t_stock_dde_combo_signal (signal_date TEXT, previous_signal_date TEXT, stock_code TEXT, stock_name TEXT, previous_signal_count INTEGER, today_signal_count INTEGER, today_morning_count INTEGER, today_noon_count INTEGER, today_close_count INTEGER, today_best_rank INTEGER, today_main_net_ratio REAL, previous_main_net_ratio REAL, entry_price REAL, combo_rank INTEGER)''')
-        connection.execute("INSERT INTO t_stock_dde_combo_signal VALUES ('20260807','20260806','000001','平安银行',1,2,1,1,0,3,.02,.01,10.5,1)")
+        connection.execute('''CREATE TABLE t_stock_dde_combo_signal (signal_date TEXT, previous_signal_date TEXT, stock_code TEXT, stock_name TEXT, previous_signal_count INTEGER, today_signal_count INTEGER, today_morning_count INTEGER, today_noon_count INTEGER, today_close_count INTEGER, today_best_rank INTEGER, today_main_net_ratio REAL, previous_main_net_ratio REAL, entry_price REAL, combo_rank INTEGER, close_return_pct REAL, t1_max_return_pct REAL, t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL)''')
+        connection.execute("INSERT INTO t_stock_dde_combo_signal VALUES ('20260807','20260806','000001','平安银行',1,2,1,1,0,3,.02,.01,10.5,1,1,2,3,4,5,6)")
     return database_path
 
 
@@ -38,3 +38,4 @@ def test_dde_combo_list_reads_yesterday_today_candidates(stock_database, monkeyp
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['previousSignalDate'] == '20260806'
     assert payload['data']['rows'][0]['todaySignalCount'] == 2
+    assert payload['data']['rows'][0]['t5MaxReturnPct'] == 6.0

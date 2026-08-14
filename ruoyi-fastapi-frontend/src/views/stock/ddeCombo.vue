@@ -14,6 +14,8 @@
         <el-table-column label="当前价" min-width="80"><template #default="{ row }">{{ number(row.entryPrice) }}</template></el-table-column>
         <el-table-column label="今日强度" min-width="90"><template #default="{ row }">{{ percent(row.todayMainNetRatio) }}</template></el-table-column>
         <el-table-column label="昨日强度" min-width="90"><template #default="{ row }">{{ percent(row.previousMainNetRatio) }}</template></el-table-column>
+        <el-table-column label="尾盘收益" min-width="90"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>
+        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}最高`" min-width="95"><template #default="{ row }">{{ percent(row[`t${day}MaxReturnPct`]) }}</template></el-table-column>
         <el-table-column label="概念" min-width="180"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
       </el-table>
       <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="getList" />

@@ -50,6 +50,12 @@ class StockDdeComboSignalModel(BaseModel):
     previous_main_net_ratio: float
     entry_price: float | None = None
     combo_rank: int
+    close_return_pct: float | None = None
+    t1_max_return_pct: float | None = None
+    t2_max_return_pct: float | None = None
+    t3_max_return_pct: float | None = None
+    t4_max_return_pct: float | None = None
+    t5_max_return_pct: float | None = None
 
 
 class StockDdeComboSignalPageModel(BaseModel):
