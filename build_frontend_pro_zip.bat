@@ -11,6 +11,15 @@ if not exist "%FRONTEND_DIR%\package.json" (
   exit /b 1
 )
 
+pushd "%ROOT_DIR%"
+git pull --ff-only
+if errorlevel 1 (
+  popd
+  echo Git pull failed.
+  exit /b 1
+)
+popd
+
 pushd "%FRONTEND_DIR%"
 call npm.cmd run build:prod
 if errorlevel 1 (
