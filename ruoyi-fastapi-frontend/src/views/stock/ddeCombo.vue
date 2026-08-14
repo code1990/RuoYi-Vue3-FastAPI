@@ -13,8 +13,8 @@
         <el-table-column label="早/午/尾" min-width="90"><template #default="{ row }">{{ row.todayMorningCount }}/{{ row.todayNoonCount }}/{{ row.todayCloseCount }}</template></el-table-column>
         <el-table-column label="买入参考价" min-width="95"><template #default="{ row }">{{ number(row.entryPrice) }}</template></el-table-column>
         <el-table-column label="当前价" min-width="80"><template #default="{ row }">{{ number(row.currentPrice) }}</template></el-table-column>
-        <el-table-column label="今日强度" min-width="90"><template #default="{ row }">{{ percent(row.todayMainNetRatio) }}</template></el-table-column>
-        <el-table-column label="昨日强度" min-width="90"><template #default="{ row }">{{ percent(row.previousMainNetRatio) }}</template></el-table-column>
+        <el-table-column label="今日强度" min-width="90"><template #default="{ row }">{{ percent(row.todayMainNetRatio, true) }}</template></el-table-column>
+        <el-table-column label="昨日强度" min-width="90"><template #default="{ row }">{{ percent(row.previousMainNetRatio, true) }}</template></el-table-column>
         <el-table-column label="尾盘收益" min-width="90"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>
         <el-table-column v-for="day in 5" :key="day" :label="`T+${day}最高`" min-width="95"><template #default="{ row }">{{ percent(row[`t${day}MaxReturnPct`]) }}</template></el-table-column>
         <el-table-column label="概念" min-width="180"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
@@ -43,7 +43,7 @@ function getList() {
 }
 
 function handleQuery() { query.pageNum = 1; getList() }
-function percent(value) { return value === null || value === undefined ? '-' : `${(value * 100).toFixed(2)}%` }
+function percent(value, ratio = false) { return value === null || value === undefined ? '-' : `${(ratio ? value * 100 : value).toFixed(2)}%` }
 function number(value) { return value === null || value === undefined ? '-' : value.toFixed(2) }
 
 getList()
