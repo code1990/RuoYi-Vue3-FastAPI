@@ -11,7 +11,8 @@
         <el-table-column label="昨日次数" prop="previousSignalCount" min-width="90" />
         <el-table-column label="今日次数" prop="todaySignalCount" min-width="90" />
         <el-table-column label="早/午/尾" min-width="90"><template #default="{ row }">{{ row.todayMorningCount }}/{{ row.todayNoonCount }}/{{ row.todayCloseCount }}</template></el-table-column>
-        <el-table-column label="当前价" min-width="80"><template #default="{ row }">{{ number(row.entryPrice) }}</template></el-table-column>
+        <el-table-column label="买入参考价" min-width="95"><template #default="{ row }">{{ number(row.entryPrice) }}</template></el-table-column>
+        <el-table-column label="当前价" min-width="80"><template #default="{ row }">{{ number(row.currentPrice) }}</template></el-table-column>
         <el-table-column label="今日强度" min-width="90"><template #default="{ row }">{{ percent(row.todayMainNetRatio) }}</template></el-table-column>
         <el-table-column label="昨日强度" min-width="90"><template #default="{ row }">{{ percent(row.previousMainNetRatio) }}</template></el-table-column>
         <el-table-column label="尾盘收益" min-width="90"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>

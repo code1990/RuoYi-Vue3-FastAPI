@@ -49,6 +49,7 @@ class StockDdeComboSignalModel(BaseModel):
     today_main_net_ratio: float
     previous_main_net_ratio: float
     entry_price: float | None = None
+    current_price: float | None = None
     combo_rank: int
     close_return_pct: float | None = None
     t1_max_return_pct: float | None = None
