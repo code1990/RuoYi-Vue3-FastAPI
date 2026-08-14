@@ -18,6 +18,7 @@
         <el-table-column label="概念" min-width="180"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
         <el-table-column label="机构" min-width="70"><template #default="{ row }">{{ getStockOrgNum(row.stockCode) }}</template></el-table-column>
         <el-table-column label="买入价" prop="entryPrice" min-width="88" />
+        <el-table-column label="早盘开盘涨幅" min-width="112"><template #default="{ row }">{{ percent(comboDays ? row.entryOpenReturnPct : row.entryChangePct) }}</template></el-table-column>
         <el-table-column :label="comboDays ? '累计评分' : '评分'" min-width="80"><template #default="{ row }">{{ number(comboDays ? row.totalScore : row.score) }}</template></el-table-column>
         <el-table-column label="融资参与度" min-width="105"><template #default="{ row }">{{ percent(comboDays ? row.avgParticipationRatio : row.participationRatio, true) }}</template></el-table-column>
         <el-table-column label="余额变化强度" min-width="115"><template #default="{ row }">{{ percent(comboDays ? row.avgBalanceChangeRatio : row.balanceChangeRatio, true) }}</template></el-table-column>
