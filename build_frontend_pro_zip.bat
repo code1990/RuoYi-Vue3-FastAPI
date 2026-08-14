@@ -25,7 +25,6 @@ if not exist "dist" (
   exit /b 1
 )
 
-if exist "%ZIP_FILE%" del /q "%ZIP_FILE%"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Compress-Archive -Path '.\dist\*' -DestinationPath '%ZIP_FILE%' -Force"
 if errorlevel 1 (
   popd

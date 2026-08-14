@@ -46,6 +46,8 @@ ruoyi-fastapi-frontend/  Windows Vue3 前端
 
 ## 服务器：后端开发与部署
 
+一键部署流程见 [`docs/deployment.md`](docs/deployment.md)。
+
 后端运行目录为 `ruoyi-fastapi-backend`，生产配置为 `.env.prod`。SQLite 路径通过 `STOCK_STAT_DB_PATH` 配置；该路径必须指向 `stock_cron` 生成的数据文件，并对服务进程可读。
 
 安装或更新依赖：

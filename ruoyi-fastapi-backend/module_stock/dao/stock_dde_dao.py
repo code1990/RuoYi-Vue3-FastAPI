@@ -55,3 +55,32 @@ class StockDdeDao:
                 params,
             ).fetchall()
         return [dict(row) for row in rows], total
+
+    @staticmethod
+    def get_combo_page(
+        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+    ) -> tuple[list[dict], int]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ['1 = 1']
+        params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
+        if start_date:
+            clauses.append('signal_date >= :start_date')
+            params['start_date'] = start_date
+        if end_date:
+            clauses.append('signal_date <= :end_date')
+            params['end_date'] = end_date
+        where_sql = ' AND '.join(clauses)
+        uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        with sqlite3.connect(uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            total = connection.execute(f'SELECT COUNT(*) FROM t_stock_dde_combo_signal WHERE {where_sql}', params).fetchone()[0]
+            rows = connection.execute(
+                f'''SELECT signal_date, previous_signal_date, stock_code, stock_name, previous_signal_count,
+                           today_signal_count, today_morning_count, today_noon_count, today_close_count,
+                           today_best_rank, today_main_net_ratio, previous_main_net_ratio, entry_price, combo_rank
+                    FROM t_stock_dde_combo_signal WHERE {where_sql}
+                    ORDER BY signal_date DESC, combo_rank ASC LIMIT :limit OFFSET :offset''', params
+            ).fetchall()
+        return [dict(row) for row in rows], total

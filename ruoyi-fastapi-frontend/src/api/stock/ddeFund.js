@@ -7,3 +7,7 @@ export function listDdeSignalPerformance(params) {
     params
   })
 }
+
+export function listDdeCombo(params) {
+  return request({ url: '/stock/dde/combo/list', method: 'get', params })
+}

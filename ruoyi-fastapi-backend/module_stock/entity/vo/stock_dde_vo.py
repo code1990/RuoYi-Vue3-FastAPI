@@ -31,3 +31,32 @@ class StockDdeSignalPerformancePageModel(BaseModel):
     page_num: int
     page_size: int
     has_next: bool
+
+
+class StockDdeComboSignalModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    signal_date: str
+    previous_signal_date: str
+    stock_code: str
+    stock_name: str
+    previous_signal_count: int
+    today_signal_count: int
+    today_morning_count: int
+    today_noon_count: int
+    today_close_count: int
+    today_best_rank: int
+    today_main_net_ratio: float
+    previous_main_net_ratio: float
+    entry_price: float | None = None
+    combo_rank: int
+
+
+class StockDdeComboSignalPageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[StockDdeComboSignalModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool
