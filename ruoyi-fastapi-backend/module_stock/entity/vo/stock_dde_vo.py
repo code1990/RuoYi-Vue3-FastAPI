@@ -33,6 +33,39 @@ class StockDdeSignalPerformancePageModel(BaseModel):
     has_next: bool
 
 
+class StockDdeTop30PerformanceModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    stock_code: str
+    trade_date: str
+    stock_name: str
+    signal_slot: str
+    signal_rank_no: int
+    raw_rank_no: int
+    entry_price: float
+    signal_change_pct: float | None = None
+    main_net_amount: float | None = None
+    market_cap: float | None = None
+    main_net_ratio: float | None = None
+    industry_name: str
+    close_return_pct: float | None = None
+    t1_max_return_pct: float | None = None
+    t2_max_return_pct: float | None = None
+    t3_max_return_pct: float | None = None
+    t4_max_return_pct: float | None = None
+    t5_max_return_pct: float | None = None
+
+
+class StockDdeTop30PerformancePageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[StockDdeTop30PerformanceModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool
+
+
 class StockDdeComboSignalModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
