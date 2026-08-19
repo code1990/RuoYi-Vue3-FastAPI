@@ -100,3 +100,79 @@ class StockDdeComboSignalPageModel(BaseModel):
     page_num: int
     page_size: int
     has_next: bool
+
+
+class StockDdeHotRankModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rank_no: int
+    stock_code: str
+    stock_name: str
+    appearance_count: int
+    signal_day_count: int
+    morning_count: int
+    noon_count: int
+    close_count: int
+    recent_5_count: int
+    latest_signal_date: str
+    latest_signal_slot: str
+    best_rank: int
+    average_rank: float
+    limit_up_count: int
+    tradable_signal_count: int
+    tradable_sample_day_count: int
+    completed_tradable_sample_day_count: int
+    target_hit_count: int
+    target_hit_rate: float | None = None
+    latest_tail_price: float | None = None
+    latest_tail_market_cap: float | None = None
+    is_large_cap: bool
+    is_high_price: bool
+    is_latest_signal_limit_up: bool
+
+
+class StockDdeHotRankPageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[StockDdeHotRankModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool
+    stat_start_date: str | None = None
+    stat_end_date: str | None = None
+
+
+class StockDdeObservationModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    trade_date: str
+    stock_code: str
+    stock_name: str
+    morning_count: int
+    noon_count: int
+    close_count: int
+    signal_count: int
+    best_rank: int
+    combo_type: str
+    entry_price: float
+    market_cap: float
+    change_pct: float | None = None
+    is_limit_up: bool
+    is_tradable: bool
+    is_completed: bool
+    target_hit: bool | None = None
+
+
+class StockDdeObservationPageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[StockDdeObservationModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool
+    tradable_count: int
+    completed_count: int
+    target_hit_count: int
+    target_hit_rate: float | None = None

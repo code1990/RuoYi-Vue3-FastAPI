@@ -4,7 +4,13 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_stock.entity.vo.stock_dde_vo import StockDdeComboSignalPageModel, StockDdeSignalPerformancePageModel, StockDdeTop30PerformancePageModel
+from module_stock.entity.vo.stock_dde_vo import (
+    StockDdeComboSignalPageModel,
+    StockDdeHotRankPageModel,
+    StockDdeObservationPageModel,
+    StockDdeSignalPerformancePageModel,
+    StockDdeTop30PerformancePageModel,
+)
 from module_stock.service.stock_dde_service import StockDdeService
 from utils.response_util import ResponseUtil
 
@@ -54,6 +60,35 @@ async def get_stock_dde_top30_performance_list(
 ) -> Response:
     try:
         result = await StockDdeService.get_top30_performance_page_services(start_date, end_date, page_num, page_size)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/hot-rank/list', summary='查询DDE热度榜', response_model=DataResponseModel[StockDdeHotRankPageModel])
+async def get_stock_dde_hot_rank_list(
+    large_cap: Annotated[bool | None, Query(alias='largeCap')] = None,
+    high_price: Annotated[bool | None, Query(alias='highPrice')] = None,
+    page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
+    page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 20,
+) -> Response:
+    try:
+        result = await StockDdeService.get_hot_rank_page_services(page_num, page_size, large_cap, high_price)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/observation/list', summary='查询DDE观察列表', response_model=DataResponseModel[StockDdeObservationPageModel])
+async def get_stock_dde_observation_list(
+    dimension: Annotated[str, Query(pattern=r'^(high_price|large_cap|intraday_combo)$')] = 'high_price',
+    start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
+    end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
+    page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
+    page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 20,
+) -> Response:
+    try:
+        result = await StockDdeService.get_observation_page_services(dimension, start_date, end_date, page_num, page_size)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

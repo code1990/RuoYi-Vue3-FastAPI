@@ -15,3 +15,11 @@ export function listDdeCombo(params) {
 export function listDdeTop30Performance(params) {
   return request({ url: '/stock/dde/top30/performance/list', method: 'get', params })
 }
+
+export function listDdeHotRank(params) {
+  return request({ url: '/stock/dde/hot-rank/list', method: 'get', params })
+}
+
+export function listDdeObservation(params) {
+  return request({ url: '/stock/dde/observation/list', method: 'get', params })
+}

@@ -1,11 +1,17 @@
+import asyncio
 import json
 import sqlite3
-import asyncio
 
 import pytest
 
 from config.env import AppConfig
-from module_stock.controller.stock_dde_controller import get_stock_dde_combo_list, get_stock_dde_signal_performance_list, get_stock_dde_top30_performance_list
+from module_stock.controller.stock_dde_controller import (
+    get_stock_dde_combo_list,
+    get_stock_dde_hot_rank_list,
+    get_stock_dde_observation_list,
+    get_stock_dde_signal_performance_list,
+    get_stock_dde_top30_performance_list,
+)
 
 
 @pytest.fixture
@@ -18,6 +24,36 @@ def stock_database(tmp_path):
         connection.execute("INSERT INTO t_stock_dde_combo_signal VALUES ('20260807','20260806','000001','平安银行',1,2,1,1,0,3,.02,.01,10.5,11,1,1,2,3,4,5,6)")
         connection.execute('''CREATE TABLE t_stock_dde_30_signal_performance (stock_code TEXT, trade_date TEXT, stock_name TEXT, signal_slot TEXT, signal_rank_no INTEGER, raw_rank_no INTEGER, entry_price REAL, signal_change_pct REAL, main_net_amount REAL, market_cap REAL, main_net_ratio REAL, industry_name TEXT, close_return_pct REAL, t1_max_return_pct REAL, t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL)''')
         connection.execute("INSERT INTO t_stock_dde_30_signal_performance VALUES ('000001','20260806','平安银行','morning',1,3,10,1,20000000,2000000000,.01,'银行',.2,3,4,5,6,7)")
+        connection.execute('''CREATE TABLE t_stock_dde_hot_rank (
+            stat_start_date TEXT, stat_end_date TEXT, rank_no INTEGER, stock_code TEXT, stock_name TEXT,
+            appearance_count INTEGER, signal_day_count INTEGER, morning_count INTEGER, noon_count INTEGER,
+            close_count INTEGER, recent_5_count INTEGER, latest_signal_date TEXT, latest_signal_slot TEXT,
+            best_rank INTEGER, average_rank REAL, limit_up_count INTEGER, tradable_signal_count INTEGER,
+            tradable_sample_day_count INTEGER, completed_tradable_sample_day_count INTEGER,
+            target_hit_count INTEGER, target_hit_rate REAL, latest_tail_price REAL,
+            latest_tail_market_cap REAL, is_large_cap INTEGER, is_high_price INTEGER,
+            is_latest_signal_limit_up INTEGER
+        )''')
+        connection.executemany(
+            "INSERT INTO t_stock_dde_hot_rank VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                ('20260801', '20260818', 1, '000001', '平安银行', 12, 8, 3, 5, 4, 6, '20260818', 'close', 1, 2.5, 1, 11, 7, 5, 3, .6, 11.2, 220000000000, 1, 0, 0),
+                ('20260801', '20260818', 2, '000002', '高价股', 8, 5, 2, 3, 3, 4, '20260817', 'noon', 2, 4.0, 0, 8, 5, 4, 2, .5, 88, 20000000000, 0, 1, 0),
+            ],
+        )
+        connection.execute('''CREATE TABLE t_stock_dde_high_price_observation (
+            trade_date TEXT, stock_code TEXT, stock_name TEXT, morning_count INTEGER, noon_count INTEGER,
+            close_count INTEGER, signal_count INTEGER, best_rank INTEGER, combo_type TEXT, entry_price REAL,
+            market_cap REAL, change_pct REAL, is_limit_up INTEGER, is_tradable INTEGER,
+            is_completed INTEGER, target_hit INTEGER
+        )''')
+        connection.executemany(
+            "INSERT INTO t_stock_dde_high_price_observation VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [
+                ('20260806', '000001', '平安银行', 1, 1, 0, 2, 1, '', 88, 220000000000, 1.2, 0, 1, 1, 1),
+                ('20260805', '000002', '涨停高价', 0, 0, 1, 1, 2, '', 90, 10000000000, 9.5, 1, 0, 0, None),
+            ],
+        )
     return database_path
 
 
@@ -50,3 +86,23 @@ def test_dde_top30_list_reads_observation_performance(stock_database, monkeypatc
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['rawRankNo'] == 3
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 7.0
+
+
+def test_dde_hot_rank_list_returns_latest_range_and_filters(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_hot_rank_list(large_cap=True, page_num=1, page_size=20)).body)
+    assert payload['data']['statStartDate'] == '20260801'
+    assert payload['data']['statEndDate'] == '20260818'
+    assert payload['data']['total'] == 1
+    assert payload['data']['rows'][0]['appearanceCount'] == 12
+    assert payload['data']['rows'][0]['isLargeCap'] is True
+
+
+def test_dde_observation_list_returns_summary_and_rows(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_observation_list(dimension='high_price', page_num=1, page_size=20)).body)
+    assert payload['data']['total'] == 2
+    assert payload['data']['tradableCount'] == 1
+    assert payload['data']['completedCount'] == 1
+    assert payload['data']['targetHitRate'] == 1.0
+    assert payload['data']['rows'][0]['entryPrice'] == 88.0
