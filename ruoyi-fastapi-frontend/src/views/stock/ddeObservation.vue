@@ -6,7 +6,7 @@
       <el-table v-loading="loading" :data="rows" border>
         <el-table-column label="交易日" prop="tradeDate" width="95" /><el-table-column label="股票" min-width="110"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column><el-table-column label="DDE次数" prop="signalCount" width="80" /><el-table-column label="早/午/尾" min-width="80"><template #default="{ row }">{{ row.morningCount }}/{{ row.noonCount }}/{{ row.closeCount }}</template></el-table-column><el-table-column label="最佳排名" prop="bestRank" width="85" />
         <el-table-column v-if="dimension === 'intraday_combo'" label="日内连续" min-width="120"><template #default="{ row }">{{ comboName(row.comboType) }}</template></el-table-column><el-table-column label="14:40价格" min-width="95"><template #default="{ row }">{{ number(row.entryPrice) }}</template></el-table-column><el-table-column label="市值" min-width="85"><template #default="{ row }">{{ amount(row.marketCap) }}</template></el-table-column><el-table-column label="涨跌幅" min-width="80"><template #default="{ row }">{{ percent(row.changePct) }}</template></el-table-column>
-        <el-table-column label="交易状态" min-width="85"><template #default="{ row }"><el-tag v-if="row.isLimitUp" size="small" type="danger">涨停</el-tag><el-tag v-else size="small" type="success">可交易</el-tag></template></el-table-column><el-table-column label="5日结果" min-width="95"><template #default="{ row }"><el-tag v-if="!row.isTradable" size="small" type="info">不统计</el-tag><el-tag v-else-if="!row.isCompleted" size="small" type="warning">待完成</el-tag><el-tag v-else :type="row.targetHit ? 'success' : 'danger'" size="small">{{ row.targetHit ? '达标' : '未达标' }}</el-tag></template></el-table-column>
+        <el-table-column label="交易状态" min-width="100"><template #default="{ row }"><el-tag v-for="slot in row.limitUpSlots" :key="slot" size="small" type="danger">{{ slotName(slot) }}涨停</el-tag><el-tag v-if="!row.limitUpSlots?.length && row.isLimitUp" size="small" type="danger">涨停</el-tag><el-tag v-if="!row.isLimitUp" size="small" type="success">可交易</el-tag></template></el-table-column><el-table-column label="5日结果" min-width="95"><template #default="{ row }"><el-tag v-if="!row.isTradable" size="small" type="info">不统计</el-tag><el-tag v-else-if="!row.isCompleted" size="small" type="warning">待完成</el-tag><el-tag v-else :type="row.targetHit ? 'success' : 'danger'" size="small">{{ row.targetHit ? '达标' : '未达标' }}</el-tag></template></el-table-column>
       </el-table>
       <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="getList" />
     </el-card>
@@ -42,6 +42,7 @@ function rate(value) { return value === null || value === undefined ? '-' : `${(
 function number(value) { return value === null || value === undefined ? '-' : value.toFixed(2) }
 function amount(value) { return value === null || value === undefined ? '-' : `${(value / 100000000).toFixed(0)}亿` }
 function comboName(value) { return { morning_noon: '早盘+午盘', noon_close: '午盘+尾盘', morning_close: '早盘+尾盘', morning_noon_close: '早盘+午盘+尾盘' }[value] || '-' }
+function slotName(value) { return { morning: '早盘', noon: '午盘', close: '尾盘' }[value] || value }
 
 watch(() => route.query.dimension, handleQuery)
 getList()

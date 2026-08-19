@@ -12,6 +12,19 @@ class StockDdeDao:
     }
 
     @staticmethod
+    def get_limit_up_slots(stock_name: str, morning_change_pct, noon_change_pct, close_change_pct) -> list[str]:
+        threshold = 4.5 if 'ST' in stock_name.upper() else 9.5
+        return [
+            slot
+            for slot, change_pct in (
+                ('morning', morning_change_pct),
+                ('noon', noon_change_pct),
+                ('close', close_change_pct),
+            )
+            if change_pct is not None and float(change_pct) >= threshold
+        ]
+
+    @staticmethod
     def get_signal_performance_page(
         database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
     ) -> tuple[list[dict], int]:
@@ -203,12 +216,34 @@ class StockDdeDao:
                     FROM {table_name} WHERE {where_sql}''',
                 params,
             ).fetchone()
+            has_fund_flow = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_dde_fund_flow'"
+            ).fetchone()
+            slot_columns = (
+                "morning.change_pct AS morning_change_pct, noon.change_pct AS noon_change_pct, close.change_pct AS close_change_pct"
+                if has_fund_flow
+                else 'NULL AS morning_change_pct, NULL AS noon_change_pct, NULL AS close_change_pct'
+            )
+            slot_joins = (
+                f'''LEFT JOIN t_stock_dde_fund_flow AS morning ON morning.stock_code = observation.stock_code AND morning.trade_date = observation.trade_date AND morning.snapshot_slot = 'morning'
+                    LEFT JOIN t_stock_dde_fund_flow AS noon ON noon.stock_code = observation.stock_code AND noon.trade_date = observation.trade_date AND noon.snapshot_slot = 'noon'
+                    LEFT JOIN t_stock_dde_fund_flow AS close ON close.stock_code = observation.stock_code AND close.trade_date = observation.trade_date AND close.snapshot_slot = 'close' '''
+                if has_fund_flow
+                else ''
+            )
             rows = connection.execute(
-                f'''SELECT trade_date, stock_code, stock_name, morning_count, noon_count, close_count,
-                           signal_count, best_rank, combo_type, entry_price, market_cap, change_pct,
-                           is_limit_up, is_tradable, is_completed, target_hit
-                    FROM {table_name} WHERE {where_sql}
-                    ORDER BY trade_date DESC, best_rank ASC, stock_code ASC LIMIT :limit OFFSET :offset''',
+                f'''SELECT observation.trade_date, observation.stock_code, observation.stock_name, observation.morning_count, observation.noon_count, observation.close_count,
+                           observation.signal_count, observation.best_rank, observation.combo_type, observation.entry_price, observation.market_cap, observation.change_pct,
+                           observation.is_limit_up, observation.is_tradable, observation.is_completed, observation.target_hit, {slot_columns}
+                    FROM {table_name} AS observation {slot_joins} WHERE {where_sql.replace('trade_date', 'observation.trade_date')}
+                    ORDER BY observation.trade_date DESC, observation.best_rank ASC, observation.stock_code ASC LIMIT :limit OFFSET :offset''',
                 params,
             ).fetchall()
-        return [dict(row) for row in rows], int(summary['total']), dict(summary)
+        result_rows = []
+        for row in rows:
+            result = dict(row)
+            result['limit_up_slots'] = cls.get_limit_up_slots(
+                str(row['stock_name'] or ''), row['morning_change_pct'], row['noon_change_pct'], row['close_change_pct']
+            )
+            result_rows.append(result)
+        return result_rows, int(summary['total']), dict(summary)

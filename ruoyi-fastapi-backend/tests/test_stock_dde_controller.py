@@ -5,6 +5,7 @@ import sqlite3
 import pytest
 
 from config.env import AppConfig
+from module_stock.dao.stock_dde_dao import StockDdeDao
 from module_stock.controller.stock_dde_controller import (
     get_stock_dde_combo_list,
     get_stock_dde_hot_rank_list,
@@ -106,3 +107,7 @@ def test_dde_observation_list_returns_summary_and_rows(stock_database, monkeypat
     assert payload['data']['completedCount'] == 1
     assert payload['data']['targetHitRate'] == 1.0
     assert payload['data']['rows'][0]['entryPrice'] == 88.0
+
+
+def test_dde_observation_limit_up_slots():
+    assert StockDdeDao.get_limit_up_slots('测试股', 9.6, 8, 9.5) == ['morning', 'close']
