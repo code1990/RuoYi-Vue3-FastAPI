@@ -39,7 +39,7 @@ function getList() {
 
 function handleQuery() { query.pageNum = 1; getList() }
 function slotName(value) { return { morning: '早盘', noon: '午盘', close: '尾盘' }[value] || value }
-function percent(value) { return value === null || value === undefined ? '-' : `${(value * 100).toFixed(2)}%` }
+function percent(value) { return value === null || value === undefined ? '待计算' : `${(value * 100).toFixed(2)}%` }
 function number(value) { return value === null || value === undefined ? '-' : value.toFixed(2) }
 function amount(value) { return value === null || value === undefined ? '-' : `${(value / 100000000).toFixed(0)}亿` }
 
