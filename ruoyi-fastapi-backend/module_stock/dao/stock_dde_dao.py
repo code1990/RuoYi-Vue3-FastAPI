@@ -12,6 +12,13 @@ class StockDdeDao:
     }
 
     @staticmethod
+    def get_order_by(sort_by: str | None, sort_order: str | None, fields: dict[str, str], default: str) -> str:
+        field = fields.get(sort_by or '')
+        if field is None or sort_order not in ('ascending', 'descending'):
+            return default
+        return f"{field} {'ASC' if sort_order == 'ascending' else 'DESC'}"
+
+    @staticmethod
     def get_limit_up_slots(stock_name: str, morning_change_pct, noon_change_pct, close_change_pct) -> list[str]:
         threshold = 4.5 if 'ST' in stock_name.upper() else 9.5
         return [
@@ -26,7 +33,8 @@ class StockDdeDao:
 
     @staticmethod
     def get_signal_performance_page(
-        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
@@ -42,6 +50,11 @@ class StockDdeDao:
             params['end_date'] = end_date
 
         where_sql = ' AND '.join(where_clauses)
+        order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
+            'tradeDate': 'trade_date', 'entryPrice': 'entry_price', 'signalChangePct': 'signal_change_pct',
+            'largeNetAmount': 'large_net_amount', 'marketCap': 'market_cap', 'mainNetRatio': 'main_net_ratio',
+            'closeReturnPct': 'close_return_pct', **{f't{day}MaxReturnPct': f't{day}_max_return_pct' for day in range(1, 6)},
+        }, "trade_date DESC, CASE signal_slot WHEN 'close' THEN 3 WHEN 'noon' THEN 2 WHEN 'morning' THEN 1 ELSE 0 END DESC, main_net_ratio DESC, signal_rank_no ASC")
         params['limit'] = page_size
         params['offset'] = (page_num - 1) * page_size
         database_uri = f'file:{path.resolve().as_posix()}?mode=ro'
@@ -59,16 +72,7 @@ class StockDdeDao:
                     t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
                 FROM t_stock_dde_signal_performance
                 WHERE {where_sql}
-                ORDER BY
-                    trade_date DESC,
-                    CASE signal_slot
-                        WHEN 'close' THEN 3
-                        WHEN 'noon' THEN 2
-                        WHEN 'morning' THEN 1
-                        ELSE 0
-                    END DESC,
-                    main_net_ratio DESC,
-                    signal_rank_no ASC
+                ORDER BY {order_by}
                 LIMIT :limit OFFSET :offset
                 ''',
                 params,
@@ -77,7 +81,8 @@ class StockDdeDao:
 
     @staticmethod
     def get_combo_page(
-        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
@@ -91,6 +96,13 @@ class StockDdeDao:
             clauses.append('signal_date <= :end_date')
             params['end_date'] = end_date
         where_sql = ' AND '.join(clauses)
+        order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
+            'signalDate': 'signal_date', 'previousSignalDate': 'previous_signal_date', 'comboRank': 'combo_rank',
+            'todayBestRank': 'today_best_rank', 'previousSignalCount': 'previous_signal_count', 'todaySignalCount': 'today_signal_count',
+            'entryPrice': 'entry_price', 'currentPrice': 'current_price', 'todayMainNetRatio': 'today_main_net_ratio',
+            'previousMainNetRatio': 'previous_main_net_ratio', 'closeReturnPct': 'close_return_pct',
+            **{f't{day}MaxReturnPct': f't{day}_max_return_pct' for day in range(1, 6)},
+        }, 'signal_date DESC, combo_rank ASC')
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
@@ -102,13 +114,14 @@ class StockDdeDao:
                            close_return_pct, t1_max_return_pct, t2_max_return_pct, t3_max_return_pct,
                            t4_max_return_pct, t5_max_return_pct
                     FROM t_stock_dde_combo_signal WHERE {where_sql}
-                    ORDER BY signal_date DESC, combo_rank ASC LIMIT :limit OFFSET :offset''', params
+                    ORDER BY {order_by} LIMIT :limit OFFSET :offset''', params
             ).fetchall()
         return [dict(row) for row in rows], total
 
     @staticmethod
     def get_top30_performance_page(
-        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
@@ -121,6 +134,12 @@ class StockDdeDao:
             clauses.append('trade_date <= :end_date')
             params['end_date'] = end_date
         where_sql = ' AND '.join(clauses)
+        order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
+            'tradeDate': 'trade_date', 'signalRankNo': 'signal_rank_no', 'rawRankNo': 'raw_rank_no',
+            'entryPrice': 'entry_price', 'mainNetAmount': 'main_net_amount', 'mainNetRatio': 'main_net_ratio',
+            'marketCap': 'market_cap', 'signalChangePct': 'signal_change_pct', 'closeReturnPct': 'close_return_pct',
+            **{f't{day}MaxReturnPct': f't{day}_max_return_pct' for day in range(1, 6)},
+        }, 'trade_date DESC, signal_rank_no ASC')
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
@@ -130,13 +149,14 @@ class StockDdeDao:
                            signal_change_pct, main_net_amount, market_cap, main_net_ratio, industry_name, close_return_pct,
                            t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
                     FROM t_stock_dde_30_signal_performance WHERE {where_sql}
-                    ORDER BY trade_date DESC, signal_rank_no ASC LIMIT :limit OFFSET :offset''', params
+                    ORDER BY {order_by} LIMIT :limit OFFSET :offset''', params
             ).fetchall()
         return [dict(row) for row in rows], total
 
     @staticmethod
     def get_hot_rank_page(
-        database_path: str, page_num: int, page_size: int, large_cap: bool | None, high_price: bool | None
+        database_path: str, page_num: int, page_size: int, large_cap: bool | None, high_price: bool | None,
+        sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int, str | None, str | None]:
         path = Path(database_path)
         if not path.is_file():
@@ -167,6 +187,14 @@ class StockDdeDao:
             if high_price:
                 clauses.append('is_high_price = 1')
             where_sql = ' AND '.join(clauses)
+            order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
+                'rankNo': 'rank_no', 'appearanceCount': 'appearance_count', 'signalDayCount': 'signal_day_count',
+                'recent5Count': 'recent_5_count', 'latestSignalDate': 'latest_signal_date', 'bestRank': 'best_rank',
+                'averageRank': 'average_rank', 'limitUpCount': 'limit_up_count', 'tradableSignalCount': 'tradable_signal_count',
+                'tradableSampleDayCount': 'tradable_sample_day_count', 'completedTradableSampleDayCount': 'completed_tradable_sample_day_count',
+                'targetHitCount': 'target_hit_count', 'targetHitRate': 'target_hit_rate', 'latestTailPrice': 'latest_tail_price',
+                'latestTailMarketCap': 'latest_tail_market_cap',
+            }, 'rank_no ASC')
             total = connection.execute(f'SELECT COUNT(*) FROM t_stock_dde_hot_rank WHERE {where_sql}', params).fetchone()[0]
             rows = connection.execute(
                 f'''SELECT rank_no, stock_code, stock_name, appearance_count, signal_day_count,
@@ -177,14 +205,15 @@ class StockDdeDao:
                            latest_tail_price, latest_tail_market_cap, is_large_cap, is_high_price,
                            is_latest_signal_limit_up
                     FROM t_stock_dde_hot_rank WHERE {where_sql}
-                    ORDER BY rank_no ASC LIMIT :limit OFFSET :offset''',
+                    ORDER BY {order_by} LIMIT :limit OFFSET :offset''',
                 params,
             ).fetchall()
         return [dict(row) for row in rows], total, stat_range['stat_start_date'], stat_range['stat_end_date']
 
     @classmethod
     def get_observation_page(
-        cls, database_path: str, dimension: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+        cls, database_path: str, dimension: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int, dict[str, int]]:
         table_name = cls.OBSERVATION_TABLES.get(dimension)
         if table_name is None:
@@ -201,6 +230,10 @@ class StockDdeDao:
             clauses.append('trade_date <= :end_date')
             params['end_date'] = end_date
         where_sql = ' AND '.join(clauses)
+        order_by = cls.get_order_by(sort_by, sort_order, {
+            'tradeDate': 'observation.trade_date', 'signalCount': 'observation.signal_count', 'bestRank': 'observation.best_rank',
+            'entryPrice': 'observation.entry_price', 'marketCap': 'observation.market_cap', 'changePct': 'observation.change_pct',
+        }, 'observation.trade_date DESC, observation.best_rank ASC, observation.stock_code ASC')
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
@@ -236,7 +269,7 @@ class StockDdeDao:
                            observation.signal_count, observation.best_rank, observation.combo_type, observation.entry_price, observation.market_cap, observation.change_pct,
                            observation.is_limit_up, observation.is_tradable, observation.is_completed, observation.target_hit, {slot_columns}
                     FROM {table_name} AS observation {slot_joins} WHERE {where_sql.replace('trade_date', 'observation.trade_date')}
-                    ORDER BY observation.trade_date DESC, observation.best_rank ASC, observation.stock_code ASC LIMIT :limit OFFSET :offset''',
+                    ORDER BY {order_by} LIMIT :limit OFFSET :offset''',
                 params,
             ).fetchall()
         result_rows = []

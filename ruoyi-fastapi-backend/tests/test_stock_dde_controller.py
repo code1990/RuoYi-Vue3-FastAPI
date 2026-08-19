@@ -91,11 +91,12 @@ def test_dde_top30_list_reads_observation_performance(stock_database, monkeypatc
 
 def test_dde_hot_rank_list_returns_latest_range_and_filters(stock_database, monkeypatch):
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
-    payload = json.loads(asyncio.run(get_stock_dde_hot_rank_list(large_cap=True, page_num=1, page_size=20)).body)
+    payload = json.loads(asyncio.run(get_stock_dde_hot_rank_list(page_num=1, page_size=20, sort_by='targetHitRate', sort_order='descending')).body)
     assert payload['data']['statStartDate'] == '20260801'
     assert payload['data']['statEndDate'] == '20260818'
-    assert payload['data']['total'] == 1
+    assert payload['data']['total'] == 2
     assert payload['data']['rows'][0]['appearanceCount'] == 12
+    assert payload['data']['rows'][0]['targetHitRate'] == 0.6
     assert payload['data']['rows'][0]['isLargeCap'] is True
 
 

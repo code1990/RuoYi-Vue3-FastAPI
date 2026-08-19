@@ -10,20 +10,20 @@
           </div>
         </div>
       </template>
-      <el-table v-loading="loading" :data="rows" border>
-        <el-table-column label="交易日" prop="tradeDate" width="88" />
+      <el-table v-loading="loading" :data="rows" border @sort-change="handleSortChange">
+        <el-table-column label="交易日" prop="tradeDate" width="88" sortable="custom" />
         <el-table-column label="股票" min-width="88"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column>
         <el-table-column label="时段" min-width="60"><template #default="{ row }">{{ signalSlot(row.signalSlot) }}</template></el-table-column>
-        <el-table-column label="买入价" prop="entryPrice" min-width="60" />
-        <el-table-column label="涨跌幅" min-width="80"><template #default="{ row }">{{ percent(row.signalChangePct) }}</template></el-table-column>
-        <el-table-column label="大单净额" min-width="80"><template #default="{ row }">{{ amount(row.largeNetAmount) }}</template></el-table-column>
-        <el-table-column label="市值" min-width="90"><template #default="{ row }">{{ amount(row.marketCap) }}</template></el-table-column>
-        <el-table-column label="强度" min-width="88"><template #default="{ row }">{{ percent(row.mainNetRatio, true) }}</template></el-table-column>
+        <el-table-column label="买入价" prop="entryPrice" min-width="60" sortable="custom" />
+        <el-table-column label="涨跌幅" prop="signalChangePct" min-width="80" sortable="custom"><template #default="{ row }">{{ percent(row.signalChangePct) }}</template></el-table-column>
+        <el-table-column label="大单净额" prop="largeNetAmount" min-width="80" sortable="custom"><template #default="{ row }">{{ amount(row.largeNetAmount) }}</template></el-table-column>
+        <el-table-column label="市值" prop="marketCap" min-width="90" sortable="custom"><template #default="{ row }">{{ amount(row.marketCap) }}</template></el-table-column>
+        <el-table-column label="强度" prop="mainNetRatio" min-width="88" sortable="custom"><template #default="{ row }">{{ percent(row.mainNetRatio, true) }}</template></el-table-column>
         <el-table-column label="行业" prop="industryName" min-width="60" />
         <el-table-column label="概念" min-width="180"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
         <el-table-column label="机构" min-width="70"><template #default="{ row }">{{ getStockOrgNum(row.stockCode) }}</template></el-table-column>
-        <el-table-column label="尾盘" min-width="96"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>
-        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}涨幅`" min-width="110"><template #default="{ row }">{{ percent(row[`t${day}MaxReturnPct`]) }}</template></el-table-column>
+        <el-table-column label="尾盘" prop="closeReturnPct" min-width="96" sortable="custom"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>
+        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}涨幅`" :prop="`t${day}MaxReturnPct`" min-width="110" sortable="custom"><template #default="{ row }">{{ percent(row[`t${day}MaxReturnPct`]) }}</template></el-table-column>
       </el-table>
       <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="getList" />
     </el-card>
@@ -38,7 +38,7 @@ const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const dateRange = ref([])
-const query = reactive({ pageNum: 1, pageSize: 20 })
+const query = reactive({ pageNum: 1, pageSize: 20, sortBy: undefined, sortOrder: undefined })
 
 function getList() {
   loading.value = true
@@ -52,6 +52,8 @@ function handleQuery() {
   query.pageNum = 1
   getList()
 }
+
+function handleSortChange({ prop, order }) { query.sortBy = order ? prop : undefined; query.sortOrder = order || undefined; query.pageNum = 1; getList() }
 
 function percent(value, ratio = false) {
   if (value === null || value === undefined) return '-'
