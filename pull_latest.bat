@@ -5,4 +5,4 @@ if errorlevel 1 (
   echo.
   echo Pull failed. Resolve local changes, then try again.
 )
-pause
+timeout /t 5 /nobreak >nul
