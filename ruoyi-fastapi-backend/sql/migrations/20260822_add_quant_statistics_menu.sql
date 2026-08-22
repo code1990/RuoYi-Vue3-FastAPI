@@ -11,7 +11,18 @@ WHERE @stat_menu_id IS NULL;
 SET @stat_menu_id := COALESCE(@stat_menu_id, (SELECT menu_id FROM sys_menu WHERE parent_id = 0 AND menu_name = '量化统计' AND menu_type = 'M' LIMIT 1));
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
-SELECT menu_name, @stat_menu_id, order_num, path, 'stat/placeholder', query, route_name, 1, 0, 'C', '0', '0', perms, 'chart', 'admin', NOW(), 'admin', NOW(), '量化统计功能占位'
+SELECT menu_name, @stat_menu_id, order_num, path,
+       CASE path
+           WHEN 'dde' THEN 'stat/ddeFund'
+           WHEN 'dde-combo' THEN 'stat/ddeCombo'
+           WHEN 'dde-top30' THEN 'stat/ddeTop30'
+           WHEN 'dde-hot-rank' THEN 'stat/ddeHotRank'
+           WHEN 'dde-high-price' THEN 'stat/ddeObservation'
+           WHEN 'dde-large-cap' THEN 'stat/ddeObservation'
+           WHEN 'dde-intraday-combo' THEN 'stat/ddeObservation'
+           WHEN 'main-fund' THEN 'stat/mainFund'
+           ELSE 'stat/marginTrading'
+       END, query, route_name, 1, 0, 'C', '0', '0', perms, 'chart', 'admin', NOW(), 'admin', NOW(), '量化统计功能占位'
 FROM (
     SELECT 'DDE资金' AS menu_name, 10 AS order_num, 'dde' AS path, '{"title":"DDE资金统计"}' AS query, 'StatDde' AS route_name, 'stock:stat:dde:list' AS perms
     UNION ALL SELECT '2日DDE', 11, 'dde-combo', '{"title":"2日DDE统计"}', 'StatDdeCombo', 'stock:stat:dde-combo:list'
