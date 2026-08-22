@@ -5,7 +5,7 @@ from pathlib import Path
 class StockMainFundDao:
     @staticmethod
     def get_performance_page(
-        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int
+        database_path: str, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
@@ -13,6 +13,9 @@ class StockMainFundDao:
 
         where_clauses = ['1 = 1']
         params: dict[str, str | int] = {}
+        if stock_code:
+            where_clauses.append('stock_code = :stock_code')
+            params['stock_code'] = stock_code
         if start_date:
             where_clauses.append('signal_date >= :start_date')
             params['start_date'] = start_date

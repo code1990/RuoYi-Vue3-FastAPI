@@ -17,13 +17,14 @@ stock_main_fund_controller = APIRouterPro(prefix='/stock/main-fund', order_num=3
     response_model=DataResponseModel[StockMainFundPerformancePageModel],
 )
 async def get_stock_main_fund_performance_list(
+    stock_code: Annotated[str | None, Query(alias='stockCode', pattern=r'^\d{6}$')] = None,
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
     page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 20,
 ) -> Response:
     try:
-        result = await StockMainFundService.get_performance_page_services(start_date, end_date, page_num, page_size)
+        result = await StockMainFundService.get_performance_page_services(stock_code, start_date, end_date, page_num, page_size)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

@@ -20,3 +20,8 @@ def test_main_fund_performance_list_paginates_sqlite_result_table(tmp_path, monk
     assert payload['data']['hasNext'] is True
     assert payload['data']['rows'][0]['stockCode'] == '600002'
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 6.0
+
+    response = asyncio.run(get_stock_main_fund_performance_list(stock_code='600001', page_num=1, page_size=20))
+    payload = json.loads(response.body)
+    assert payload['data']['total'] == 1
+    assert payload['data']['rows'][0]['stockCode'] == '600001'
