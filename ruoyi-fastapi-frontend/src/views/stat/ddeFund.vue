@@ -32,8 +32,8 @@ function initChart() {
     },
     yAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
     series: Object.entries(source).flatMap(([strength, result]) => periods.flatMap((period, periodIndex) => [
-      { name: `${strength} 达标`, type: 'bar', stack: period, data: result.success[periodIndex], itemStyle: { color: colors[strength][0] } },
-      { name: `${strength} 未达标`, type: 'bar', stack: period, data: result.failure[periodIndex], itemStyle: { color: colors[strength][1] } }
+      { name: `${strength} 达标`, type: 'bar', stack: period, barWidth: 5, data: result.success[periodIndex], itemStyle: { color: colors[strength][0] } },
+      { name: `${strength} 未达标`, type: 'bar', stack: period, barWidth: 5, data: result.failure[periodIndex], itemStyle: { color: colors[strength][1] } }
     ]))
   })
 }
