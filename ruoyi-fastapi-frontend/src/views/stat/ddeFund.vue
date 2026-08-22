@@ -1,17 +1,14 @@
 <template>
   <div class="stat-page">
     <el-alert title="模拟数据：每根柱仅统计已完成5个交易日观察的信号；绿色为达标，红色为未达标。" type="info" :closable="false" show-icon />
-    <el-card header="DDE强度区间 × 时段：5日结果" class="chart-row"><div ref="strengthChart" class="chart" /></el-card>
-    <el-card header="交易日 × 时段：5日结果稳定性" class="chart-row"><div ref="dateChart" class="chart" /></el-card>
+    <el-card header="DDE强度 5%–8%：交易日 × 时段 5日结果" class="chart-row"><div ref="dateChart" class="chart" /></el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
 
-const strengthChart = ref()
 const dateChart = ref()
-const strengthBins = ['<1%', '1–3%', '3–5%', '5–8%', '8–12%', '≥12%']
 const tradeDates = ['08-12', '08-13', '08-14', '08-15', '08-18', '08-19', '08-20', '08-21']
 const chartInstances = []
 
@@ -30,18 +27,6 @@ function resultSeries(stack, success, failure) {
 }
 
 function initCharts() {
-  createChart(strengthChart.value, {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { top: 0 },
-    grid: { left: 50, right: 20, top: 65, bottom: 48 },
-    xAxis: { type: 'category', data: strengthBins, name: 'DDE强度区间' },
-    yAxis: { type: 'value', name: '完整5日样本数' },
-    series: [
-      ...resultSeries('morning', [18, 32, 43, 46, 21, 7], [27, 38, 34, 22, 10, 5]),
-      ...resultSeries('noon', [12, 27, 35, 39, 18, 6], [29, 42, 38, 28, 13, 6]),
-      ...resultSeries('close', [21, 39, 55, 61, 30, 11], [25, 31, 29, 18, 8, 4])
-    ]
-  })
   createChart(dateChart.value, {
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { top: 0 },
