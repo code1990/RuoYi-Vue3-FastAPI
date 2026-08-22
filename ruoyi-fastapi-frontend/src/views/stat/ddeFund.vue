@@ -1,43 +1,44 @@
 <template>
   <div class="stat-page">
-    <el-alert title="模拟数据：每根柱仅统计已完成5个交易日观察的信号；绿色为达标，红色为未达标。" type="info" :closable="false" show-icon />
-    <el-card header="DDE强度 5%–8%：交易日 × 时段 5日结果" class="chart-row"><div ref="dateChart" class="chart" /></el-card>
+    <el-alert title="模拟数据：仅统计信号后5个交易日内达到目标收益的股票。" type="info" :closable="false" show-icon />
+    <el-card v-for="level in strengthLevels" :key="level.name" :header="`${level.name} DDE强度：达标股票数`" class="chart-row">
+      <div :ref="element => setChartRef(level.name, element)" class="chart" />
+    </el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
 
-const dateChart = ref()
 const tradeDates = ['08-12', '08-13', '08-14', '08-15', '08-18', '08-19', '08-20', '08-21']
+const strengthLevels = [
+  { name: '0–5%', morning: [4, 5, 6, 7, 5, 8, 6, 9], noon: [3, 4, 4, 5, 4, 5, 5, 6], close: [5, 6, 7, 8, 6, 9, 8, 10] },
+  { name: '5–15%', morning: [7, 9, 11, 13, 10, 15, 12, 16], noon: [5, 7, 8, 10, 8, 11, 9, 12], close: [8, 11, 14, 17, 14, 19, 16, 21] },
+  { name: '15%+', morning: [1, 2, 3, 4, 3, 5, 4, 6], noon: [1, 1, 2, 2, 1, 3, 2, 3], close: [2, 3, 4, 5, 4, 6, 5, 7] }
+]
+const chartRefs = {}
 const chartInstances = []
 
-function createChart(element, option) {
-  const chart = echarts.init(element)
-  chart.setOption(option)
-  chartInstances.push(chart)
-}
-
-function resultSeries(stack, success, failure) {
-  const labels = { morning: '早盘', noon: '午盘', close: '尾盘' }
-  return [
-    { name: `${labels[stack]}达标`, type: 'bar', stack, data: success, itemStyle: { color: stack === 'morning' ? '#67c23a' : stack === 'noon' ? '#95d475' : '#c2e7b0' } },
-    { name: `${labels[stack]}未达标`, type: 'bar', stack, data: failure, itemStyle: { color: stack === 'morning' ? '#f56c6c' : stack === 'noon' ? '#f89898' : '#fab6b6' } }
-  ]
+function setChartRef(name, element) {
+  if (element) chartRefs[name] = element
 }
 
 function initCharts() {
-  createChart(dateChart.value, {
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { top: 0 },
-    grid: { left: 50, right: 20, top: 65, bottom: 45 },
-    xAxis: { type: 'category', data: tradeDates, name: '交易日' },
-    yAxis: { type: 'value', name: '完整5日样本数' },
-    series: [
-      ...resultSeries('morning', [7, 9, 11, 13, 10, 15, 12, 16], [9, 8, 10, 7, 9, 6, 8, 6]),
-      ...resultSeries('noon', [5, 7, 8, 10, 8, 11, 9, 12], [10, 9, 11, 8, 10, 7, 9, 8]),
-      ...resultSeries('close', [8, 11, 14, 17, 14, 19, 16, 21], [7, 6, 8, 5, 7, 5, 6, 5])
-    ]
+  strengthLevels.forEach(level => {
+    const chart = echarts.init(chartRefs[level.name])
+    chart.setOption({
+      tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+      legend: { data: ['早盘', '午盘', '尾盘'] },
+      grid: { left: 50, right: 20, top: 45, bottom: 45 },
+      xAxis: { type: 'category', data: tradeDates, name: '交易日' },
+      yAxis: { type: 'value', name: '达标股票数', minInterval: 1 },
+      series: [
+        { name: '早盘', type: 'bar', stack: 'success', data: level.morning, itemStyle: { color: '#409eff' } },
+        { name: '午盘', type: 'bar', stack: 'success', data: level.noon, itemStyle: { color: '#e6a23c' } },
+        { name: '尾盘', type: 'bar', stack: 'success', data: level.close, itemStyle: { color: '#67c23a' } }
+      ]
+    })
+    chartInstances.push(chart)
   })
 }
 
@@ -57,5 +58,5 @@ onBeforeUnmount(() => {
 <style scoped>
 .stat-page { padding: 20px; }
 .chart-row { margin-top: 16px; }
-.chart { height: 400px; }
+.chart { height: 300px; }
 </style>
