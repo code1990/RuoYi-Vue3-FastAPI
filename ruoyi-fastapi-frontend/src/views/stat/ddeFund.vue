@@ -1,20 +1,16 @@
 <template>
   <div class="stat-page">
-    <el-alert title="当前为模拟数据，仅用于确认统计图表口径；暂未读取后端数据。" type="info" :closable="false" show-icon />
-    <el-row :gutter="16" class="chart-row">
-      <el-col :xs="24" :lg="14"><el-card header="上榜信号平均DDE强度：按交易日与时段"><div ref="rateChart" class="chart" /></el-card></el-col>
-      <el-col :xs="24" :lg="10"><el-card header="完整5日样本：成功与失败"><div ref="countChart" class="chart" /></el-card></el-col>
-    </el-row>
-    <el-card header="交易日 × DDE强度：5日达标率热力图" class="chart-row"><div ref="heatmapChart" class="heatmap" /></el-card>
+    <el-alert title="模拟数据：每根柱仅统计已完成5个交易日观察的信号；绿色为达标，红色为未达标。" type="info" :closable="false" show-icon />
+    <el-card header="DDE强度区间 × 时段：5日结果" class="chart-row"><div ref="strengthChart" class="chart" /></el-card>
+    <el-card header="交易日 × 时段：5日结果稳定性" class="chart-row"><div ref="dateChart" class="chart" /></el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
 
-const rateChart = ref()
-const countChart = ref()
-const heatmapChart = ref()
+const strengthChart = ref()
+const dateChart = ref()
 const strengthBins = ['<1%', '1–3%', '3–5%', '5–8%', '8–12%', '≥12%']
 const tradeDates = ['08-12', '08-13', '08-14', '08-15', '08-18', '08-19', '08-20', '08-21']
 const chartInstances = []
@@ -25,44 +21,38 @@ function createChart(element, option) {
   chartInstances.push(chart)
 }
 
+function resultSeries(stack, success, failure) {
+  const labels = { morning: '早盘', noon: '午盘', close: '尾盘' }
+  return [
+    { name: `${labels[stack]}达标`, type: 'bar', stack, data: success, itemStyle: { color: stack === 'morning' ? '#67c23a' : stack === 'noon' ? '#95d475' : '#c2e7b0' } },
+    { name: `${labels[stack]}未达标`, type: 'bar', stack, data: failure, itemStyle: { color: stack === 'morning' ? '#f56c6c' : stack === 'noon' ? '#f89898' : '#fab6b6' } }
+  ]
+}
+
 function initCharts() {
-  createChart(rateChart.value, {
-    tooltip: { trigger: 'axis', valueFormatter: value => `${value}%` },
-    legend: { data: ['早盘', '午盘', '尾盘'] },
-    grid: { left: 48, right: 20, top: 45, bottom: 45 },
+  createChart(strengthChart.value, {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { top: 0 },
+    grid: { left: 50, right: 20, top: 65, bottom: 48 },
+    xAxis: { type: 'category', data: strengthBins, name: 'DDE强度区间' },
+    yAxis: { type: 'value', name: '完整5日样本数' },
+    series: [
+      ...resultSeries('morning', [18, 32, 43, 46, 21, 7], [27, 38, 34, 22, 10, 5]),
+      ...resultSeries('noon', [12, 27, 35, 39, 18, 6], [29, 42, 38, 28, 13, 6]),
+      ...resultSeries('close', [21, 39, 55, 61, 30, 11], [25, 31, 29, 18, 8, 4])
+    ]
+  })
+  createChart(dateChart.value, {
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    legend: { top: 0 },
+    grid: { left: 50, right: 20, top: 65, bottom: 45 },
     xAxis: { type: 'category', data: tradeDates, name: '交易日' },
-    yAxis: { type: 'value', name: '平均DDE强度', min: 0, max: 12, axisLabel: { formatter: '{value}%' } },
+    yAxis: { type: 'value', name: '完整5日样本数' },
     series: [
-      { name: '早盘', type: 'line', smooth: true, data: [3.2, 4.1, 3.8, 5.2, 4.7, 6.1, 5.4, 6.8] },
-      { name: '午盘', type: 'line', smooth: true, data: [2.6, 3.4, 4.3, 4.7, 4.1, 5.2, 4.9, 5.6] },
-      { name: '尾盘', type: 'line', smooth: true, data: [3.8, 4.6, 5.1, 6.3, 5.8, 7.2, 6.7, 8.1] }
+      ...resultSeries('morning', [7, 9, 11, 13, 10, 15, 12, 16], [9, 8, 10, 7, 9, 6, 8, 6]),
+      ...resultSeries('noon', [5, 7, 8, 10, 8, 11, 9, 12], [10, 9, 11, 8, 10, 7, 9, 8]),
+      ...resultSeries('close', [8, 11, 14, 17, 14, 19, 16, 21], [7, 6, 8, 5, 7, 5, 6, 5])
     ]
-  })
-  createChart(countChart.value, {
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['达标', '未达标'] },
-    grid: { left: 42, right: 15, top: 45, bottom: 45 },
-    xAxis: { type: 'category', data: tradeDates },
-    yAxis: { type: 'value', name: '股票数' },
-    series: [
-      { name: '达标', type: 'bar', stack: 'sample', data: [18, 22, 25, 31, 27, 35, 29, 38], itemStyle: { color: '#67c23a' } },
-      { name: '未达标', type: 'bar', stack: 'sample', data: [21, 19, 24, 20, 23, 18, 22, 19], itemStyle: { color: '#f56c6c' } }
-    ]
-  })
-  createChart(heatmapChart.value, {
-    tooltip: { position: 'top', formatter: params => `${tradeDates[params.value[0]]}<br>${strengthBins[params.value[1]]}<br>达标率：${params.value[2]}%` },
-    grid: { left: 70, right: 35, top: 20, bottom: 70 },
-    xAxis: { type: 'category', data: tradeDates, splitArea: { show: true } },
-    yAxis: { type: 'category', data: strengthBins, splitArea: { show: true } },
-    visualMap: { min: 20, max: 80, calculable: true, orient: 'horizontal', left: 'center', bottom: 5, inRange: { color: ['#e8f3ff', '#91cc75', '#f7ba2a', '#ee6666'] } },
-    series: [{ type: 'heatmap', label: { show: true, formatter: params => `${params.value[2]}%` }, data: [
-      [0, 0, 27], [1, 0, 31], [2, 0, 29], [3, 0, 35], [4, 0, 33], [5, 0, 36], [6, 0, 30], [7, 0, 38],
-      [0, 1, 39], [1, 1, 42], [2, 1, 45], [3, 1, 41], [4, 1, 49], [5, 1, 46], [6, 1, 43], [7, 1, 51],
-      [0, 2, 48], [1, 2, 52], [2, 2, 50], [3, 2, 56], [4, 2, 54], [5, 2, 58], [6, 2, 55], [7, 2, 61],
-      [0, 3, 57], [1, 3, 62], [2, 3, 60], [3, 3, 66], [4, 3, 63], [5, 3, 69], [6, 3, 65], [7, 3, 71],
-      [0, 4, 61], [1, 4, 68], [2, 4, 65], [3, 4, 72], [4, 4, 69], [5, 4, 75], [6, 4, 70], [7, 4, 74],
-      [0, 5, 53], [1, 5, 60], [2, 5, 57], [3, 5, 64], [4, 5, 59], [5, 5, 67], [6, 5, 62], [7, 5, 66]
-    ] }]
   })
 }
 
@@ -82,6 +72,5 @@ onBeforeUnmount(() => {
 <style scoped>
 .stat-page { padding: 20px; }
 .chart-row { margin-top: 16px; }
-.chart { height: 340px; }
-.heatmap { height: 430px; }
+.chart { height: 400px; }
 </style>
