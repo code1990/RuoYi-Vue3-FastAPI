@@ -19,10 +19,6 @@ const source = {
 const colors = { '0–5%': ['#67c23a', '#b3e19d'], '5–15%': ['#e6a23c', '#f3d19e'], '15%+': ['#f56c6c', '#fab6b6'] }
 let chart
 
-function flatten(values) {
-  return tradeDates.flatMap((_, dateIndex) => periods.map((_, periodIndex) => values[periodIndex][dateIndex]))
-}
-
 function initChart() {
   chart = echarts.init(chartRef.value)
   chart.setOption({
