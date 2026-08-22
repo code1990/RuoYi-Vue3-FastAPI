@@ -67,7 +67,7 @@ class StockDdeDao:
                 f'''
                 SELECT
                     stock_code, trade_date, stock_name, signal_slot, entry_price, signal_change_pct,
-                    large_net_amount, market_cap, main_net_ratio, industry_name,
+                    large_net_amount, market_cap, main_net_ratio,
                     close_return_pct, t1_max_return_pct, t2_max_return_pct,
                     t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
                 FROM t_stock_dde_signal_performance
@@ -149,7 +149,7 @@ class StockDdeDao:
             total = connection.execute(f'SELECT COUNT(*) FROM t_stock_dde_30_signal_performance WHERE {where_sql}', params).fetchone()[0]
             rows = connection.execute(
                 f'''SELECT stock_code, trade_date, stock_name, signal_slot, signal_rank_no, raw_rank_no, entry_price,
-                           signal_change_pct, main_net_amount, market_cap, main_net_ratio, industry_name, close_return_pct,
+                           signal_change_pct, main_net_amount, market_cap, main_net_ratio, close_return_pct,
                            t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
                     FROM t_stock_dde_30_signal_performance WHERE {where_sql}
                     ORDER BY {order_by} LIMIT :limit OFFSET :offset''', params

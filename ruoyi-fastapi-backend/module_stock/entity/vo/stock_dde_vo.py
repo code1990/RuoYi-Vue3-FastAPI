@@ -14,7 +14,6 @@ class StockDdeSignalPerformanceModel(BaseModel):
     large_net_amount: float | None = Field(default=None, description='大单净额')
     market_cap: float | None = Field(default=None, description='市值')
     main_net_ratio: float | None = Field(default=None, description='主力净流入强度')
-    industry_name: str = Field(description='行业')
     close_return_pct: float | None = Field(default=None, description='尾盘涨幅')
     t1_max_return_pct: float | None = Field(default=None, description='T+1涨幅')
     t2_max_return_pct: float | None = Field(default=None, description='T+2涨幅')
@@ -47,7 +46,6 @@ class StockDdeTop30PerformanceModel(BaseModel):
     main_net_amount: float | None = None
     market_cap: float | None = None
     main_net_ratio: float | None = None
-    industry_name: str
     close_return_pct: float | None = None
     t1_max_return_pct: float | None = None
     t2_max_return_pct: float | None = None
