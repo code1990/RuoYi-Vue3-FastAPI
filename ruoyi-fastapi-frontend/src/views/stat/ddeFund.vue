@@ -2,8 +2,8 @@
   <div class="stat-page">
     <el-alert title="当前为模拟数据，仅用于确认统计图表口径；暂未读取后端数据。" type="info" :closable="false" show-icon />
     <el-row :gutter="16" class="chart-row">
-      <el-col :xs="24" :lg="14"><el-card header="5日达标率：按DDE强度与时段"><div ref="rateChart" class="chart" /></el-card></el-col>
-      <el-col :xs="24" :lg="10"><el-card header="样本数量：避免小样本高胜率"><div ref="countChart" class="chart" /></el-card></el-col>
+      <el-col :xs="24" :lg="14"><el-card header="上榜信号平均DDE强度：按交易日与时段"><div ref="rateChart" class="chart" /></el-card></el-col>
+      <el-col :xs="24" :lg="10"><el-card header="完整5日样本：成功与失败"><div ref="countChart" class="chart" /></el-card></el-col>
     </el-row>
     <el-card header="交易日 × DDE强度：5日达标率热力图" class="chart-row"><div ref="heatmapChart" class="heatmap" /></el-card>
   </div>
@@ -30,20 +30,24 @@ function initCharts() {
     tooltip: { trigger: 'axis', valueFormatter: value => `${value}%` },
     legend: { data: ['早盘', '午盘', '尾盘'] },
     grid: { left: 48, right: 20, top: 45, bottom: 45 },
-    xAxis: { type: 'category', data: strengthBins, name: 'DDE强度' },
-    yAxis: { type: 'value', name: '5日达标率', min: 0, max: 100, axisLabel: { formatter: '{value}%' } },
+    xAxis: { type: 'category', data: tradeDates, name: '交易日' },
+    yAxis: { type: 'value', name: '平均DDE强度', min: 0, max: 12, axisLabel: { formatter: '{value}%' } },
     series: [
-      { name: '早盘', type: 'line', smooth: true, data: [31, 42, 51, 60, 66, 58] },
-      { name: '午盘', type: 'line', smooth: true, data: [28, 39, 48, 55, 61, 54] },
-      { name: '尾盘', type: 'line', smooth: true, data: [35, 47, 59, 68, 72, 63] }
+      { name: '早盘', type: 'line', smooth: true, data: [3.2, 4.1, 3.8, 5.2, 4.7, 6.1, 5.4, 6.8] },
+      { name: '午盘', type: 'line', smooth: true, data: [2.6, 3.4, 4.3, 4.7, 4.1, 5.2, 4.9, 5.6] },
+      { name: '尾盘', type: 'line', smooth: true, data: [3.8, 4.6, 5.1, 6.3, 5.8, 7.2, 6.7, 8.1] }
     ]
   })
   createChart(countChart.value, {
     tooltip: { trigger: 'axis' },
-    grid: { left: 42, right: 15, top: 25, bottom: 45 },
-    xAxis: { type: 'category', data: strengthBins },
+    legend: { data: ['达标', '未达标'] },
+    grid: { left: 42, right: 15, top: 45, bottom: 45 },
+    xAxis: { type: 'category', data: tradeDates },
     yAxis: { type: 'value', name: '股票数' },
-    series: [{ type: 'bar', data: [286, 431, 362, 218, 96, 41], itemStyle: { color: '#409eff' } }]
+    series: [
+      { name: '达标', type: 'bar', stack: 'sample', data: [18, 22, 25, 31, 27, 35, 29, 38], itemStyle: { color: '#67c23a' } },
+      { name: '未达标', type: 'bar', stack: 'sample', data: [21, 19, 24, 20, 23, 18, 22, 19], itemStyle: { color: '#f56c6c' } }
+    ]
   })
   createChart(heatmapChart.value, {
     tooltip: { position: 'top', formatter: params => `${tradeDates[params.value[0]]}<br>${strengthBins[params.value[1]]}<br>达标率：${params.value[2]}%` },
