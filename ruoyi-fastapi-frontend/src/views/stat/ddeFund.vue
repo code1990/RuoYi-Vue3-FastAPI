@@ -17,8 +17,8 @@ const colors = { '0-5%': ['#67c23a', '#b3e19d'], '5-15%': ['#e6a23c', '#f3d19e']
 let chart
 
 function renderChart(rows) {
-  const tradeDates = [...new Set(rows.map(row => row.tradeDate))].sort().slice(-30)
-  const values = new Map(rows.map(row => [`${row.tradeDate}:${row.signalSlot}:${row.strengthBand}`, row]))
+  const tradeDates = [...new Set(rows.map(row => row.trade_date))].sort().slice(-30)
+  const values = new Map(rows.map(row => [`${row.trade_date}:${row.signal_slot}:${row.strength_band}`, row]))
   chart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { top: 0 },
@@ -26,8 +26,8 @@ function renderChart(rows) {
     xAxis: { type: 'category', data: tradeDates, axisLabel: { interval: 0, formatter: value => `${value.slice(4, 6)}-${value.slice(6)}` } },
     yAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
     series: strengthBands.flatMap(strength => periods.flatMap(period => [
-      { name: `${strength} 达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.successCount || 0), itemStyle: { color: colors[strength][0] } },
-      { name: `${strength} 未达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.failureCount || 0), itemStyle: { color: colors[strength][1] } }
+      { name: `${strength} 达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.success_count || 0), itemStyle: { color: colors[strength][0] } },
+      { name: `${strength} 未达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.failure_count || 0), itemStyle: { color: colors[strength][1] } }
     ]))
   }, true)
 }
