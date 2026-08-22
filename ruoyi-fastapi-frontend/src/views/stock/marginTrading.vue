@@ -11,11 +11,11 @@
         </div>
       </template>
       <el-table v-loading="loading" :data="rows" border>
-        <el-table-column label="交易日" prop="signalDate" width="100" />
+        <el-table-column label="交易日" prop="signalDate" width="100" fixed="left" />
+        <el-table-column label="股票" min-width="88" fixed="left"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column>
+        <el-table-column label="行业" min-width="80" fixed="left"><template #default="{ row }">{{ getStockIndustry(row.stockCode) }}</template></el-table-column>
+        <el-table-column label="概念" min-width="180" fixed="left"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
         <el-table-column label="排名" :prop="comboDays ? 'latestRank' : 'rankNo'" width="68" />
-        <el-table-column label="股票" min-width="88"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column>
-        <el-table-column label="行业" prop="industryName" min-width="80" />
-        <el-table-column label="概念" min-width="180"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column>
         <el-table-column label="机构" min-width="70"><template #default="{ row }">{{ getStockOrgNum(row.stockCode) }}</template></el-table-column>
         <el-table-column label="买入价" prop="entryPrice" min-width="88" />
         <el-table-column label="早盘开盘涨幅" min-width="112"><template #default="{ row }">{{ percent(comboDays ? row.entryOpenReturnPct : row.entryChangePct) }}</template></el-table-column>
@@ -23,7 +23,7 @@
         <el-table-column label="融资参与度" min-width="105"><template #default="{ row }">{{ percent(comboDays ? row.avgParticipationRatio : row.participationRatio, true) }}</template></el-table-column>
         <el-table-column label="余额变化强度" min-width="115"><template #default="{ row }">{{ percent(comboDays ? row.avgBalanceChangeRatio : row.balanceChangeRatio, true) }}</template></el-table-column>
         <el-table-column label="尾盘" min-width="96"><template #default="{ row }">{{ percent(row.closeReturnPct) }}</template></el-table-column>
-        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}涨幅`" min-width="110"><template #default="{ row }">{{ percent(row[`t${day}MaxReturnPct`]) }}</template></el-table-column>
+        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}涨幅`" min-width="110"><template #default="{ row }"><span :class="['return-value', returnClass(row[`t${day}MaxReturnPct`])]">{{ percent(row[`t${day}MaxReturnPct`]) }}</span></template></el-table-column>
       </el-table>
       <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="getList" />
     </el-card>
@@ -32,7 +32,7 @@
 
 <script setup>
 import { listMarginCombo, listMarginLongPerformance } from '@/api/stock/marginTrading'
-import { getStockConcept, getStockOrgNum } from '@/utils/stockMetadata'
+import { getStockConcept, getStockIndustry, getStockOrgNum } from '@/utils/stockMetadata'
 
 const route = useRoute()
 const comboDays = computed(() => [2, 3, 5].includes(Number(route.query.windowDays)) ? Number(route.query.windowDays) : 0)
@@ -66,6 +66,11 @@ function number(value) {
   return value === null || value === undefined ? '-' : value.toFixed(2)
 }
 
+function returnClass(value) {
+  if (value === null || value === undefined) return ''
+  return value > 1.8 ? 'return-high' : 'return-low'
+}
+
 getList()
 watch(comboDays, handleQuery)
 </script>
@@ -76,4 +81,7 @@ watch(comboDays, handleQuery)
 :deep(.el-table) { white-space: nowrap; }
 .header-actions { display: flex; flex: 0 0 auto; gap: 10px; align-items: center; margin-left: 16px; margin-right: auto; }
 :deep(.date-range.el-date-editor) { width: 280px !important; flex: 0 0 280px; }
+.return-value { display: block; padding: 1px 4px; border-radius: 3px; text-align: center; }
+.return-high { background: #fef0f0; color: #f56c6c; }
+.return-low { background: #f0f9eb; color: #67c23a; }
 </style>

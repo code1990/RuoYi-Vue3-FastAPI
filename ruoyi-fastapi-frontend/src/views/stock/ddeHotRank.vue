@@ -3,7 +3,7 @@
     <el-card shadow="never">
       <template #header><div class="header"><span>DDE热度榜</span><div class="header-actions"><span class="range">统计区间：{{ rangeText }}</span><el-checkbox v-model="largeCapOnly" @change="handleQuery">大盘股（≥800亿）</el-checkbox><el-checkbox v-model="highPriceOnly" @change="handleQuery">高价股（≥80元）</el-checkbox></div></div></template>
       <el-table v-loading="loading" :data="rows" border @sort-change="handleSortChange">
-        <el-table-column label="排名" prop="rankNo" width="60" sortable="custom" /><el-table-column label="股票" min-width="110"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column>
+        <el-table-column label="交易日" prop="latestSignalDate" width="95" sortable="custom" fixed="left" /><el-table-column label="股票" min-width="110" fixed="left"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column><el-table-column label="行业" min-width="70" fixed="left"><template #default="{ row }">{{ getStockIndustry(row.stockCode) }}</template></el-table-column><el-table-column label="概念" min-width="180" fixed="left"><template #default="{ row }">{{ getStockConcept(row.stockCode) }}</template></el-table-column><el-table-column label="排名" prop="rankNo" width="60" sortable="custom" />
         <el-table-column label="累计出现" prop="appearanceCount" min-width="85" sortable="custom" /><el-table-column label="出现天数" prop="signalDayCount" min-width="80" sortable="custom" /><el-table-column label="早/午/尾" min-width="80"><template #default="{ row }">{{ row.morningCount }}/{{ row.noonCount }}/{{ row.closeCount }}</template></el-table-column><el-table-column label="近5日" prop="recent5Count" width="70" sortable="custom" />
         <el-table-column label="最近信号" prop="latestSignalDate" min-width="120" sortable="custom"><template #default="{ row }">{{ row.latestSignalDate }} {{ slotName(row.latestSignalSlot) }}</template></el-table-column><el-table-column label="最佳/平均排名" min-width="105"><template #default="{ row }">{{ row.bestRank }}/{{ row.averageRank.toFixed(1) }}</template></el-table-column>
         <el-table-column label="涨停次数" prop="limitUpCount" min-width="80" sortable="custom" /><el-table-column label="可交易次数" prop="tradableSignalCount" min-width="90" sortable="custom" /><el-table-column label="完成样本" prop="completedTradableSampleDayCount" min-width="80" sortable="custom"><template #default="{ row }">{{ row.completedTradableSampleDayCount }}/{{ row.tradableSampleDayCount }}</template></el-table-column><el-table-column label="5日达标" prop="targetHitCount" min-width="80" sortable="custom"><template #default="{ row }">{{ row.targetHitCount }}</template></el-table-column><el-table-column label="可交易5日达标率" prop="targetHitRate" min-width="130" sortable="custom"><template #default="{ row }">{{ percent(row.targetHitRate) }}</template></el-table-column>
@@ -16,6 +16,7 @@
 
 <script setup>
 import { listDdeHotRank } from '@/api/stock/ddeFund'
+import { getStockConcept, getStockIndustry } from '@/utils/stockMetadata'
 
 const loading = ref(false)
 const rows = ref([])

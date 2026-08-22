@@ -8,6 +8,10 @@ export function getStockConcept(stockCode) {
   return getStockMetadata(stockCode).concept || '-'
 }
 
+export function getStockIndustry(stockCode) {
+  return getStockMetadata(stockCode).industry || '-'
+}
+
 export function getStockOrgNum(stockCode) {
   const value = getStockMetadata(stockCode).org_num
   return value === null || value === undefined ? '-' : Number(value).toFixed(0)
