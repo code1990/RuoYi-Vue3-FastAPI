@@ -10,6 +10,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeObservationPageModel,
     StockDdeSignalPerformancePageModel,
     StockDdeTop30PerformancePageModel,
+    StockDdeTop30StatisticsModel,
 )
 from module_stock.service.stock_dde_service import StockDdeService
 from utils.response_util import ResponseUtil
@@ -67,6 +68,19 @@ async def get_stock_dde_top30_performance_list(
 ) -> Response:
     try:
         result = await StockDdeService.get_top30_performance_page_services(signal_slot, start_date, end_date, page_num, page_size, sort_by, sort_order)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/top30/statistics', summary='查询DDE可交易Top30统计', response_model=DataResponseModel[list[StockDdeTop30StatisticsModel]])
+async def get_stock_dde_top30_statistics(
+    start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
+    end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
+    target_return_pct: Annotated[float, Query(alias='targetReturnPct', ge=0, le=100)] = 5,
+) -> Response:
+    try:
+        result = await StockDdeService.get_top30_statistics_services(start_date, end_date, target_return_pct)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

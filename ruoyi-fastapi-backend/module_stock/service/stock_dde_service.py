@@ -51,6 +51,10 @@ class StockDdeService:
         )
 
     @classmethod
+    async def get_top30_statistics_services(cls, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
+        return await asyncio.to_thread(StockDdeDao.get_top30_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
+
+    @classmethod
     async def get_hot_rank_page_services(
         cls, page_num: int, page_size: int, large_cap: bool | None, high_price: bool | None, sort_by: str | None, sort_order: str | None,
     ) -> StockDdeHotRankPageModel:

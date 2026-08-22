@@ -1,46 +1,50 @@
 <template>
   <div class="stat-page">
-    <el-alert title="模拟数据：每个交易日的三根柱固定按早盘、午盘、尾盘顺序排列。" type="info" :closable="false" show-icon />
-    <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" class="chart" /></el-card>
+    <el-alert title="可交易 Top30：信号时已涨停股票已剔除；仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
+    <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
+import { getDdeTop30Statistics } from '@/api/stock/ddeFund'
 
 const chartRef = ref()
-const tradeDates = ['07-13', '07-14', '07-15', '07-16', '07-17', '07-20', '07-21', '07-22', '07-23', '07-24', '07-27', '07-28', '07-29', '07-30', '07-31', '08-03', '08-04', '08-05', '08-06', '08-07', '08-10', '08-11', '08-12', '08-13', '08-14', '08-17', '08-18', '08-19', '08-20', '08-21']
-const periods = ['早盘', '午盘', '尾盘']
-function mockValues(base, phase) { return tradeDates.map((_, index) => Math.max(1, base + ((index * 5 + phase) % 7) - 3)) }
-const source = {
-  '0–5%': { success: [mockValues(6, 0), mockValues(5, 1), mockValues(7, 2)], failure: [mockValues(8, 3), mockValues(9, 4), mockValues(7, 5)] },
-  '5–15%': { success: [mockValues(12, 1), mockValues(9, 2), mockValues(15, 3)], failure: [mockValues(5, 4), mockValues(6, 5), mockValues(4, 6)] },
-  '15%+': { success: [mockValues(4, 2), mockValues(3, 3), mockValues(5, 4)], failure: [mockValues(3, 5), mockValues(4, 6), mockValues(2, 0)] }
-}
-const colors = { '0–5%': ['#67c23a', '#b3e19d'], '5–15%': ['#e6a23c', '#f3d19e'], '15%+': ['#f56c6c', '#fab6b6'] }
+const loading = ref(false)
+const periods = [{ key: 'morning', label: '早盘' }, { key: 'noon', label: '午盘' }, { key: 'close', label: '尾盘' }]
+const strengthBands = ['0-5%', '5-15%', '15%+']
+const colors = { '0-5%': ['#67c23a', '#b3e19d'], '5-15%': ['#e6a23c', '#f3d19e'], '15%+': ['#f56c6c', '#fab6b6'] }
 let chart
 
-function initChart() {
-  chart = echarts.init(chartRef.value)
+function renderChart(rows) {
+  const tradeDates = [...new Set(rows.map(row => row.tradeDate))].sort().slice(-30)
+  const values = new Map(rows.map(row => [`${row.tradeDate}:${row.signalSlot}:${row.strengthBand}`, row]))
   chart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { top: 0 },
     grid: { left: 60, right: 20, top: 55, bottom: 72 },
-    xAxis: {
-      type: 'category',
-      data: tradeDates,
-      axisLabel: { interval: 0 }
-    },
+    xAxis: { type: 'category', data: tradeDates, axisLabel: { interval: 0, formatter: value => `${value.slice(4, 6)}-${value.slice(6)}` } },
     yAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
-    series: Object.entries(source).flatMap(([strength, result]) => periods.flatMap((period, periodIndex) => [
-      { name: `${strength} 达标`, type: 'bar', stack: period, barWidth: 5, data: result.success[periodIndex], itemStyle: { color: colors[strength][0] } },
-      { name: `${strength} 未达标`, type: 'bar', stack: period, barWidth: 5, data: result.failure[periodIndex], itemStyle: { color: colors[strength][1] } }
+    series: strengthBands.flatMap(strength => periods.flatMap(period => [
+      { name: `${strength} 达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.successCount || 0), itemStyle: { color: colors[strength][0] } },
+      { name: `${strength} 未达标`, type: 'bar', stack: period.key, barWidth: 5, data: tradeDates.map(date => values.get(`${date}:${period.key}:${strength}`)?.failureCount || 0), itemStyle: { color: colors[strength][1] } }
     ]))
-  })
+  }, true)
+}
+
+async function getStatistics() {
+  loading.value = true
+  try {
+    const response = await getDdeTop30Statistics({ targetReturnPct: 5 })
+    renderChart(response.data)
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(() => {
-  initChart()
+  chart = echarts.init(chartRef.value)
+  getStatistics()
   window.addEventListener('resize', chart.resize)
 })
 

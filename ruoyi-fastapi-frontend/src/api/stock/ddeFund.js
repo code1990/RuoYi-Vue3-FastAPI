@@ -16,6 +16,10 @@ export function listDdeTop30Performance(params) {
   return request({ url: '/stock/dde/top30/performance/list', method: 'get', params })
 }
 
+export function getDdeTop30Statistics(params) {
+  return request({ url: '/stock/dde/top30/statistics', method: 'get', params })
+}
+
 export function listDdeHotRank(params) {
   return request({ url: '/stock/dde/hot-rank/list', method: 'get', params })
 }

@@ -64,6 +64,18 @@ class StockDdeTop30PerformancePageModel(BaseModel):
     has_next: bool
 
 
+class StockDdeTop30StatisticsModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    trade_date: str
+    signal_slot: str
+    strength_band: str
+    success_count: int
+    failure_count: int
+    sample_count: int
+    limit_up_excluded_count: int
+
+
 class StockDdeComboSignalModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
