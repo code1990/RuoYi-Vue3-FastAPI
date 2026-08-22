@@ -157,7 +157,7 @@ class StockDdeDao:
         return [dict(row) for row in rows], total
 
     @staticmethod
-    def get_top30_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
+    def get_signal_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
@@ -172,15 +172,12 @@ class StockDdeDao:
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
-            snapshot_exists = connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_stock_dde_30_snapshot'").fetchone()
-            snapshot_join = 'LEFT JOIN t_stock_dde_30_snapshot AS snapshot ON snapshot.trade_date = performance.trade_date AND snapshot.snapshot_slot = performance.signal_slot' if snapshot_exists else ''
-            excluded_sql = 'COALESCE(MAX(snapshot.limit_up_excluded_count), 0)' if snapshot_exists else '0'
             rows = connection.execute(f'''SELECT performance.trade_date, performance.signal_slot,
                 CASE WHEN performance.main_net_ratio < 0.05 THEN '0-5%' WHEN performance.main_net_ratio < 0.15 THEN '5-15%' ELSE '15%+' END AS strength_band,
                 SUM(CASE WHEN performance.t5_max_return_pct >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
                 SUM(CASE WHEN performance.t5_max_return_pct < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
-                COUNT(*) AS sample_count, {excluded_sql} AS limit_up_excluded_count
-                FROM t_stock_dde_30_signal_performance AS performance {snapshot_join}
+                COUNT(*) AS sample_count, 0 AS limit_up_excluded_count
+                FROM t_stock_dde_signal_performance AS performance
                 WHERE {where_sql}
                 GROUP BY performance.trade_date, performance.signal_slot, strength_band
                 ORDER BY performance.trade_date, CASE performance.signal_slot WHEN 'morning' THEN 1 WHEN 'noon' THEN 2 WHEN 'close' THEN 3 ELSE 4 END, strength_band''', params).fetchall()

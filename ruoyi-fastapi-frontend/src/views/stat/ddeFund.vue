@@ -1,13 +1,13 @@
 <template>
   <div class="stat-page">
-    <el-alert title="原始 Top30：仅取原始排名前30；信号时涨停股票不计且不补位；仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
+    <el-alert title="DDE收益列表可视化：统计口径与量化回测 DDE资金列表一致，仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
     <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
-import { getDdeTop30Statistics } from '@/api/stock/ddeFund'
+import { getDdeStatistics } from '@/api/stock/ddeFund'
 
 const chartRef = ref()
 const loading = ref(false)
@@ -35,7 +35,7 @@ function renderChart(rows) {
 async function getStatistics() {
   loading.value = true
   try {
-    const response = await getDdeTop30Statistics({ targetReturnPct: 5 })
+    const response = await getDdeStatistics({ targetReturnPct: 5 })
     renderChart(response.data)
   } finally {
     loading.value = false
