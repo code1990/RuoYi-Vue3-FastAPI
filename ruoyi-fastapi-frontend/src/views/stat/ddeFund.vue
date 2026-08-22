@@ -1,6 +1,6 @@
 <template>
   <div class="stat-page">
-    <el-alert title="模拟数据：每个交易日含早盘、午盘、尾盘三根柱；每根柱分层展示三个强度区间的达标与未达标样本。" type="info" :closable="false" show-icon />
+    <el-alert title="模拟数据：每个交易日的三根柱固定按早盘、午盘、尾盘顺序排列。" type="info" :closable="false" show-icon />
     <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" class="chart" /></el-card>
   </div>
 </template>
@@ -31,8 +31,8 @@ function initChart() {
     grid: { left: 60, right: 20, top: 55, bottom: 72 },
     xAxis: {
       type: 'category',
-      data: tradeDates.flatMap(date => periods.map((period, index) => `${index === 0 ? date : ''}\n${period}`)),
-      axisLabel: { interval: 0, lineHeight: 18 }
+      data: tradeDates.flatMap(date => [date, '', '']),
+      axisLabel: { interval: 0 }
     },
     yAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
     series: Object.entries(source).flatMap(([strength, result]) => [
