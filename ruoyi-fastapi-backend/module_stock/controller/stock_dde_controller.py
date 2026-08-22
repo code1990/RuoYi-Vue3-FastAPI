@@ -56,7 +56,7 @@ async def get_stock_dde_signal_performance_list(
     return ResponseUtil.success(data=result)
 
 
-@stock_dde_controller.get('/top30/performance/list', summary='查询DDE可交易Top30收益列表', response_model=DataResponseModel[StockDdeTop30PerformancePageModel])
+@stock_dde_controller.get('/top30/performance/list', summary='查询DDE原始Top30收益列表（涨停不计）', response_model=DataResponseModel[StockDdeTop30PerformancePageModel])
 async def get_stock_dde_top30_performance_list(
     signal_slot: Annotated[str | None, Query(alias='signalSlot', pattern=r'^(morning|noon|close|post_close)$')] = None,
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
@@ -73,7 +73,7 @@ async def get_stock_dde_top30_performance_list(
     return ResponseUtil.success(data=result)
 
 
-@stock_dde_controller.get('/top30/statistics', summary='查询DDE可交易Top30统计', response_model=DataResponseModel[list[StockDdeTop30StatisticsModel]])
+@stock_dde_controller.get('/top30/statistics', summary='查询DDE原始Top30统计（涨停不计）', response_model=DataResponseModel[list[StockDdeTop30StatisticsModel]])
 async def get_stock_dde_top30_statistics(
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,

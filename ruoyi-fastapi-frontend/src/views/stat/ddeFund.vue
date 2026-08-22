@@ -1,6 +1,6 @@
 <template>
   <div class="stat-page">
-    <el-alert title="可交易 Top30：信号时已涨停股票已剔除；仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
+    <el-alert title="原始 Top30：仅取原始排名前30；信号时涨停股票不计且不补位；仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
     <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
   </div>
 </template>
