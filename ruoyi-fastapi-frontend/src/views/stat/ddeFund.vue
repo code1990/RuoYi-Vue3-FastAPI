@@ -9,12 +9,13 @@
 import * as echarts from 'echarts'
 
 const chartRef = ref()
-const tradeDates = ['08-12', '08-13', '08-14', '08-15', '08-18', '08-19', '08-20', '08-21']
+const tradeDates = ['07-13', '07-14', '07-15', '07-16', '07-17', '07-20', '07-21', '07-22', '07-23', '07-24', '07-27', '07-28', '07-29', '07-30', '07-31', '08-03', '08-04', '08-05', '08-06', '08-07', '08-10', '08-11', '08-12', '08-13', '08-14', '08-17', '08-18', '08-19', '08-20', '08-21']
 const periods = ['早盘', '午盘', '尾盘']
+function mockValues(base, phase) { return tradeDates.map((_, index) => Math.max(1, base + ((index * 5 + phase) % 7) - 3)) }
 const source = {
-  '0–5%': { success: [[4, 5, 6, 7, 5, 8, 6, 9], [3, 4, 4, 5, 4, 5, 5, 6], [5, 6, 7, 8, 6, 9, 8, 10]], failure: [[8, 9, 7, 8, 9, 7, 8, 6], [9, 8, 10, 7, 9, 8, 9, 7], [7, 6, 8, 5, 7, 5, 6, 5]] },
-  '5–15%': { success: [[7, 9, 11, 13, 10, 15, 12, 16], [5, 7, 8, 10, 8, 11, 9, 12], [8, 11, 14, 17, 14, 19, 16, 21]], failure: [[6, 5, 7, 4, 6, 3, 5, 3], [7, 6, 8, 5, 7, 4, 6, 4], [5, 4, 6, 3, 5, 2, 4, 2]] },
-  '15%+': { success: [[1, 2, 3, 4, 3, 5, 4, 6], [1, 1, 2, 2, 1, 3, 2, 3], [2, 3, 4, 5, 4, 6, 5, 7]], failure: [[3, 3, 2, 3, 3, 2, 3, 2], [4, 3, 4, 3, 4, 3, 4, 3], [2, 2, 3, 2, 3, 2, 2, 1]] }
+  '0–5%': { success: [mockValues(6, 0), mockValues(5, 1), mockValues(7, 2)], failure: [mockValues(8, 3), mockValues(9, 4), mockValues(7, 5)] },
+  '5–15%': { success: [mockValues(12, 1), mockValues(9, 2), mockValues(15, 3)], failure: [mockValues(5, 4), mockValues(6, 5), mockValues(4, 6)] },
+  '15%+': { success: [mockValues(4, 2), mockValues(3, 3), mockValues(5, 4)], failure: [mockValues(3, 5), mockValues(4, 6), mockValues(2, 0)] }
 }
 const colors = { '0–5%': ['#67c23a', '#b3e19d'], '5–15%': ['#e6a23c', '#f3d19e'], '15%+': ['#f56c6c', '#fab6b6'] }
 let chart
