@@ -1,6 +1,6 @@
 <template>
   <div class="stat-page">
-    <el-alert title="DDE收益列表可视化：统计口径与量化回测 DDE资金列表一致，仅统计已完成5个交易日的样本。" type="info" :closable="false" show-icon />
+    <el-alert title="DDE收益列表可视化：与量化回测 DDE资金列表一致；5日内最高收益≥1.8%为达标。" type="info" :closable="false" show-icon />
     <el-card header="DDE强度、时段与5日结果" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
   </div>
 </template>
@@ -35,7 +35,7 @@ function renderChart(rows) {
 async function getStatistics() {
   loading.value = true
   try {
-    const response = await getDdeStatistics({ targetReturnPct: 5 })
+    const response = await getDdeStatistics({ targetReturnPct: 1.8 })
     renderChart(response.data)
   } finally {
     loading.value = false

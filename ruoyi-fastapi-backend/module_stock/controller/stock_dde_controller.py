@@ -77,7 +77,7 @@ async def get_stock_dde_top30_performance_list(
 async def get_stock_dde_statistics(
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
-    target_return_pct: Annotated[float, Query(alias='targetReturnPct', ge=0, le=100)] = 5,
+    target_return_pct: Annotated[float, Query(alias='targetReturnPct', ge=0, le=100)] = 1.8,
 ) -> Response:
     try:
         result = await StockDdeService.get_signal_statistics_services(start_date, end_date, target_return_pct)

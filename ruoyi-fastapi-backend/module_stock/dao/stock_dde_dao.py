@@ -161,7 +161,7 @@ class StockDdeDao:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
-        clauses, params = ['performance.t5_max_return_pct IS NOT NULL'], {'target_return_pct': target_return_pct}
+        clauses, params = ['performance.max_return_t5_pct IS NOT NULL'], {'target_return_pct': target_return_pct}
         if start_date:
             clauses.append('performance.trade_date >= :start_date')
             params['start_date'] = start_date
@@ -174,8 +174,8 @@ class StockDdeDao:
             connection.row_factory = sqlite3.Row
             rows = connection.execute(f'''SELECT performance.trade_date, performance.signal_slot,
                 CASE WHEN performance.main_net_ratio < 0.05 THEN '0-5%' WHEN performance.main_net_ratio < 0.15 THEN '5-15%' ELSE '15%+' END AS strength_band,
-                SUM(CASE WHEN performance.t5_max_return_pct >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
-                SUM(CASE WHEN performance.t5_max_return_pct < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
+                SUM(CASE WHEN performance.max_return_t5_pct >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
+                SUM(CASE WHEN performance.max_return_t5_pct < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
                 COUNT(*) AS sample_count, 0 AS limit_up_excluded_count
                 FROM t_stock_dde_signal_performance AS performance
                 WHERE {where_sql}
