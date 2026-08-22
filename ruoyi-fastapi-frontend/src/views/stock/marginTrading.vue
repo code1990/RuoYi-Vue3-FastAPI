@@ -4,7 +4,7 @@
       <template #header>
         <div class="header">
           <span>{{ comboDays ? `融资${comboDays}天` : '融资融券' }}</span>
-          <div class="header-actions">
+          <div class="header-actions"><el-input v-model="query.stockCode" placeholder="股票代码" clearable maxlength="6" style="width: 120px" @keyup.enter="handleQuery" />
             <el-date-picker v-model="dateRange" class="date-range" type="daterange" value-format="YYYYMMDD" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" />
             <el-button type="primary" icon="Search" @click="handleQuery">查询</el-button>
           </div>
@@ -40,14 +40,14 @@ const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const dateRange = ref([])
-const query = reactive({ pageNum: 1, pageSize: 20 })
+const query = reactive({ pageNum: 1, pageSize: 20, stockCode: '' })
 
 function getList() {
   loading.value = true
   const list = comboDays.value ? listMarginCombo : listMarginLongPerformance
-  list({ ...query, windowDays: comboDays.value || undefined, startDate: dateRange.value?.[0], endDate: dateRange.value?.[1] }).then(response => {
-    rows.value = response.data.rows
-    total.value = response.data.total
+  list({ ...query, stockCode: query.stockCode || undefined, windowDays: comboDays.value || undefined, startDate: dateRange.value?.[0], endDate: dateRange.value?.[1] }).then(response => {
+    rows.value = response.data.rows.filter(row => !query.stockCode || row.stockCode === query.stockCode)
+    total.value = query.stockCode ? rows.value.length : response.data.total
   }).finally(() => { loading.value = false })
 }
 
