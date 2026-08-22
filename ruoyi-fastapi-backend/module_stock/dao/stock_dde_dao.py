@@ -120,13 +120,16 @@ class StockDdeDao:
 
     @staticmethod
     def get_top30_performance_page(
-        database_path: str, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        database_path: str, signal_slot: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
         sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
         clauses, params = ['1 = 1'], {'limit': page_size, 'offset': (page_num - 1) * page_size}
+        if signal_slot:
+            clauses.append('signal_slot = :signal_slot')
+            params['signal_slot'] = signal_slot
         if start_date:
             clauses.append('trade_date >= :start_date')
             params['start_date'] = start_date
@@ -139,7 +142,7 @@ class StockDdeDao:
             'entryPrice': 'entry_price', 'mainNetAmount': 'main_net_amount', 'mainNetRatio': 'main_net_ratio',
             'marketCap': 'market_cap', 'signalChangePct': 'signal_change_pct', 'closeReturnPct': 'close_return_pct',
             **{f't{day}MaxReturnPct': f't{day}_max_return_pct' for day in range(1, 6)},
-        }, 'trade_date DESC, signal_rank_no ASC')
+        }, "trade_date DESC, CASE signal_slot WHEN 'post_close' THEN 4 WHEN 'close' THEN 3 WHEN 'noon' THEN 2 WHEN 'morning' THEN 1 ELSE 0 END DESC, raw_rank_no ASC")
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row

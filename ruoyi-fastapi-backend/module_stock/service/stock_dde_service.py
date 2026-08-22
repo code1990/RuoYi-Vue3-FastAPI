@@ -41,10 +41,10 @@ class StockDdeService:
 
     @classmethod
     async def get_top30_performance_page_services(
-        cls, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
+        cls, signal_slot: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
     ) -> StockDdeTop30PerformancePageModel:
         rows, total = await asyncio.to_thread(
-            StockDdeDao.get_top30_performance_page, AppConfig.stock_stat_db_path, start_date, end_date, page_num, page_size, sort_by, sort_order
+            StockDdeDao.get_top30_performance_page, AppConfig.stock_stat_db_path, signal_slot, start_date, end_date, page_num, page_size, sort_by, sort_order
         )
         return StockDdeTop30PerformancePageModel(
             rows=rows, total=total, page_num=page_num, page_size=page_size, has_next=page_num * page_size < total
