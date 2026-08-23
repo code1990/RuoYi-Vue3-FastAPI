@@ -14,9 +14,6 @@
 <script setup>
 import * as echarts from 'echarts'
 import { getKdjHistory } from '@/api/stock/kdj'
-import { listDdeSignalPerformance } from '@/api/stock/ddeFund'
-import { listMainFundPerformance } from '@/api/stock/mainFund'
-import { listMarginLongPerformance } from '@/api/stock/marginTrading'
 import { getFundVisualHistory } from '@/api/stock/fundVisual'
 
 const chartRef = ref()
@@ -38,40 +35,55 @@ function formatDate(value) {
   return `${text.slice(4, 6)}-${text.slice(6)}`
 }
 
-function percent(value) {
-  return value == null ? '-' : Math.round(Number(value) * 10000) / 100
+function isSignal(row, camel, snake) {
+  return valueOf(row, camel, snake) === true || Number(valueOf(row, camel, snake)) === 1
 }
 
-function signalSeries(name, rows, dates, candles, dateField, valueField, color, offset) {
-  const values = new Map(rows.map(row => [dateKey(row[dateField]), percent(row[valueField])]))
+function kdjMarks(candles, indicators, dates) {
   const candleByDate = new Map(candles.map(row => [dateKey(valueOf(row, 'tradeDate', 'trade_date')), row]))
-  return {
-    name,
-    type: 'scatter',
-    xAxisIndex: 0,
-    yAxisIndex: 0,
-    symbol: 'arrow',
-    symbolSize: [8, 20],
-    symbolOffset: [offset, 16],
-    itemStyle: { color },
-    data: dates.flatMap(date => candleByDate.has(date) && values.has(date) ? [[date, valueOf(candleByDate.get(date), 'low')]] : [])
-  }
+  const indicatorByKey = new Map(indicators.map(row => [`${dateKey(valueOf(row, 'tradeDate', 'trade_date'))}:${row.period}`, row]))
+  return [9, 90].flatMap(period => [
+    {
+      name: `${period} 金叉`, type: 'scatter', xAxisIndex: 0, yAxisIndex: 0, symbol: 'pin', symbolSize: 28,
+      itemStyle: { color: period === 9 ? '#f56c6c' : '#8e44ad' }, label: { show: true, formatter: `金${period}`, color: '#fff', fontSize: 10 },
+      data: dates.flatMap(date => {
+        const indicator = indicatorByKey.get(`${date}:${period}`)
+        return indicator && isSignal(indicator, 'goldenCross', 'golden_cross') ? [[date, valueOf(candleByDate.get(date), 'low')]] : []
+      })
+    },
+    {
+      name: `${period} K1`, type: 'scatter', xAxisIndex: 0, yAxisIndex: 0, symbol: 'arrow', symbolSize: [8, 20],
+      symbolOffset: [period === 9 ? -5 : 5, 16], itemStyle: { color: '#f5222d' },
+      data: dates.flatMap(date => {
+        const indicator = indicatorByKey.get(`${date}:${period}`)
+        return indicator && isSignal(indicator, 'rsvCrossK', 'rsv_cross_k') ? [[date, valueOf(candleByDate.get(date), 'low')]] : []
+      })
+    },
+    {
+      name: `${period} K2`, type: 'scatter', xAxisIndex: 0, yAxisIndex: 0, symbol: 'arrow', symbolSize: [8, 20],
+      symbolOffset: [period === 9 ? -5 : 5, -16], itemStyle: { color: '#f5222d' },
+      data: dates.flatMap(date => {
+        const indicator = indicatorByKey.get(`${date}:${period}`)
+        return indicator && isSignal(indicator, 'rsvCrossD', 'rsv_cross_d') ? [[date, valueOf(candleByDate.get(date), 'high')]] : []
+      })
+    }
+  ])
 }
 
-function renderChart(kdj, mainFund, margin, dde) {
+function renderChart(kdj, funds) {
   const candles = kdj.candles || []
   if (!candles.length) {
     errorMessage.value = '没有可显示的 K 线数据'
     return
   }
   const dates = candles.map(row => dateKey(valueOf(row, 'tradeDate', 'trade_date')))
-  const bar = rows => {
+  const bars = rows => {
     const values = new Map(rows.map(row => [dateKey(row.tradeDate), row.value]))
     return dates.map(date => values.get(date) ?? '-')
   }
   chart.setOption({
     animation: false,
-    legend: { top: 2, data: ['K线', '55日主连资金', '融资融券', 'DDE'] },
+    legend: { top: 2, data: ['K线', '9 金叉', '90 金叉'] },
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     axisPointer: { link: [{ xAxisIndex: 'all' }] },
     grid: [
@@ -85,7 +97,7 @@ function renderChart(kdj, mainFund, margin, dde) {
       { scale: true, splitArea: { show: true } },
       { gridIndex: 1, name: '55日净流入(亿)' },
       { gridIndex: 2, name: '融资买入(亿)' },
-      { gridIndex: 3, name: 'DDE%', axisLabel: { formatter: '{value}%' } }
+      { gridIndex: 3, name: 'DDE%' }
     ],
     dataZoom: [
       { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: dates.length > 120 ? 100 - 12000 / dates.length : 0, end: 100 },
@@ -93,12 +105,10 @@ function renderChart(kdj, mainFund, margin, dde) {
     ],
     series: [
       { name: 'K线', type: 'candlestick', data: candles.map(row => [valueOf(row, 'open'), valueOf(row, 'close'), valueOf(row, 'low'), valueOf(row, 'high')]), itemStyle: { color: '#ef5350', color0: '#26a69a', borderColor: '#ef5350', borderColor0: '#26a69a' } },
-      signalSeries('55日主连资金', mainFund.rows, dates, candles, 'signalDate', 'signalScore', '#f56c6c', -8),
-      signalSeries('融资融券', margin.rows, dates, candles, 'signalDate', 'score', '#409eff', 0),
-      signalSeries('DDE', dde.rows, dates, candles, 'tradeDate', 'mainNetRatio', '#e6a23c', 8),
-      { name: '55日主连资金净流入', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: bar(mainFund.raw), itemStyle: { color: '#f56c6c' } },
-      { name: '融资买入额', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: bar(margin.raw), itemStyle: { color: '#409eff' } },
-      { name: 'DDE资金强度', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: bar(dde.raw), itemStyle: { color: '#e6a23c' } }
+      ...kdjMarks(candles, kdj.indicators || [], dates),
+      { name: '55日主连资金净流入', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: bars(funds.mainFund), itemStyle: { color: '#f56c6c' } },
+      { name: '融资买入额', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: bars(funds.margin), itemStyle: { color: '#409eff' } },
+      { name: 'DDE资金强度', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: bars(funds.dde), itemStyle: { color: '#e6a23c' } }
     ]
   }, true)
 }
@@ -108,20 +118,8 @@ async function loadChart() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const params = { stockCode: stockCode.value, pageNum: 1, pageSize: 200 }
-    const [kdj, mainFund, margin, dde, raw] = await Promise.all([
-      getKdjHistory({ stockCode: stockCode.value }),
-      listMainFundPerformance(params),
-      listMarginLongPerformance(params),
-      listDdeSignalPerformance(params),
-      getFundVisualHistory({ stockCode: stockCode.value })
-    ])
-    renderChart(
-      kdj.data,
-      { rows: mainFund.data.rows, raw: raw.data.mainFund },
-      { rows: margin.data.rows, raw: raw.data.margin },
-      { rows: dde.data.rows, raw: raw.data.dde }
-    )
+    const [kdj, funds] = await Promise.all([getKdjHistory({ stockCode: stockCode.value }), getFundVisualHistory({ stockCode: stockCode.value })])
+    renderChart(kdj.data, funds.data)
   } catch (error) {
     errorMessage.value = error.message || '资金数据加载失败'
   } finally {
