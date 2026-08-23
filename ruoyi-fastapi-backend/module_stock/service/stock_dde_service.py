@@ -30,11 +30,12 @@ class StockDdeService:
 
     @classmethod
     async def get_signal_performance_page_services(
-        cls, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
+        cls, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
     ) -> StockDdeSignalPerformancePageModel:
         rows, total = await asyncio.to_thread(
             StockDdeDao.get_signal_performance_page,
             AppConfig.stock_stat_db_path,
+            stock_code,
             start_date,
             end_date,
             page_num,
