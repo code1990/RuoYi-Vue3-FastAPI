@@ -169,6 +169,13 @@ class StockDdeObservationModel(BaseModel):
     market_cap: float
     change_pct: float | None = None
     main_net_ratio: float | None = None
+    close_return_pct: float | None = None
+    t1_max_return_pct: float | None = None
+    t2_max_return_pct: float | None = None
+    t3_max_return_pct: float | None = None
+    t4_max_return_pct: float | None = None
+    t5_max_return_pct: float | None = None
+    max_return_t5_pct: float | None = None
     limit_up_slots: list[str] = []
     is_limit_up: bool
     is_tradable: bool
@@ -188,3 +195,17 @@ class StockDdeObservationPageModel(BaseModel):
     completed_count: int
     target_hit_count: int
     target_hit_rate: float | None = None
+
+
+class StockDdeObservationStatisticsModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    dimension: str
+    sample_count: int
+    limit_up_count: int
+    completed_count: int
+    target_hit_count: int
+    target_hit_rate: float | None = None
+    average_max_return_t5_pct: float | None = None
+    positive_count: int
+    positive_rate: float | None = None

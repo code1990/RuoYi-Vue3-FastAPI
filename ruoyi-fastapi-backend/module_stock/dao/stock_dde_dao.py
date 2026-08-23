@@ -264,6 +264,8 @@ class StockDdeDao:
         order_by = cls.get_order_by(sort_by, sort_order, {
             'tradeDate': 'observation.trade_date', 'signalCount': 'observation.signal_count', 'bestRank': 'observation.best_rank',
             'entryPrice': 'observation.entry_price', 'marketCap': 'observation.market_cap', 'changePct': 'observation.change_pct',
+            'closeReturnPct': 'observation.close_return_pct', 'maxReturnT5Pct': 'observation.max_return_t5_pct',
+            **{f't{day}MaxReturnPct': f'observation.t{day}_max_return_pct' for day in range(1, 6)},
         }, 'observation.trade_date DESC, observation.best_rank ASC, observation.stock_code ASC')
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
@@ -299,6 +301,8 @@ class StockDdeDao:
             rows = connection.execute(
                 f'''SELECT observation.trade_date, observation.stock_code, observation.stock_name, observation.morning_count, observation.noon_count, observation.close_count,
                            observation.signal_count, observation.best_rank, observation.combo_type, observation.entry_price, observation.market_cap, observation.change_pct,
+                           observation.close_return_pct, observation.t1_max_return_pct, observation.t2_max_return_pct,
+                           observation.t3_max_return_pct, observation.t4_max_return_pct, observation.t5_max_return_pct, observation.max_return_t5_pct,
                            observation.is_limit_up, observation.is_tradable, observation.is_completed, observation.target_hit, {slot_columns}
                     FROM {table_name} AS observation {slot_joins} WHERE {where_sql.replace('trade_date', 'observation.trade_date')}
                     ORDER BY {order_by} LIMIT :limit OFFSET :offset''',
@@ -312,3 +316,49 @@ class StockDdeDao:
             )
             result_rows.append(result)
         return result_rows, int(summary['total']), dict(summary)
+
+    @classmethod
+    def get_observation_statistics(cls, database_path: str, start_date: str | None, end_date: str | None) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ['1 = 1']
+        params: dict[str, str] = {}
+        if start_date:
+            clauses.append('trade_date >= :start_date')
+            params['start_date'] = start_date
+        if end_date:
+            clauses.append('trade_date <= :end_date')
+            params['end_date'] = end_date
+        where_sql = ' AND '.join(clauses)
+        uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        result = []
+        with sqlite3.connect(uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            for dimension in ('high_price', 'large_cap', 'high_strength'):
+                table_name = cls.OBSERVATION_TABLES[dimension]
+                exists = connection.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table_name,)
+                ).fetchone()
+                if not exists:
+                    continue
+                row = connection.execute(
+                    f'''SELECT COUNT(*) AS sample_count, COALESCE(SUM(is_limit_up), 0) AS limit_up_count,
+                               COALESCE(SUM(is_completed), 0) AS completed_count,
+                               COALESCE(SUM(target_hit), 0) AS target_hit_count,
+                               AVG(CASE WHEN is_completed = 1 THEN max_return_t5_pct END) AS average_max_return_t5_pct,
+                               COALESCE(SUM(CASE WHEN is_completed = 1 AND max_return_t5_pct > 0 THEN 1 ELSE 0 END), 0) AS positive_count
+                        FROM {table_name} WHERE {where_sql}''',
+                    params,
+                ).fetchone()
+                completed_count = int(row['completed_count'])
+                target_hit_count = int(row['target_hit_count'])
+                positive_count = int(row['positive_count'])
+                result.append({
+                    'dimension': dimension, 'sample_count': int(row['sample_count']), 'limit_up_count': int(row['limit_up_count']),
+                    'completed_count': completed_count, 'target_hit_count': target_hit_count,
+                    'target_hit_rate': target_hit_count / completed_count if completed_count else None,
+                    'average_max_return_t5_pct': row['average_max_return_t5_pct'], 'positive_count': positive_count,
+                    'positive_rate': positive_count / completed_count if completed_count else None,
+                })
+        return result

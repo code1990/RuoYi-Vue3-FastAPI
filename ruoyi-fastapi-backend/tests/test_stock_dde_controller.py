@@ -10,6 +10,7 @@ from module_stock.controller.stock_dde_controller import (
     get_stock_dde_combo_list,
     get_stock_dde_hot_rank_list,
     get_stock_dde_observation_list,
+    get_stock_dde_observation_statistics,
     get_stock_dde_signal_performance_list,
     get_stock_dde_top30_performance_list,
 )
@@ -49,17 +50,21 @@ def stock_database(tmp_path):
             trade_date TEXT, stock_code TEXT, stock_name TEXT, morning_count INTEGER, noon_count INTEGER,
             close_count INTEGER, signal_count INTEGER, best_rank INTEGER, combo_type TEXT, entry_price REAL,
             market_cap REAL, change_pct REAL, is_limit_up INTEGER, is_tradable INTEGER,
-            is_completed INTEGER, target_hit INTEGER
+            is_completed INTEGER, target_hit INTEGER, close_return_pct REAL, t1_max_return_pct REAL,
+            t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL,
+            max_return_t5_pct REAL
         )''')
         connection.executemany(
-            "INSERT INTO t_stock_dde_high_price_observation VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO t_stock_dde_high_price_observation VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
-                ('20260806', '000001', '平安银行', 1, 1, 0, 2, 1, '', 88, 220000000000, 1.2, 0, 1, 1, 1),
-                ('20260805', '000002', '涨停高价', 0, 0, 1, 1, 2, '', 90, 10000000000, 9.5, 1, 0, 0, None),
+                ('20260806', '000001', '平安银行', 1, 1, 0, 2, 1, '', 88, 220000000000, 1.2, 0, 1, 1, 1, 1.2, 2, 2, 2, 2, 2, 2),
+                ('20260805', '000002', '涨停高价', 0, 0, 1, 1, 2, '', 90, 10000000000, 9.5, 1, 1, 0, None, None, None, None, None, None, None, None),
             ],
         )
         connection.execute('CREATE TABLE t_stock_dde_high_strength_observation AS SELECT * FROM t_stock_dde_high_price_observation WHERE 0')
         connection.execute("INSERT INTO t_stock_dde_high_strength_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
+        connection.execute('CREATE TABLE t_stock_dde_large_cap_observation AS SELECT * FROM t_stock_dde_high_price_observation WHERE 0')
+        connection.execute("INSERT INTO t_stock_dde_large_cap_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
     return database_path
 
 
@@ -117,10 +122,11 @@ def test_dde_observation_list_returns_summary_and_rows(stock_database, monkeypat
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
     payload = json.loads(asyncio.run(get_stock_dde_observation_list(dimension='high_price', page_num=1, page_size=20)).body)
     assert payload['data']['total'] == 2
-    assert payload['data']['tradableCount'] == 1
+    assert payload['data']['tradableCount'] == 2
     assert payload['data']['completedCount'] == 1
     assert payload['data']['targetHitRate'] == 1.0
     assert payload['data']['rows'][0]['entryPrice'] == 88.0
+    assert payload['data']['rows'][0]['maxReturnT5Pct'] == 2.0
 
 
 def test_dde_high_strength_observation_list(stock_database, monkeypatch):
@@ -128,6 +134,15 @@ def test_dde_high_strength_observation_list(stock_database, monkeypatch):
     payload = json.loads(asyncio.run(get_stock_dde_observation_list(dimension='high_strength', page_num=1, page_size=20)).body)
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['stockCode'] == '000001'
+
+
+def test_dde_observation_statistics_includes_limit_up_assumptions(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_observation_statistics()).body)
+    high_price = next(item for item in payload['data'] if item['dimension'] == 'high_price')
+    assert high_price['sampleCount'] == 2
+    assert high_price['limitUpCount'] == 1
+    assert high_price['averageMaxReturnT5Pct'] == 2.0
 
 
 def test_dde_observation_limit_up_slots():

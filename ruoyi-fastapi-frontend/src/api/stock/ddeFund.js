@@ -27,3 +27,7 @@ export function listDdeHotRank(params) {
 export function listDdeObservation(params) {
   return request({ url: '/stock/dde/observation/list', method: 'get', params })
 }
+
+export function getDdeObservationStatistics(params) {
+  return request({ url: '/stock/dde/observation/statistics', method: 'get', params })
+}

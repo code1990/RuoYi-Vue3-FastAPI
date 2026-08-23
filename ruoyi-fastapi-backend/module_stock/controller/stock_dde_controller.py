@@ -8,6 +8,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
+    StockDdeObservationStatisticsModel,
     StockDdeSignalPerformancePageModel,
     StockDdeTop30PerformancePageModel,
     StockDdeTop30StatisticsModel,
@@ -114,6 +115,18 @@ async def get_stock_dde_observation_list(
 ) -> Response:
     try:
         result = await StockDdeService.get_observation_page_services(dimension, start_date, end_date, page_num, page_size, sort_by, sort_order)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/observation/statistics', summary='查询DDE专项回测统计', response_model=DataResponseModel[list[StockDdeObservationStatisticsModel]])
+async def get_stock_dde_observation_statistics(
+    start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
+    end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
+) -> Response:
+    try:
+        result = await StockDdeService.get_observation_statistics_services(start_date, end_date)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

@@ -6,6 +6,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
+    StockDdeObservationStatisticsModel,
     StockDdeSignalPerformancePageModel,
     StockDdeTop30PerformancePageModel,
 )
@@ -99,3 +100,10 @@ class StockDdeService:
             target_hit_count=target_hit_count,
             target_hit_rate=target_hit_count / completed_count if completed_count else None,
         )
+
+    @classmethod
+    async def get_observation_statistics_services(
+        cls, start_date: str | None, end_date: str | None,
+    ) -> list[StockDdeObservationStatisticsModel]:
+        rows = await asyncio.to_thread(StockDdeDao.get_observation_statistics, AppConfig.stock_stat_db_path, start_date, end_date)
+        return [StockDdeObservationStatisticsModel.model_validate(row) for row in rows]

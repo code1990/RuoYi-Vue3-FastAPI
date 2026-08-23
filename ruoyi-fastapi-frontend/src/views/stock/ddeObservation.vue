@@ -15,8 +15,10 @@
         <el-table-column label="市值" prop="marketCap" sortable="custom" min-width="85"><template #default="{ row }">{{ amount(row.marketCap) }}</template></el-table-column>
         <el-table-column v-if="dimension === 'high_strength'" label="资金强度" min-width="90"><template #default="{ row }">{{ rate(row.mainNetRatio) }}</template></el-table-column>
         <el-table-column label="涨跌幅" prop="changePct" sortable="custom" min-width="80"><template #default="{ row }">{{ percent(row.changePct) }}</template></el-table-column>
-        <el-table-column label="交易状态" min-width="100"><template #default="{ row }"><el-tag v-for="slot in row.limitUpSlots" :key="slot" size="small" type="danger">{{ slotName(slot) }}涨停</el-tag><el-tag v-if="!row.limitUpSlots?.length && row.isLimitUp" size="small" type="danger">涨停</el-tag><el-tag v-if="!row.isLimitUp" size="small" type="success">可交易</el-tag></template></el-table-column>
-        <el-table-column label="5日结果" min-width="95"><template #default="{ row }"><el-tag v-if="!row.isTradable" size="small" type="info">不统计</el-tag><el-tag v-else-if="!row.isCompleted" size="small" type="warning">待完成</el-tag><el-tag v-else :type="row.targetHit ? 'success' : 'danger'" size="small">{{ row.targetHit ? '达标' : '未达标' }}</el-tag></template></el-table-column>
+        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}最高`" :prop="`t${day}MaxReturnPct`" min-width="95" sortable="custom"><template #default="{ row }"><span :class="['return-value', returnClass(row[`t${day}MaxReturnPct`])]">{{ percent(row[`t${day}MaxReturnPct`]) }}</span></template></el-table-column>
+        <el-table-column label="5日最高" prop="maxReturnT5Pct" min-width="95" sortable="custom"><template #default="{ row }"><span :class="['return-value', returnClass(row.maxReturnT5Pct)]">{{ percent(row.maxReturnT5Pct) }}</span></template></el-table-column>
+        <el-table-column label="参与假设" min-width="100"><template #default="{ row }"><el-tag v-if="row.isLimitUp" size="small" type="danger">涨停参与</el-tag><el-tag v-else size="small" type="success">正常参与</el-tag></template></el-table-column>
+        <el-table-column label="5日结果" min-width="95"><template #default="{ row }"><el-tag v-if="!row.isCompleted" size="small" type="warning">待完成</el-tag><el-tag v-else :type="row.targetHit ? 'success' : 'danger'" size="small">{{ row.targetHit ? '达标' : '未达标' }}</el-tag></template></el-table-column>
       </el-table>
       <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="getList" />
     </el-card>
@@ -55,6 +57,7 @@ function number(value) { return value === null || value === undefined ? '-' : va
 function amount(value) { return value === null || value === undefined ? '-' : `${(value / 100000000).toFixed(0)}亿` }
 function comboName(value) { return { morning_noon: '早盘+午盘', noon_close: '午盘+尾盘', morning_close: '早盘+尾盘', morning_noon_close: '早盘+午盘+尾盘' }[value] || '-' }
 function slotName(value) { return { morning: '早盘', noon: '午盘', close: '尾盘' }[value] || value }
+function returnClass(value) { return value === null || value === undefined ? '' : value >= 2 ? 'return-high' : 'return-low' }
 
 watch(() => route.query.dimension, handleQuery)
 getList()
@@ -67,4 +70,7 @@ getList()
 .header-actions { flex: 0 0 auto; margin-left: 16px; margin-right: auto; }
 .summary { margin-bottom: 16px; }
 :deep(.el-table) { white-space: nowrap; }
+.return-value { display: block; padding: 1px 4px; border-radius: 3px; text-align: center; }
+.return-high { background: #fef0f0; color: #f56c6c; }
+.return-low { background: #f0f9eb; color: #67c23a; }
 </style>
