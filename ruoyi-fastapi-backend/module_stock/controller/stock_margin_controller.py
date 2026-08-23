@@ -4,7 +4,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel
+from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginComboStatisticsModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel
 from module_stock.service.stock_margin_service import StockMarginService
 from utils.response_util import ResponseUtil
 
@@ -37,6 +37,20 @@ async def get_stock_margin_long_statistics(
 ) -> Response:
     try:
         result = await StockMarginService.get_long_statistics_services(start_date, end_date, target_return_pct)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_margin_controller.get('/combo/statistics', summary='查询多日融资列表统计', response_model=DataResponseModel[list[StockMarginComboStatisticsModel]])
+async def get_stock_margin_combo_statistics(
+    window_days: Annotated[int, Query(alias='windowDays', ge=2, le=5)],
+    target_return_pct: Annotated[float, Query(alias='targetReturnPct', ge=0, le=100)] = 1.8,
+) -> Response:
+    if window_days not in (2, 3, 5):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail='windowDays must be 2, 3, or 5')
+    try:
+        result = await StockMarginService.get_combo_statistics_services(window_days, target_return_pct)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

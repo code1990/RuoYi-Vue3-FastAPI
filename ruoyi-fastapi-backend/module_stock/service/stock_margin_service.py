@@ -2,10 +2,15 @@ import asyncio
 
 from config.env import AppConfig
 from module_stock.dao.stock_margin_dao import StockMarginDao
-from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel
+from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginComboStatisticsModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel
 
 
 class StockMarginService:
+    @classmethod
+    async def get_combo_statistics_services(cls, window_days: int, target_return_pct: float) -> list[StockMarginComboStatisticsModel]:
+        rows = await asyncio.to_thread(StockMarginDao.get_combo_statistics, AppConfig.stock_stat_db_path, window_days, target_return_pct)
+        return [StockMarginComboStatisticsModel.model_validate(row) for row in rows]
+
     @classmethod
     async def get_long_statistics_services(cls, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[StockMarginLongStatisticsModel]:
         rows = await asyncio.to_thread(StockMarginDao.get_long_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
