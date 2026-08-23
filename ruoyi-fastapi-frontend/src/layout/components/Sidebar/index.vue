@@ -1,5 +1,5 @@
 <template>
-  <div :class="{ 'has-logo': showLogo }" class="sidebar-container">
+  <div :class="{ 'has-logo': showLogo, 'has-module-header': showModuleHeader }" class="sidebar-container">
     <logo v-if="showLogo" :collapse="isCollapse" />
     <div v-if="showModuleHeader" class="sidebar-module-header">
       <span class="module-title">{{ sidebarParentTitle }}</span>
@@ -102,6 +102,14 @@ const activeMenu = computed(() => {
 
   .scrollbar-wrapper {
     background-color: v-bind(getMenuBackground);
+  }
+
+  &.has-module-header :deep(.el-scrollbar) {
+    height: calc(100% - 57px);
+  }
+
+  &.has-logo.has-module-header :deep(.el-scrollbar) {
+    height: calc(100% - 107px);
   }
 
   .el-menu {
