@@ -27,7 +27,8 @@ class StockKdjDao:
                     ORDER BY trade_date DESC
                     LIMIT :limit
                 )
-                SELECT daily.trade_date, daily.open, daily.high, daily.low, daily.close
+                SELECT daily.trade_date, daily.open, daily.high, daily.low, daily.close,
+                       daily.vol, daily.amount, daily.vol_rate, daily.percent, daily.changes, daily.pre_close
                 FROM t_stock_daily_240 AS daily
                 JOIN dates ON dates.trade_date = daily.trade_date
                 WHERE daily.stock_code = :stock_code

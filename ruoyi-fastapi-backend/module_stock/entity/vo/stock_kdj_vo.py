@@ -10,6 +10,12 @@ class StockKdjCandleModel(BaseModel):
     high: float | None = None
     low: float | None = None
     close: float | None = None
+    vol: float | None = None
+    amount: float | None = None
+    vol_rate: float | None = None
+    percent: float | None = None
+    changes: float | None = None
+    pre_close: float | None = None
 
 
 class StockKdjIndicatorModel(BaseModel):

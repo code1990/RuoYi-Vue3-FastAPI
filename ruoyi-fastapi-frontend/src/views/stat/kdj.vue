@@ -44,6 +44,20 @@ function roundKdj(value) {
   return value == null ? value : Math.round(Number(value) * 100) / 100
 }
 
+function fixed(value) {
+  return value == null ? '--' : Number(value).toFixed(2)
+}
+
+function formatDateWithWeekday(value) {
+  const text = String(value)
+  const date = new Date(Number(text.slice(0, 4)), Number(text.slice(4, 6)) - 1, Number(text.slice(6)))
+  return `${text.slice(0, 4)}/${text.slice(4, 6)}/${text.slice(6)}/${['日', '一', '二', '三', '四', '五', '六'][date.getDay()]}`
+}
+
+function formatAmount(value) {
+  return value == null ? '--' : `${(Number(value) / 100000000).toFixed(2)}亿`
+}
+
 function renderChart(payload) {
   const candles = payload?.candles || []
   const indicators = payload?.indicators || []
@@ -52,6 +66,7 @@ function renderChart(payload) {
     return
   }
   const dates = candles.map(row => String(valueOf(row, 'tradeDate', 'trade_date')))
+  const candleByDate = new Map(candles.map(candle => [String(valueOf(candle, 'tradeDate', 'trade_date')), candle]))
   const indicatorByKey = new Map(indicators.map(row => [`${valueOf(row, 'tradeDate', 'trade_date')}:${row.period}`, row]))
   const lineSeries = [9, 90].flatMap(period => ['K', 'D', 'J'].map((name, index) => ({
     name: `${period}${name}`,
@@ -113,7 +128,31 @@ function renderChart(payload) {
   chart.setOption({
     animation: false,
     legend: { top: 4, data: ['K线', '9K', '9D', '9J', '90K', '90D', '90J', '9 金叉', '90 金叉'] },
-    tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      formatter: params => {
+        const candle = candleByDate.get(String(params[0]?.axisValue))
+        if (!candle) return ''
+        const high = Number(valueOf(candle, 'high'))
+        const low = Number(valueOf(candle, 'low'))
+        const preClose = Number(valueOf(candle, 'preClose', 'pre_close'))
+        const amplitude = Number.isFinite(preClose) && preClose ? (high - low) / preClose * 100 : null
+        return [
+          formatDateWithWeekday(valueOf(candle, 'tradeDate', 'trade_date')),
+          `开盘：${fixed(valueOf(candle, 'open'))}`,
+          `最高：${fixed(high)}`,
+          `最低：${fixed(low)}`,
+          `收盘：${fixed(valueOf(candle, 'close'))}`,
+          `总量：${valueOf(candle, 'vol') == null ? '--' : Math.round(Number(valueOf(candle, 'vol'))).toLocaleString('zh-CN')}`,
+          `换手：${fixed(valueOf(candle, 'volRate', 'vol_rate'))}%`,
+          `总额：${formatAmount(valueOf(candle, 'amount'))}`,
+          `振幅：${fixed(amplitude)}%`,
+          `涨跌：${fixed(valueOf(candle, 'changes'))}`,
+          `涨幅：${fixed(valueOf(candle, 'percent'))}%`
+        ].join('<br/>')
+      }
+    },
     axisPointer: { link: [{ xAxisIndex: 'all' }] },
     grid: [
       { left: 60, right: 20, top: 42, height: '52%' },
