@@ -1,53 +1,54 @@
 <template>
   <div class="algorithm-page">
-    <el-alert title="二分法首个条件：DDE资金强度是否达到15%；5日内最高收益≥1.8%为达标，不含涨停样本。" type="info" :closable="false" show-icon />
-    <el-card header="DDE强度二分结果" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
+    <el-alert :title="summary" :type="experiment?.status === 'observing' ? 'success' : 'warning'" :closable="false" show-icon />
+    <el-row :gutter="16" class="metrics">
+      <el-col :span="6"><el-statistic title="训练样本" :value="experiment?.trainMetrics.root.sample_count || 0" /></el-col>
+      <el-col :span="6"><el-statistic title="训练命中率" :value="rate(experiment?.trainMetrics.root.hit_rate)" suffix="%" /></el-col>
+      <el-col :span="6"><el-statistic title="验证样本" :value="experiment?.validationMetrics.root.sample_count || 0" /></el-col>
+      <el-col :span="6"><el-statistic title="验证命中率" :value="rate(experiment?.validationMetrics.root.hit_rate)" suffix="%" /></el-col>
+    </el-row>
+    <el-card header="DDE 二分剪枝树" class="chart-row"><div ref="chartRef" v-loading="loading" class="chart" /></el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
-import { getDdeStatistics } from '@/api/stock/ddeFund'
+import { getLatestDdeAlgorithm } from '@/api/stock/algorithm'
 
 const chartRef = ref()
 const loading = ref(false)
-const slots = [{ key: 'morning', label: '早盘' }, { key: 'noon', label: '午盘' }, { key: 'close', label: '尾盘' }]
+const experiment = ref(null)
 let chart
 
-function renderChart(rows) {
-  const values = new Map()
-  slots.forEach(({ key }) => {
-    values.set(`${key}:低强度`, { success: 0, failure: 0 })
-    values.set(`${key}:高强度`, { success: 0, failure: 0 })
-  })
-  rows.forEach(row => {
-    const branch = row.strength_band === '15%+' ? '高强度' : '低强度'
-    const value = values.get(`${row.signal_slot}:${branch}`)
-    if (value) {
-      value.success += row.success_count
-      value.failure += row.failure_count
-    }
-  })
-  const categories = slots.flatMap(({ label }) => [`${label}\n<15%`, `${label}\n≥15%`])
-  const branches = slots.flatMap(({ key }) => [`${key}:低强度`, `${key}:高强度`])
+const summary = computed(() => {
+  if (!experiment.value) return '尚无 DDE 二分实验结果，请先运行 stock_cron/algorithm/run_dde_binary_experiment.py。'
+  return `${experiment.value.dataStartDate} 至 ${experiment.value.dataEndDate}｜${experiment.value.targetRule}｜${experiment.value.conclusion}`
+})
+
+function rate(value) {
+  return value == null ? 0 : Math.round(value * 10000) / 100
+}
+
+function renderTree(data) {
+  const root = {
+    name: `${data.tree.name}\n训练 ${data.trainMetrics.root.sample_count}｜验证 ${data.validationMetrics.root.sample_count}`,
+    children: data.tree.children.map(node => ({
+      name: `${node.name}\n训练 ${rate(node.train.hit_rate)}% (${node.train.sample_count})\n验证 ${rate(node.validation.hit_rate)}% (${node.validation.sample_count})`,
+      itemStyle: { color: node.pruned ? '#909399' : '#67c23a' }
+    }))
+  }
   chart.setOption({
-    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    legend: { top: 0 },
-    grid: { left: 100, right: 24, top: 52, bottom: 24 },
-    xAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
-    yAxis: { type: 'category', inverse: true, data: categories, axisLabel: { lineHeight: 18 } },
-    series: [
-      { name: '达标', type: 'bar', stack: 'sample', data: branches.map(key => values.get(key).success), itemStyle: { color: '#f56c6c' } },
-      { name: '未达标', type: 'bar', stack: 'sample', data: branches.map(key => values.get(key).failure), itemStyle: { color: '#909399' } }
-    ]
+    tooltip: { trigger: 'item' },
+    series: [{ type: 'tree', data: [root], top: '8%', bottom: '8%', left: '8%', right: '8%', symbolSize: 12, label: { position: 'top', verticalAlign: 'middle', align: 'center', fontSize: 13, lineHeight: 20 }, leaves: { label: { position: 'bottom', verticalAlign: 'middle', align: 'center' } }, expandAndCollapse: false, initialTreeDepth: -1 }]
   }, true)
 }
 
-async function getStatistics() {
+async function loadExperiment() {
   loading.value = true
   try {
-    const response = await getDdeStatistics({ targetReturnPct: 1.8 })
-    renderChart(response.data)
+    const response = await getLatestDdeAlgorithm()
+    experiment.value = response.data
+    if (response.data) renderTree(response.data)
   } finally {
     loading.value = false
   }
@@ -55,7 +56,7 @@ async function getStatistics() {
 
 onMounted(() => {
   chart = echarts.init(chartRef.value)
-  getStatistics()
+  loadExperiment()
   window.addEventListener('resize', chart.resize)
 })
 
@@ -67,6 +68,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .algorithm-page { padding: 20px; }
+.metrics { margin-top: 16px; }
 .chart-row { margin-top: 16px; }
-.chart { height: 560px; }
+.chart { height: 460px; }
 </style>
