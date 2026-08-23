@@ -65,3 +65,11 @@
 - 数据直接来自 `GET /stock/dde/hot-rank/list?pageNum=1&pageSize=30` 的当前热度榜列表。
 
 仅展示当前统计区间内排名前30的股票。股票为纵轴，早盘、午盘、尾盘 DDE 出现次数为横向堆叠柱；柱总长度即累计出现次数。
+
+## DDE日内连续列表统计
+
+- 路由：`/stat/dde-intraday-combo`
+- 接口：`GET /stock/dde/observation/intraday/statistics?targetReturnPct=1.8`
+- 数据仅来自 `t_stock_dde_intraday_combo_observation`。
+
+按 `早+午`、`午+尾`、`早+尾`、`早+午+尾` 四类日内组合展示每日并列堆叠柱。仅完整5日样本入图，五日内任一天最高收益达到目标收益为达标。

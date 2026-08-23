@@ -427,3 +427,33 @@ class StockDdeDao:
                     'positive_rate': positive_count / completed_count if completed_count else None,
                 })
         return result
+
+    @staticmethod
+    def get_intraday_combo_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ['is_completed = 1']
+        params: dict[str, str | float] = {'target_return_pct': target_return_pct}
+        if start_date:
+            clauses.append('trade_date >= :start_date')
+            params['start_date'] = start_date
+        if end_date:
+            clauses.append('trade_date <= :end_date')
+            params['end_date'] = end_date
+        where_sql = ' AND '.join(clauses)
+        uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        with sqlite3.connect(uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                f'''SELECT trade_date, combo_type,
+                           SUM(CASE WHEN max_return_t5_pct >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
+                           SUM(CASE WHEN max_return_t5_pct < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
+                           COUNT(*) AS sample_count
+                    FROM t_stock_dde_intraday_combo_observation
+                    WHERE {where_sql}
+                    GROUP BY trade_date, combo_type
+                    ORDER BY trade_date, CASE combo_type WHEN 'morning_noon' THEN 1 WHEN 'noon_close' THEN 2 WHEN 'morning_close' THEN 3 ELSE 4 END''',
+                params,
+            ).fetchall()
+        return [dict(row) for row in rows]

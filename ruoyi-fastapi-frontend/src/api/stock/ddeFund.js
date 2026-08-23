@@ -39,3 +39,7 @@ export function listDdeObservation(params) {
 export function getDdeObservationStatistics(params) {
   return request({ url: '/stock/dde/observation/statistics', method: 'get', params })
 }
+
+export function getDdeIntradayComboStatistics(params) {
+  return request({ url: '/stock/dde/observation/intraday/statistics', method: 'get', params })
+}

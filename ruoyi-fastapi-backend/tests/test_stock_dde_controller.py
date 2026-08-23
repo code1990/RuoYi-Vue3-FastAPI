@@ -12,6 +12,7 @@ from module_stock.controller.stock_dde_controller import (
     get_stock_dde_hot_rank_list,
     get_stock_dde_observation_list,
     get_stock_dde_observation_statistics,
+    get_stock_dde_intraday_combo_statistics,
     get_stock_dde_signal_performance_list,
     get_stock_dde_top30_performance_list,
     get_stock_dde_top30_statistics,
@@ -67,6 +68,9 @@ def stock_database(tmp_path):
         connection.execute("INSERT INTO t_stock_dde_high_strength_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
         connection.execute('CREATE TABLE t_stock_dde_large_cap_observation AS SELECT * FROM t_stock_dde_high_price_observation WHERE 0')
         connection.execute("INSERT INTO t_stock_dde_large_cap_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
+        connection.execute('CREATE TABLE t_stock_dde_intraday_combo_observation AS SELECT * FROM t_stock_dde_high_price_observation WHERE 0')
+        connection.execute("INSERT INTO t_stock_dde_intraday_combo_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
+        connection.execute("UPDATE t_stock_dde_intraday_combo_observation SET combo_type = 'morning_noon'")
     return database_path
 
 
@@ -160,6 +164,14 @@ def test_dde_observation_statistics_includes_limit_up_assumptions(stock_database
     assert high_price['sampleCount'] == 2
     assert high_price['limitUpCount'] == 1
     assert high_price['averageMaxReturnT5Pct'] == 2.0
+
+
+def test_dde_intraday_combo_statistics_groups_complete_list_by_combo(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_intraday_combo_statistics()).body)
+    assert payload['data'] == [
+        {'tradeDate': '20260806', 'comboType': 'morning_noon', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1}
+    ]
 
 
 def test_dde_observation_limit_up_slots():

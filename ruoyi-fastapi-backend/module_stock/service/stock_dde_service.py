@@ -8,6 +8,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
     StockDdeObservationStatisticsModel,
+    StockDdeIntradayComboStatisticsModel,
     StockDdeSignalPerformancePageModel,
     StockDdeTop30PerformancePageModel,
     StockDdeTop30ListStatisticsModel,
@@ -123,3 +124,10 @@ class StockDdeService:
     ) -> list[StockDdeObservationStatisticsModel]:
         rows = await asyncio.to_thread(StockDdeDao.get_observation_statistics, AppConfig.stock_stat_db_path, start_date, end_date)
         return [StockDdeObservationStatisticsModel.model_validate(row) for row in rows]
+
+    @classmethod
+    async def get_intraday_combo_statistics_services(
+        cls, start_date: str | None, end_date: str | None, target_return_pct: float,
+    ) -> list[StockDdeIntradayComboStatisticsModel]:
+        rows = await asyncio.to_thread(StockDdeDao.get_intraday_combo_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
+        return [StockDdeIntradayComboStatisticsModel.model_validate(row) for row in rows]
