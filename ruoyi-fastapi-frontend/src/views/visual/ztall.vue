@@ -1,11 +1,7 @@
 <template>
   <div class="visual-page">
     <el-card>
-      <el-form inline @submit.prevent>
-        <el-form-item label="交易日"><el-date-picker v-model="tradeDate" type="date" value-format="YYYY-MM-DD" :clearable="false" /></el-form-item>
-        <el-button type="primary" :loading="loading" @click="loadChart">查询</el-button>
-      </el-form>
-      <el-alert :title="`展示 ${displayDate} 涨停题材前15，按涨停家数排序。`" type="info" :closable="false" show-icon />
+      <el-alert :title="`横轴为交易日；题材按 2026 年以来累计涨停家数取前15，纵向堆叠显示每日涨停家数。`" type="info" :closable="false" show-icon />
       <div ref="chartRef" v-loading="loading" class="chart" />
     </el-card>
   </div>
@@ -16,28 +12,26 @@ import * as echarts from 'echarts'
 import { getLimitUpThemeTop15 } from '@/api/stock/limitUp'
 
 const chartRef = ref()
-const tradeDate = ref('')
-const displayDate = ref('-')
 const loading = ref(false)
 let chart
 
-function renderChart(rows) {
+function renderChart(data) {
   chart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
-    grid: { left: 140, right: 42, top: 28, bottom: 24 },
-    xAxis: { type: 'value', name: '涨停家数', minInterval: 1 },
-    yAxis: { type: 'category', inverse: true, data: rows.map(row => `${row.rankNo}. ${row.themeName}`) },
-    series: [{ type: 'bar', data: rows.map(row => row.limitUpCount), itemStyle: { color: '#f56c6c' }, label: { show: true, position: 'right' } }]
+    legend: { type: 'scroll', top: 0 },
+    grid: { left: 60, right: 24, top: 62, bottom: 88 },
+    xAxis: { type: 'category', data: data.tradeDates, axisLabel: { formatter: value => value.slice(5), rotate: 45 } },
+    yAxis: { type: 'value', name: '涨停家数', minInterval: 1 },
+    dataZoom: [{ type: 'inside' }, { type: 'slider', bottom: 18 }],
+    series: data.rows.map(row => ({ name: `${row.rankNo}. ${row.themeName}`, type: 'bar', stack: 'theme', data: row.values }))
   }, true)
 }
 
 async function loadChart() {
   loading.value = true
   try {
-    const response = await getLimitUpThemeTop15({ tradeDate: tradeDate.value || undefined })
-    displayDate.value = response.data.tradeDate || '-'
-    tradeDate.value = response.data.tradeDate || ''
-    renderChart(response.data.rows)
+    const response = await getLimitUpThemeTop15()
+    renderChart(response.data)
   } finally {
     loading.value = false
   }

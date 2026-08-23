@@ -8,12 +8,12 @@ class StockLimitUpThemeModel(BaseModel):
     rank_no: int
     theme_type: str
     theme_name: str
-    limit_up_count: int
-    amount: float | None = None
+    total_count: int
+    values: list[int]
 
 
 class StockLimitUpThemeListModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    trade_date: str | None = None
+    trade_dates: list[str]
     rows: list[StockLimitUpThemeModel]

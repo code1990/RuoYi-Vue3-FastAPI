@@ -7,6 +7,6 @@ from module_stock.entity.vo.stock_limit_up_vo import StockLimitUpThemeListModel
 
 class StockLimitUpService:
     @classmethod
-    async def get_theme_top15_services(cls, trade_date: str | None) -> StockLimitUpThemeListModel:
-        resolved_date, rows = await asyncio.to_thread(StockLimitUpDao.get_theme_top15, AppConfig.stock_stat_db_path, trade_date)
-        return StockLimitUpThemeListModel(trade_date=resolved_date, rows=rows)
+    async def get_theme_top15_services(cls, start_date: str | None, end_date: str | None) -> StockLimitUpThemeListModel:
+        trade_dates, rows = await asyncio.to_thread(StockLimitUpDao.get_theme_top15, AppConfig.stock_stat_db_path, start_date, end_date)
+        return StockLimitUpThemeListModel(trade_dates=trade_dates, rows=rows)
