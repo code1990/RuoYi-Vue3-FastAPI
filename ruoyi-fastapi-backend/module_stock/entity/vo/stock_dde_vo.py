@@ -168,6 +168,7 @@ class StockDdeObservationModel(BaseModel):
     entry_price: float
     market_cap: float
     change_pct: float | None = None
+    main_net_ratio: float | None = None
     limit_up_slots: list[str] = []
     is_limit_up: bool
     is_tradable: bool

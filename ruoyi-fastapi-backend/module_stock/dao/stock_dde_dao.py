@@ -8,6 +8,7 @@ class StockDdeDao:
     OBSERVATION_TABLES = {
         'high_price': 't_stock_dde_high_price_observation',
         'large_cap': 't_stock_dde_large_cap_observation',
+        'high_strength': 't_stock_dde_high_strength_observation',
         'intraday_combo': 't_stock_dde_intraday_combo_observation',
     }
 
@@ -283,9 +284,10 @@ class StockDdeDao:
                 "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_dde_fund_flow'"
             ).fetchone()
             slot_columns = (
-                "morning.change_pct AS morning_change_pct, noon.change_pct AS noon_change_pct, close.change_pct AS close_change_pct"
+                "morning.change_pct AS morning_change_pct, noon.change_pct AS noon_change_pct, close.change_pct AS close_change_pct, "
+                "(COALESCE(CAST(close.super_large_net_amount AS REAL), 0) + COALESCE(CAST(close.large_net_amount AS REAL), 0)) / NULLIF(CAST(close.market_cap AS REAL), 0) AS main_net_ratio"
                 if has_fund_flow
-                else 'NULL AS morning_change_pct, NULL AS noon_change_pct, NULL AS close_change_pct'
+                else 'NULL AS morning_change_pct, NULL AS noon_change_pct, NULL AS close_change_pct, NULL AS main_net_ratio'
             )
             slot_joins = (
                 f'''LEFT JOIN t_stock_dde_fund_flow AS morning ON morning.stock_code = observation.stock_code AND morning.trade_date = observation.trade_date AND morning.snapshot_slot = 'morning'

@@ -58,6 +58,8 @@ def stock_database(tmp_path):
                 ('20260805', '000002', '涨停高价', 0, 0, 1, 1, 2, '', 90, 10000000000, 9.5, 1, 0, 0, None),
             ],
         )
+        connection.execute('CREATE TABLE t_stock_dde_high_strength_observation AS SELECT * FROM t_stock_dde_high_price_observation WHERE 0')
+        connection.execute("INSERT INTO t_stock_dde_high_strength_observation SELECT * FROM t_stock_dde_high_price_observation WHERE stock_code = '000001'")
     return database_path
 
 
@@ -119,6 +121,13 @@ def test_dde_observation_list_returns_summary_and_rows(stock_database, monkeypat
     assert payload['data']['completedCount'] == 1
     assert payload['data']['targetHitRate'] == 1.0
     assert payload['data']['rows'][0]['entryPrice'] == 88.0
+
+
+def test_dde_high_strength_observation_list(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_observation_list(dimension='high_strength', page_num=1, page_size=20)).body)
+    assert payload['data']['total'] == 1
+    assert payload['data']['rows'][0]['stockCode'] == '000001'
 
 
 def test_dde_observation_limit_up_slots():

@@ -104,7 +104,7 @@ async def get_stock_dde_hot_rank_list(
 
 @stock_dde_controller.get('/observation/list', summary='查询DDE观察列表', response_model=DataResponseModel[StockDdeObservationPageModel])
 async def get_stock_dde_observation_list(
-    dimension: Annotated[str, Query(pattern=r'^(high_price|large_cap|intraday_combo)$')] = 'high_price',
+    dimension: Annotated[str, Query(pattern=r'^(high_price|large_cap|high_strength|intraday_combo)$')] = 'high_price',
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
