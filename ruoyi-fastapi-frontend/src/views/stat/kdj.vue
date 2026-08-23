@@ -36,6 +36,10 @@ function isGoldenCross(row) {
   return valueOf(row, 'goldenCross', 'golden_cross') === true || Number(valueOf(row, 'goldenCross', 'golden_cross')) === 1
 }
 
+function isSignal(row, camel, snake) {
+  return valueOf(row, camel, snake) === true || Number(valueOf(row, camel, snake)) === 1
+}
+
 function renderChart(payload) {
   const candles = payload?.candles || []
   const indicators = payload?.indicators || []
@@ -69,10 +73,45 @@ function renderChart(payload) {
       return indicator && isGoldenCross(indicator) ? [[date, valueOf(candle, 'low')]] : []
     })
   }))
+  const rsvCrossSeries = [9, 90].flatMap(period => [
+    {
+      name: `${period} K1`,
+      type: 'scatter',
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      symbol: 'triangle',
+      symbolSize: 28,
+      symbolOffset: [0, '55%'],
+      itemStyle: { color: '#f5222d', borderColor: '#fff', borderWidth: 2, shadowBlur: 5, shadowColor: 'rgba(245, 34, 45, .7)' },
+      label: { show: true, formatter: `${period} K1`, position: 'bottom', distance: 3, color: '#fff', backgroundColor: '#f5222d', padding: [2, 4], borderRadius: 2, fontSize: 10 },
+      data: candles.flatMap(candle => {
+        const date = String(valueOf(candle, 'tradeDate', 'trade_date'))
+        const indicator = indicatorByKey.get(`${date}:${period}`)
+        return indicator && isSignal(indicator, 'rsvCrossK', 'rsv_cross_k') ? [[date, valueOf(candle, 'low')]] : []
+      })
+    },
+    {
+      name: `${period} K2`,
+      type: 'scatter',
+      xAxisIndex: 0,
+      yAxisIndex: 0,
+      symbol: 'triangle',
+      symbolRotate: 180,
+      symbolSize: 28,
+      symbolOffset: [0, '-55%'],
+      itemStyle: { color: '#f5222d', borderColor: '#fff', borderWidth: 2, shadowBlur: 5, shadowColor: 'rgba(245, 34, 45, .7)' },
+      label: { show: true, formatter: `${period} K2`, position: 'top', distance: 3, color: '#fff', backgroundColor: '#f5222d', padding: [2, 4], borderRadius: 2, fontSize: 10 },
+      data: candles.flatMap(candle => {
+        const date = String(valueOf(candle, 'tradeDate', 'trade_date'))
+        const indicator = indicatorByKey.get(`${date}:${period}`)
+        return indicator && isSignal(indicator, 'rsvCrossD', 'rsv_cross_d') ? [[date, valueOf(candle, 'high')]] : []
+      })
+    }
+  ])
 
   chart.setOption({
     animation: false,
-    legend: { top: 4, data: ['K线', '9K', '9D', '9J', '90K', '90D', '90J', '9 金叉', '90 金叉'] },
+    legend: { top: 4, data: ['K线', '9K', '9D', '9J', '90K', '90D', '90J', '9 金叉', '90 金叉', '9 K1', '9 K2', '90 K1', '90 K2'] },
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
     axisPointer: { link: [{ xAxisIndex: 'all' }] },
     grid: [
@@ -99,6 +138,7 @@ function renderChart(payload) {
         itemStyle: { color: '#ef5350', color0: '#26a69a', borderColor: '#ef5350', borderColor0: '#26a69a' }
       },
       ...goldenCrossSeries,
+      ...rsvCrossSeries,
       ...lineSeries
     ]
   }, true)
