@@ -3,7 +3,7 @@
 import * as echarts from 'echarts'
 import { getMarginComboStatistics, getMarginLongStatistics } from '@/api/stock/marginTrading'
 const chartRef = ref(); const loading = ref(false)
-const route = useRoute(); const windowDays = computed(() => [2, 3, 5].includes(Number(route.query.windowDays)) ? Number(route.query.windowDays) : 0)
+const route = useRoute(); const windowDays = computed(() => [2, 3, 5].includes(Number(route.query.windowDays)) ? Number(route.query.windowDays) : ({ '/stat/margin-2d': 2, '/stat/margin-3d': 3, '/stat/margin-5d': 5 }[route.path] || 0))
 const bands = [{ key: '0-0.3', colors: ['#67c23a', '#b3e19d'] }, { key: '0.3-0.6', colors: ['#e6a23c', '#f3d19e'] }, { key: '0.6+', colors: ['#f56c6c', '#fab6b6'] }]
 let chart
 function renderChart(rows) {
