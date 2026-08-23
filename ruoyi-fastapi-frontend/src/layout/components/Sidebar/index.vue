@@ -1,5 +1,5 @@
 <template>
-  <div :class="{ 'has-logo': showLogo, 'has-module-header': showModuleHeader }" class="sidebar-container">
+  <div :class="{ 'has-logo': showLogo }" class="sidebar-container">
     <logo v-if="showLogo" :collapse="isCollapse" />
     <div v-if="showModuleHeader" class="sidebar-module-header">
       <span class="module-title">{{ sidebarParentTitle }}</span>
@@ -82,6 +82,8 @@ const activeMenu = computed(() => {
 
 <style lang="scss" scoped>
 .sidebar-container {
+  display: flex;
+  flex-direction: column;
   background-color: v-bind(getMenuBackground);
 
   .sidebar-module-header {
@@ -104,12 +106,15 @@ const activeMenu = computed(() => {
     background-color: v-bind(getMenuBackground);
   }
 
-  &.has-module-header :deep(.el-scrollbar) {
-    height: calc(100% - 57px);
+  :deep(.el-scrollbar) {
+    flex: 1;
+    min-height: 0;
+    height: auto !important;
   }
 
-  &.has-logo.has-module-header :deep(.el-scrollbar) {
-    height: calc(100% - 107px);
+  :deep(.el-scrollbar__wrap) {
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .el-menu {
