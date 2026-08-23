@@ -17,6 +17,7 @@ import { getKdjHistory } from '@/api/stock/kdj'
 import { listDdeSignalPerformance } from '@/api/stock/ddeFund'
 import { listMainFundPerformance } from '@/api/stock/mainFund'
 import { listMarginLongPerformance } from '@/api/stock/marginTrading'
+import { getFundVisualHistory } from '@/api/stock/fundVisual'
 
 const chartRef = ref()
 const stockCode = ref('000001')
@@ -64,8 +65,8 @@ function renderChart(kdj, mainFund, margin, dde) {
     return
   }
   const dates = candles.map(row => dateKey(valueOf(row, 'tradeDate', 'trade_date')))
-  const bar = (rows, field, dateField) => {
-    const values = new Map(rows.map(row => [dateKey(row[dateField]), percent(row[field])]))
+  const bar = rows => {
+    const values = new Map(rows.map(row => [dateKey(row.tradeDate), row.value]))
     return dates.map(date => values.get(date) ?? '-')
   }
   chart.setOption({
@@ -82,8 +83,8 @@ function renderChart(kdj, mainFund, margin, dde) {
     xAxis: [0, 1, 2, 3].map(index => ({ type: 'category', gridIndex: index, data: dates, boundaryGap: true, axisLabel: { show: index === 3, formatter: formatDate } })),
     yAxis: [
       { scale: true, splitArea: { show: true } },
-      { gridIndex: 1, name: '55日%', axisLabel: { formatter: '{value}%' } },
-      { gridIndex: 2, name: '两融%', axisLabel: { formatter: '{value}%' } },
+      { gridIndex: 1, name: '55日净流入(亿)' },
+      { gridIndex: 2, name: '融资买入(亿)' },
       { gridIndex: 3, name: 'DDE%', axisLabel: { formatter: '{value}%' } }
     ],
     dataZoom: [
@@ -92,12 +93,12 @@ function renderChart(kdj, mainFund, margin, dde) {
     ],
     series: [
       { name: 'K线', type: 'candlestick', data: candles.map(row => [valueOf(row, 'open'), valueOf(row, 'close'), valueOf(row, 'low'), valueOf(row, 'high')]), itemStyle: { color: '#ef5350', color0: '#26a69a', borderColor: '#ef5350', borderColor0: '#26a69a' } },
-      signalSeries('55日主连资金', mainFund, dates, candles, 'signalDate', 'signalScore', '#f56c6c', -8),
-      signalSeries('融资融券', margin, dates, candles, 'signalDate', 'score', '#409eff', 0),
-      signalSeries('DDE', dde, dates, candles, 'tradeDate', 'mainNetRatio', '#e6a23c', 8),
-      { name: '55日主连资金强度', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: bar(mainFund, 'signalScore', 'signalDate'), itemStyle: { color: '#f56c6c' } },
-      { name: '融资融券强度', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: bar(margin, 'score', 'signalDate'), itemStyle: { color: '#409eff' } },
-      { name: 'DDE资金强度', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: bar(dde, 'mainNetRatio', 'tradeDate'), itemStyle: { color: '#e6a23c' } }
+      signalSeries('55日主连资金', mainFund.rows, dates, candles, 'signalDate', 'signalScore', '#f56c6c', -8),
+      signalSeries('融资融券', margin.rows, dates, candles, 'signalDate', 'score', '#409eff', 0),
+      signalSeries('DDE', dde.rows, dates, candles, 'tradeDate', 'mainNetRatio', '#e6a23c', 8),
+      { name: '55日主连资金净流入', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: bar(mainFund.raw), itemStyle: { color: '#f56c6c' } },
+      { name: '融资买入额', type: 'bar', xAxisIndex: 2, yAxisIndex: 2, data: bar(margin.raw), itemStyle: { color: '#409eff' } },
+      { name: 'DDE资金强度', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: bar(dde.raw), itemStyle: { color: '#e6a23c' } }
     ]
   }, true)
 }
@@ -108,13 +109,19 @@ async function loadChart() {
   errorMessage.value = ''
   try {
     const params = { stockCode: stockCode.value, pageNum: 1, pageSize: 200 }
-    const [kdj, mainFund, margin, dde] = await Promise.all([
+    const [kdj, mainFund, margin, dde, raw] = await Promise.all([
       getKdjHistory({ stockCode: stockCode.value }),
       listMainFundPerformance(params),
       listMarginLongPerformance(params),
-      listDdeSignalPerformance(params)
+      listDdeSignalPerformance(params),
+      getFundVisualHistory({ stockCode: stockCode.value })
     ])
-    renderChart(kdj.data, mainFund.data.rows, margin.data.rows, dde.data.rows)
+    renderChart(
+      kdj.data,
+      { rows: mainFund.data.rows, raw: raw.data.mainFund },
+      { rows: margin.data.rows, raw: raw.data.margin },
+      { rows: dde.data.rows, raw: raw.data.dde }
+    )
   } catch (error) {
     errorMessage.value = error.message || '资金数据加载失败'
   } finally {
