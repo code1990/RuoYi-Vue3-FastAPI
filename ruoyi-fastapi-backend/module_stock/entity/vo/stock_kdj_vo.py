@@ -27,9 +27,9 @@ class StockKdjIndicatorModel(BaseModel):
     k: float | None = None
     d: float | None = None
     j: float | None = None
-    rsv_cross_k: bool
-    rsv_cross_d: bool
-    golden_cross: bool
+    rsv_cross_k: int
+    rsv_cross_d: int
+    golden_cross: int
 
 
 class StockKdjHistoryModel(BaseModel):

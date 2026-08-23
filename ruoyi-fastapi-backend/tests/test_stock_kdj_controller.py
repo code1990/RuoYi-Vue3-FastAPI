@@ -48,5 +48,5 @@ def test_kdj_history_returns_candles_and_both_periods(tmp_path, monkeypatch):
     assert [row['tradeDate'] for row in payload['data']['candles']] == [20260802, 20260803]
     assert payload['data']['candles'][0]['amount'] == 23000
     assert len(payload['data']['indicators']) == 4
-    assert payload['data']['indicators'][0]['goldenCross'] is True
-    assert payload['data']['indicators'][-1]['goldenCross'] is True
+    assert payload['data']['indicators'][0]['goldenCross'] == 1
+    assert payload['data']['indicators'][-1]['goldenCross'] == 1
