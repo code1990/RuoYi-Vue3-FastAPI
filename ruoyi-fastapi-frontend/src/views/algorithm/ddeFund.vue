@@ -33,9 +33,9 @@ function renderChart(rows) {
   chart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { top: 0 },
-    grid: { left: 60, right: 24, top: 52, bottom: 62 },
-    xAxis: { type: 'category', data: categories, axisLabel: { lineHeight: 18 } },
-    yAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
+    grid: { left: 100, right: 24, top: 52, bottom: 24 },
+    xAxis: { type: 'value', name: '完整5日样本数', minInterval: 1 },
+    yAxis: { type: 'category', inverse: true, data: categories, axisLabel: { lineHeight: 18 } },
     series: [
       { name: '达标', type: 'bar', stack: 'sample', data: branches.map(key => values.get(key).success), itemStyle: { color: '#f56c6c' } },
       { name: '未达标', type: 'bar', stack: 'sample', data: branches.map(key => values.get(key).failure), itemStyle: { color: '#909399' } }
