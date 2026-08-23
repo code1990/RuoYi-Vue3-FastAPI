@@ -2,7 +2,7 @@ import asyncio
 
 from config.env import AppConfig
 from module_stock.dao.stock_main_fund_dao import StockMainFundDao
-from module_stock.entity.vo.stock_main_fund_vo import StockMainFundPerformancePageModel
+from module_stock.entity.vo.stock_main_fund_vo import StockMainFundPerformancePageModel, StockMainFundStatisticsModel
 
 
 class StockMainFundService:
@@ -26,3 +26,8 @@ class StockMainFundService:
             page_size=page_size,
             has_next=page_num * page_size < total,
         )
+
+    @classmethod
+    async def get_statistics_services(cls, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[StockMainFundStatisticsModel]:
+        rows = await asyncio.to_thread(StockMainFundDao.get_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
+        return [StockMainFundStatisticsModel.model_validate(row) for row in rows]

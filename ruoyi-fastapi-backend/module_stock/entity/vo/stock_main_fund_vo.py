@@ -36,3 +36,13 @@ class StockMainFundPerformancePageModel(BaseModel):
     page_num: int
     page_size: int
     has_next: bool
+
+
+class StockMainFundStatisticsModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    signal_date: str
+    inflow_band: str
+    success_count: int
+    failure_count: int
+    sample_count: int

@@ -3,7 +3,7 @@ import json
 import sqlite3
 
 from config.env import AppConfig
-from module_stock.controller.stock_main_fund_controller import get_stock_main_fund_performance_list
+from module_stock.controller.stock_main_fund_controller import get_stock_main_fund_performance_list, get_stock_main_fund_statistics
 
 
 def test_main_fund_performance_list_paginates_sqlite_result_table(tmp_path, monkeypatch):
@@ -25,3 +25,10 @@ def test_main_fund_performance_list_paginates_sqlite_result_table(tmp_path, monk
     payload = json.loads(response.body)
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['stockCode'] == '600001'
+
+    payload = json.loads(asyncio.run(get_stock_main_fund_statistics()).body)
+    assert payload['data'] == [
+        {'signalDate': '20260805', 'inflowBand': '1-2天', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+        {'signalDate': '20260806', 'inflowBand': '3-5天', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+        {'signalDate': '20260806', 'inflowBand': '6天+', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+    ]

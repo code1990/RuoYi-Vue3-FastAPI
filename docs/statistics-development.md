@@ -73,3 +73,11 @@
 - 数据仅来自 `t_stock_dde_intraday_combo_observation`。
 
 按 `早+午`、`午+尾`、`早+尾`、`早+午+尾` 四类日内组合展示每日并列堆叠柱。仅完整5日样本入图，五日内任一天最高收益达到目标收益为达标。
+
+## 主连资金列表统计
+
+- 路由：`/stat/main-fund`
+- 接口：`GET /stock/main-fund/statistics?targetReturnPct=1.8`
+- 数据仅来自 `t_stock_55d_fund_performance`。
+
+按连续流入 `1-2天`、`3-5天`、`6天+` 分组展示每日并列堆叠柱。仅完整5日样本入图，五日内任一天最高收益达到目标收益为达标。
