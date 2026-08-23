@@ -34,6 +34,16 @@ class StockMarginLongPerformancePageModel(BaseModel):
     has_next: bool
 
 
+class StockMarginLongStatisticsModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    signal_date: str
+    participation_band: str
+    success_count: int
+    failure_count: int
+    sample_count: int
+
+
 class StockMarginComboModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

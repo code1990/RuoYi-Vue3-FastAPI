@@ -6,6 +6,7 @@ from config.env import AppConfig
 from module_stock.controller.stock_margin_controller import (
     get_stock_margin_combo_list,
     get_stock_margin_long_performance_list,
+    get_stock_margin_long_statistics,
 )
 
 
@@ -23,6 +24,13 @@ def test_margin_long_performance_list_paginates_sqlite_result_table(tmp_path, mo
     assert payload['data']['hasNext'] is True
     assert payload['data']['rows'][0]['stockCode'] == '600002'
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 6.0
+
+    payload = json.loads(asyncio.run(get_stock_margin_long_statistics()).body)
+    assert payload['data'] == [
+        {'signalDate': '20260805', 'participationBand': '10-20%', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+        {'signalDate': '20260806', 'participationBand': '10-20%', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+        {'signalDate': '20260806', 'participationBand': '20%+', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+    ]
 
 
 def test_margin_combo_list_sorts_by_total_score(tmp_path, monkeypatch):

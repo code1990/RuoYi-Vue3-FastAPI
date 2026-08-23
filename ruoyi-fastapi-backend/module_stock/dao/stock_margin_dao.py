@@ -4,6 +4,35 @@ from pathlib import Path
 
 class StockMarginDao:
     @staticmethod
+    def get_long_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ['t5_max_return_pct IS NOT NULL']
+        params: dict[str, str | float] = {'target_return_pct': target_return_pct}
+        if start_date:
+            clauses.append('signal_date >= :start_date')
+            params['start_date'] = start_date
+        if end_date:
+            clauses.append('signal_date <= :end_date')
+            params['end_date'] = end_date
+        max_return = 'MAX(t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct, t5_max_return_pct)'
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                f'''SELECT signal_date,
+                           CASE WHEN participation_ratio < 0.1 THEN '10%以下'
+                                WHEN participation_ratio < 0.2 THEN '10-20%' ELSE '20%+' END AS participation_band,
+                           SUM(CASE WHEN {max_return} >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
+                           SUM(CASE WHEN {max_return} < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
+                           COUNT(*) AS sample_count
+                    FROM t_stock_margin_long_performance WHERE {' AND '.join(clauses)}
+                    GROUP BY signal_date, participation_band
+                    ORDER BY signal_date, CASE participation_band WHEN '10%以下' THEN 1 WHEN '10-20%' THEN 2 ELSE 3 END''', params,
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
     def get_combo_page(
         database_path: str, window_days: int, start_date: str | None, end_date: str | None, page_num: int, page_size: int
     ) -> tuple[list[dict], int]:
