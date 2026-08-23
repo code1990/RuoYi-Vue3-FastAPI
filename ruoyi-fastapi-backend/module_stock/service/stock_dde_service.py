@@ -4,6 +4,7 @@ from config.env import AppConfig
 from module_stock.dao.stock_dde_dao import StockDdeDao
 from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
+    StockDdeComboStatisticsModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
     StockDdeObservationStatisticsModel,
@@ -17,6 +18,13 @@ class StockDdeService:
     async def get_combo_page_services(cls, start_date, end_date, page_num, page_size, sort_by, sort_order) -> StockDdeComboSignalPageModel:
         rows, total = await asyncio.to_thread(StockDdeDao.get_combo_page, AppConfig.stock_stat_db_path, start_date, end_date, page_num, page_size, sort_by, sort_order)
         return StockDdeComboSignalPageModel(rows=rows, total=total, page_num=page_num, page_size=page_size, has_next=page_num * page_size < total)
+
+    @classmethod
+    async def get_combo_statistics_services(
+        cls, start_date: str | None, end_date: str | None, target_return_pct: float,
+    ) -> list[StockDdeComboStatisticsModel]:
+        rows = await asyncio.to_thread(StockDdeDao.get_combo_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
+        return [StockDdeComboStatisticsModel.model_validate(row) for row in rows]
 
     @classmethod
     async def get_signal_performance_page_services(

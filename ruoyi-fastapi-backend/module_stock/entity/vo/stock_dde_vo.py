@@ -112,6 +112,16 @@ class StockDdeComboSignalPageModel(BaseModel):
     has_next: bool
 
 
+class StockDdeComboStatisticsModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    signal_date: str
+    combo_band: str
+    success_count: int
+    failure_count: int
+    sample_count: int
+
+
 class StockDdeHotRankModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

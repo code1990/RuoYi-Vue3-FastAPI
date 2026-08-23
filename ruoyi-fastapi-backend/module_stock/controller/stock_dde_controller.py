@@ -6,6 +6,7 @@ from common.router import APIRouterPro
 from common.vo import DataResponseModel
 from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
+    StockDdeComboStatisticsModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
     StockDdeObservationStatisticsModel,
@@ -30,6 +31,19 @@ async def get_stock_dde_combo_list(
 ) -> Response:
     try:
         result = await StockDdeService.get_combo_page_services(start_date, end_date, page_num, page_size, sort_by, sort_order)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/combo/statistics', summary='查询2日DDE列表统计', response_model=DataResponseModel[list[StockDdeComboStatisticsModel]])
+async def get_stock_dde_combo_statistics(
+    start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
+    end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
+    target_return_pct: Annotated[float, Query(alias='targetReturnPct', ge=0, le=100)] = 1.8,
+) -> Response:
+    try:
+        result = await StockDdeService.get_combo_statistics_services(start_date, end_date, target_return_pct)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

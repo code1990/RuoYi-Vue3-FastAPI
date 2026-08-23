@@ -8,6 +8,7 @@ from config.env import AppConfig
 from module_stock.dao.stock_dde_dao import StockDdeDao
 from module_stock.controller.stock_dde_controller import (
     get_stock_dde_combo_list,
+    get_stock_dde_combo_statistics,
     get_stock_dde_hot_rank_list,
     get_stock_dde_observation_list,
     get_stock_dde_observation_statistics,
@@ -89,6 +90,12 @@ def test_dde_combo_list_reads_yesterday_today_candidates(stock_database, monkeyp
     assert payload['data']['rows'][0]['todaySignalCount'] == 2
     assert payload['data']['rows'][0]['currentPrice'] == 11.0
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 6.0
+
+
+def test_dde_combo_statistics_uses_only_complete_list_samples(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_combo_statistics()).body)
+    assert payload['data'] == [{'signalDate': '20260807', 'comboBand': '3次', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1}]
 
 
 def test_dde_top30_list_reads_observation_performance(stock_database, monkeypatch):
