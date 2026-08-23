@@ -1,5 +1,9 @@
 import request from '@/utils/request'
 
-export function getLatestDdeAlgorithm() {
-  return request({ url: '/stock/algorithm/dde/latest', method: 'get' })
+export function listDdeAlgorithms(params) {
+  return request({ url: '/stock/algorithm/dde/list', method: 'get', params })
+}
+
+export function getDdeAlgorithm(experimentKey) {
+  return request({ url: `/stock/algorithm/dde/${experimentKey}`, method: 'get' })
 }

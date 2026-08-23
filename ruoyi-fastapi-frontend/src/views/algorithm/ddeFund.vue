@@ -1,6 +1,18 @@
 <template>
   <div class="algorithm-page">
-    <el-alert :title="summary" :type="experiment?.status === 'observing' ? 'success' : 'warning'" :closable="false" show-icon />
+    <el-card>
+      <el-form inline><el-form-item label="状态"><el-select v-model="status" clearable placeholder="全部" style="width: 120px"><el-option label="观察中" value="observing" /><el-option label="已剪枝" value="rejected" /></el-select></el-form-item><el-button type="primary" :loading="loading" @click="loadExperiments">筛选</el-button></el-form>
+      <el-table :data="experiments" v-loading="loading" size="small" row-key="experimentKey" :default-sort="{ prop: 'validationRate', order: 'descending' }">
+        <el-table-column prop="experimentKey" label="实验" min-width="150" />
+        <el-table-column label="数据区间" min-width="170"><template #default="{ row }">{{ row.dataStartDate }} ~ {{ row.dataEndDate }}</template></el-table-column>
+        <el-table-column label="训练命中率" prop="trainRate" sortable width="120"><template #default="{ row }">{{ percent(row.trainMetrics.root.hit_rate) }}</template></el-table-column>
+        <el-table-column label="验证命中率" prop="validationRate" sortable width="120"><template #default="{ row }">{{ percent(row.validationMetrics.root.hit_rate) }}</template></el-table-column>
+        <el-table-column label="验证样本" prop="validationSamples" sortable width="100"><template #default="{ row }">{{ row.validationMetrics.root.sample_count }}</template></el-table-column>
+        <el-table-column label="状态" width="100"><template #default="{ row }"><el-tag :type="row.status === 'observing' ? 'success' : 'info'">{{ row.status === 'observing' ? '观察中' : '已剪枝' }}</el-tag></template></el-table-column>
+        <el-table-column label="操作" width="100"><template #default="{ row }"><el-button link type="primary" @click="selectExperiment(row.experimentKey)">查看树</el-button></template></el-table-column>
+      </el-table>
+    </el-card>
+    <el-alert :title="summary" :type="experiment?.status === 'observing' ? 'success' : 'warning'" :closable="false" show-icon class="summary" />
     <el-row :gutter="16" class="metrics">
       <el-col :span="6"><el-statistic title="训练样本" :value="experiment?.trainMetrics.root.sample_count || 0" /></el-col>
       <el-col :span="6"><el-statistic title="训练命中率" :value="rate(experiment?.trainMetrics.root.hit_rate)" suffix="%" /></el-col>
@@ -13,11 +25,13 @@
 
 <script setup>
 import * as echarts from 'echarts'
-import { getLatestDdeAlgorithm } from '@/api/stock/algorithm'
+import { getDdeAlgorithm, listDdeAlgorithms } from '@/api/stock/algorithm'
 
 const chartRef = ref()
 const loading = ref(false)
 const experiment = ref(null)
+const experiments = ref([])
+const status = ref('')
 let chart
 
 const summary = computed(() => {
@@ -27,6 +41,10 @@ const summary = computed(() => {
 
 function rate(value) {
   return value == null ? 0 : Math.round(value * 10000) / 100
+}
+
+function percent(value) {
+  return `${rate(value)}%`
 }
 
 function renderTree(data) {
@@ -43,10 +61,10 @@ function renderTree(data) {
   }, true)
 }
 
-async function loadExperiment() {
+async function selectExperiment(experimentKey) {
   loading.value = true
   try {
-    const response = await getLatestDdeAlgorithm()
+    const response = await getDdeAlgorithm(experimentKey)
     experiment.value = response.data
     if (response.data) renderTree(response.data)
   } finally {
@@ -54,9 +72,26 @@ async function loadExperiment() {
   }
 }
 
+async function loadExperiments() {
+  loading.value = true
+  try {
+    const response = await listDdeAlgorithms({ status: status.value || undefined })
+    experiments.value = response.data.map(row => ({
+      ...row,
+      trainRate: rate(row.trainMetrics.root.hit_rate),
+      validationRate: rate(row.validationMetrics.root.hit_rate),
+      validationSamples: row.validationMetrics.root.sample_count
+    }))
+    if (experiments.value.length) await selectExperiment(experiments.value[0].experimentKey)
+    else experiment.value = null
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
   chart = echarts.init(chartRef.value)
-  loadExperiment()
+  loadExperiments()
   window.addEventListener('resize', chart.resize)
 })
 
@@ -69,6 +104,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .algorithm-page { padding: 20px; }
 .metrics { margin-top: 16px; }
+.summary { margin-top: 16px; }
 .chart-row { margin-top: 16px; }
 .chart { height: 460px; }
 </style>
