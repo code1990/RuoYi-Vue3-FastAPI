@@ -120,6 +120,18 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/stat/kdj',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/stat/kdj.vue'),
+        name: 'StatKdjPreview',
+        meta: { title: 'KDJ预览', icon: 'chart' }
+      }
+    ]
+  },
+  {
     path: '',
     component: Layout,
     redirect: '/index',
