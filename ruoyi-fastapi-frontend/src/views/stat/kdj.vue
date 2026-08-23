@@ -40,6 +40,10 @@ function isSignal(row, camel, snake) {
   return valueOf(row, camel, snake) === true || Number(valueOf(row, camel, snake)) === 1
 }
 
+function roundKdj(value) {
+  return value == null ? value : Math.round(Number(value) * 100) / 100
+}
+
 function renderChart(payload) {
   const candles = payload?.candles || []
   const indicators = payload?.indicators || []
@@ -56,7 +60,7 @@ function renderChart(payload) {
     yAxisIndex: 1,
     showSymbol: false,
     lineStyle: { width: 1.5, type: period === 90 ? 'dashed' : 'solid', color: period === 9 ? ['#409eff', '#67c23a', '#e6a23c'][index] : ['#8ec5ff', '#a9dca7', '#f4c98c'][index] },
-    data: dates.map(date => valueOf(indicatorByKey.get(`${date}:${period}`) || {}, name.toLowerCase()))
+    data: dates.map(date => roundKdj(valueOf(indicatorByKey.get(`${date}:${period}`) || {}, name.toLowerCase())))
   })))
   const goldenCrossSeries = [9, 90].map(period => ({
     name: `${period} 金叉`,
@@ -81,7 +85,7 @@ function renderChart(payload) {
       yAxisIndex: 0,
       symbol: 'arrow',
       symbolSize: [8, 20],
-      symbolOffset: [period === 9 ? -5 : 5, '35%'],
+      symbolOffset: [period === 9 ? -5 : 5, 16],
       itemStyle: { color: '#f5222d' },
       data: candles.flatMap(candle => {
         const date = String(valueOf(candle, 'tradeDate', 'trade_date'))
@@ -96,7 +100,7 @@ function renderChart(payload) {
       yAxisIndex: 0,
       symbol: 'arrow',
       symbolSize: [8, 20],
-      symbolOffset: [period === 9 ? -5 : 5, '-35%'],
+      symbolOffset: [period === 9 ? -5 : 5, -16],
       itemStyle: { color: '#f5222d' },
       data: candles.flatMap(candle => {
         const date = String(valueOf(candle, 'tradeDate', 'trade_date'))
