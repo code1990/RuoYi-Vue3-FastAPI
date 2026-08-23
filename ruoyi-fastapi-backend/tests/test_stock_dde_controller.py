@@ -14,6 +14,7 @@ from module_stock.controller.stock_dde_controller import (
     get_stock_dde_observation_statistics,
     get_stock_dde_signal_performance_list,
     get_stock_dde_top30_performance_list,
+    get_stock_dde_top30_statistics,
 )
 
 
@@ -112,6 +113,15 @@ def test_dde_top30_list_filters_requested_slot(stock_database, monkeypatch):
     payload = json.loads(asyncio.run(get_stock_dde_top30_performance_list(signal_slot='morning', page_num=1, page_size=20)).body)
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['rawRankNo'] == 3
+
+
+def test_dde_top30_statistics_groups_complete_list_by_slot(stock_database, monkeypatch):
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_top30_statistics()).body)
+    assert payload['data'] == [
+        {'tradeDate': '20260806', 'signalSlot': 'morning', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+        {'tradeDate': '20260806', 'signalSlot': 'close', 'successCount': 1, 'failureCount': 0, 'sampleCount': 1},
+    ]
 
 
 def test_dde_hot_rank_list_returns_latest_range_and_filters(stock_database, monkeypatch):

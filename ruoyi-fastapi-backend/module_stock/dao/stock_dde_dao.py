@@ -192,6 +192,37 @@ class StockDdeDao:
         return [dict(row) for row in rows], total
 
     @staticmethod
+    def get_top30_list_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        clauses = ["signal_slot IN ('morning', 'noon', 'close')", 't5_max_return_pct IS NOT NULL']
+        params: dict[str, str | float] = {'target_return_pct': target_return_pct}
+        if start_date:
+            clauses.append('trade_date >= :start_date')
+            params['start_date'] = start_date
+        if end_date:
+            clauses.append('trade_date <= :end_date')
+            params['end_date'] = end_date
+        where_sql = ' AND '.join(clauses)
+        max_return = 'MAX(t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct, t5_max_return_pct)'
+        uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        with sqlite3.connect(uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            rows = connection.execute(
+                f'''SELECT trade_date, signal_slot,
+                           SUM(CASE WHEN {max_return} >= :target_return_pct THEN 1 ELSE 0 END) AS success_count,
+                           SUM(CASE WHEN {max_return} < :target_return_pct THEN 1 ELSE 0 END) AS failure_count,
+                           COUNT(*) AS sample_count
+                    FROM t_stock_dde_30_signal_performance
+                    WHERE {where_sql}
+                    GROUP BY trade_date, signal_slot
+                    ORDER BY trade_date, CASE signal_slot WHEN 'morning' THEN 1 WHEN 'noon' THEN 2 ELSE 3 END''',
+                params,
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
     def get_signal_statistics(database_path: str, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
         path = Path(database_path)
         if not path.is_file():

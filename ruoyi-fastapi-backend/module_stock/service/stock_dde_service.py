@@ -10,6 +10,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeObservationStatisticsModel,
     StockDdeSignalPerformancePageModel,
     StockDdeTop30PerformancePageModel,
+    StockDdeTop30ListStatisticsModel,
 )
 
 
@@ -58,6 +59,13 @@ class StockDdeService:
         return StockDdeTop30PerformancePageModel(
             rows=rows, total=total, page_num=page_num, page_size=page_size, has_next=page_num * page_size < total
         )
+
+    @classmethod
+    async def get_top30_list_statistics_services(
+        cls, start_date: str | None, end_date: str | None, target_return_pct: float,
+    ) -> list[StockDdeTop30ListStatisticsModel]:
+        rows = await asyncio.to_thread(StockDdeDao.get_top30_list_statistics, AppConfig.stock_stat_db_path, start_date, end_date, target_return_pct)
+        return [StockDdeTop30ListStatisticsModel.model_validate(row) for row in rows]
 
     @classmethod
     async def get_signal_statistics_services(cls, start_date: str | None, end_date: str | None, target_return_pct: float) -> list[dict]:
