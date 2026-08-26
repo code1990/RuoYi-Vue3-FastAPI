@@ -40,3 +40,29 @@ class StockAlgorithmDao:
             -row['validation_metrics']['root']['sample_count'],
             row['experiment_key'],
         ))
+
+
+    @staticmethod
+    def get_rule_candidates(database_path: str, experiment_key: str | None = None, status: str | None = None) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            exists = connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_stock_algorithm_rule_candidate'").fetchone()
+            if not exists:
+                return []
+            clauses, params = [], []
+            if experiment_key:
+                clauses.append('experiment_key = ?'); params.append(experiment_key)
+            if status:
+                clauses.append('status = ?'); params.append(status)
+            where = (' WHERE ' + ' AND '.join(clauses)) if clauses else ''
+            rows = connection.execute("SELECT experiment_key, rule_key, depth, conditions_json, train_metrics, validation_metrics, status, prune_reason, created_at FROM t_stock_algorithm_rule_candidate" + where + " ORDER BY status, json_extract(validation_metrics, '$.hit_rate') DESC, json_extract(validation_metrics, '$.sample_count') DESC", params).fetchall()
+        results=[]
+        for row in rows:
+            item=dict(row)
+            for name in ('conditions_json','train_metrics','validation_metrics'):
+                item[name.replace('_json','')] = json.loads(item.pop(name))
+            results.append(item)
+        return results

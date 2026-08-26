@@ -87,6 +87,24 @@ def test_dde_performance_list_reads_sqlite_result_table(stock_database, monkeypa
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 7.0
 
 
+def test_dde_performance_list_includes_newly_captured_signal_without_returns(stock_database, monkeypatch):
+    with sqlite3.connect(stock_database) as connection:
+        connection.execute('''CREATE TABLE t_stock_dde_signal (
+            stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, signal_side TEXT, rank_no INTEGER, stock_name TEXT,
+            entry_price REAL, market_cap REAL, turnover_amount REAL, main_net_amount REAL, total_net_amount REAL, main_net_ratio REAL
+        )''')
+        connection.execute('''CREATE TABLE t_stock_dde_fund_flow (
+            stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, change_pct REAL, large_net_amount REAL
+        )''')
+        connection.execute("INSERT INTO t_stock_dde_signal VALUES ('000001', '20260826', 'close', 'inflow', 1, '平安银行', 12.34, 2000000000, 0, 100000000, 0, .05)")
+        connection.execute("INSERT INTO t_stock_dde_fund_flow VALUES ('000001', '20260826', 'close', 1.2, 80000000)")
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    payload = json.loads(asyncio.run(get_stock_dde_signal_performance_list(start_date='20260826', end_date='20260826', page_num=1, page_size=20)).body)
+    assert payload['data']['total'] == 1
+    assert payload['data']['rows'][0]['entryPrice'] == 12.34
+    assert payload['data']['rows'][0]['t1MaxReturnPct'] is None
+
+
 def test_dde_combo_list_reads_yesterday_today_candidates(stock_database, monkeypatch):
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
     payload = json.loads(asyncio.run(get_stock_dde_combo_list(page_num=1, page_size=20)).body)

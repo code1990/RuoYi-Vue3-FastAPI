@@ -22,6 +22,17 @@ async def get_stock_algorithm_dde_list(
     return ResponseUtil.success(data=result)
 
 
+@stock_algorithm_controller.get('/dde/rules/list', summary='??DDE??????', response_model=DataResponseModel[list])
+async def get_stock_algorithm_dde_rules(
+    experiment_key: Annotated[str | None, Query(alias='experimentKey')] = None,
+    rule_status: Annotated[str | None, Query(alias='status', pattern=r'^(accepted|pruned)$')] = None,
+) -> Response:
+    try:
+        result = await StockAlgorithmService.get_rule_candidates_services(experiment_key, rule_status)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
 @stock_algorithm_controller.get('/dde/{experiment_key}', summary='查询DDE二分实验详情', response_model=DataResponseModel[StockAlgorithmExperimentModel | None])
 async def get_stock_algorithm_dde_experiment(experiment_key: str) -> Response:
     try:

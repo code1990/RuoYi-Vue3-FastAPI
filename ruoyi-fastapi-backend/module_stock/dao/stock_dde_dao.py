@@ -41,8 +41,59 @@ class StockDdeDao:
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
 
+        database_uri = f'file:{path.resolve().as_posix()}?mode=ro'
+        with sqlite3.connect(database_uri, uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            has_signals = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_dde_signal'"
+            ).fetchone()
+            if not has_signals:
+                return StockDdeDao._get_saved_signal_performance_page(
+                    connection, stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
+                )
+            clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", 'signal.entry_price > 0']
+            params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
+            if stock_code:
+                clauses.append('signal.stock_code = :stock_code')
+                params['stock_code'] = stock_code
+            if start_date:
+                clauses.append('signal.trade_date >= :start_date')
+                params['start_date'] = start_date
+            if end_date:
+                clauses.append('signal.trade_date <= :end_date')
+                params['end_date'] = end_date
+            where_sql = ' AND '.join(clauses)
+            order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
+                'tradeDate': 'signal.trade_date', 'entryPrice': 'signal.entry_price', 'signalChangePct': 'flow.change_pct',
+                'largeNetAmount': 'flow.large_net_amount', 'marketCap': 'signal.market_cap', 'mainNetRatio': 'signal.main_net_ratio',
+                'closeReturnPct': 'performance.close_return_pct', **{f't{day}MaxReturnPct': f'performance.t{day}_max_return_pct' for day in range(1, 6)},
+            }, "signal.trade_date DESC, CASE signal.snapshot_slot WHEN 'close' THEN 3 WHEN 'noon' THEN 2 WHEN 'morning' THEN 1 ELSE 0 END DESC, signal.main_net_ratio DESC, signal.rank_no ASC")
+            total = connection.execute(
+                f'''SELECT COUNT(*) FROM t_stock_dde_signal AS signal
+                    JOIN t_stock_dde_fund_flow AS flow ON flow.stock_code = signal.stock_code AND flow.trade_date = signal.trade_date AND flow.snapshot_slot = signal.snapshot_slot
+                    WHERE {where_sql}''', params
+            ).fetchone()[0]
+            rows = connection.execute(
+                f'''
+                SELECT signal.stock_code, signal.trade_date, signal.stock_name, signal.snapshot_slot AS signal_slot, signal.entry_price,
+                       flow.change_pct AS signal_change_pct, CAST(flow.large_net_amount AS REAL) AS large_net_amount, signal.market_cap, signal.main_net_ratio,
+                       performance.close_return_pct, performance.t1_max_return_pct, performance.t2_max_return_pct,
+                       performance.t3_max_return_pct, performance.t4_max_return_pct, performance.t5_max_return_pct
+                FROM t_stock_dde_signal AS signal
+                JOIN t_stock_dde_fund_flow AS flow ON flow.stock_code = signal.stock_code AND flow.trade_date = signal.trade_date AND flow.snapshot_slot = signal.snapshot_slot
+                LEFT JOIN t_stock_dde_signal_performance AS performance ON performance.stock_code = signal.stock_code AND performance.trade_date = signal.trade_date AND performance.signal_slot = signal.snapshot_slot
+                WHERE {where_sql}
+                ORDER BY {order_by}
+                LIMIT :limit OFFSET :offset
+                ''',
+                params,
+            ).fetchall()
+        return [dict(row) for row in rows], total
+
+    @staticmethod
+    def _get_saved_signal_performance_page(connection: sqlite3.Connection, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None) -> tuple[list[dict], int]:
         where_clauses = ['1 = 1']
-        params: dict[str, str | int] = {}
+        params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
         if stock_code:
             where_clauses.append('stock_code = :stock_code')
             params['stock_code'] = stock_code
@@ -52,35 +103,18 @@ class StockDdeDao:
         if end_date:
             where_clauses.append('trade_date <= :end_date')
             params['end_date'] = end_date
-
         where_sql = ' AND '.join(where_clauses)
         order_by = StockDdeDao.get_order_by(sort_by, sort_order, {
             'tradeDate': 'trade_date', 'entryPrice': 'entry_price', 'signalChangePct': 'signal_change_pct',
             'largeNetAmount': 'large_net_amount', 'marketCap': 'market_cap', 'mainNetRatio': 'main_net_ratio',
             'closeReturnPct': 'close_return_pct', **{f't{day}MaxReturnPct': f't{day}_max_return_pct' for day in range(1, 6)},
         }, "trade_date DESC, CASE signal_slot WHEN 'close' THEN 3 WHEN 'noon' THEN 2 WHEN 'morning' THEN 1 ELSE 0 END DESC, main_net_ratio DESC, signal_rank_no ASC")
-        params['limit'] = page_size
-        params['offset'] = (page_num - 1) * page_size
-        database_uri = f'file:{path.resolve().as_posix()}?mode=ro'
-        with sqlite3.connect(database_uri, uri=True) as connection:
-            connection.row_factory = sqlite3.Row
-            total = connection.execute(
-                f'SELECT COUNT(*) FROM t_stock_dde_signal_performance WHERE {where_sql}', params
-            ).fetchone()[0]
-            rows = connection.execute(
-                f'''
-                SELECT
-                    stock_code, trade_date, stock_name, signal_slot, entry_price, signal_change_pct,
-                    large_net_amount, market_cap, main_net_ratio,
-                    close_return_pct, t1_max_return_pct, t2_max_return_pct,
-                    t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
-                FROM t_stock_dde_signal_performance
-                WHERE {where_sql}
-                ORDER BY {order_by}
-                LIMIT :limit OFFSET :offset
-                ''',
-                params,
-            ).fetchall()
+        total = connection.execute(f'SELECT COUNT(*) FROM t_stock_dde_signal_performance WHERE {where_sql}', params).fetchone()[0]
+        rows = connection.execute(
+            f'''SELECT stock_code, trade_date, stock_name, signal_slot, entry_price, signal_change_pct, large_net_amount, market_cap, main_net_ratio,
+                       close_return_pct, t1_max_return_pct, t2_max_return_pct, t3_max_return_pct, t4_max_return_pct, t5_max_return_pct
+                FROM t_stock_dde_signal_performance WHERE {where_sql} ORDER BY {order_by} LIMIT :limit OFFSET :offset''', params
+        ).fetchall()
         return [dict(row) for row in rows], total
 
     @staticmethod

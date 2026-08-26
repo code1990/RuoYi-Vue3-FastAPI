@@ -53,7 +53,7 @@ async def get_stock_dde_combo_statistics(
 
 @stock_dde_controller.get(
     '/performance/list',
-    summary='查询DDE信号收益列表',
+    summary='查询DDE信号列表',
     response_model=DataResponseModel[StockDdeSignalPerformancePageModel],
 )
 async def get_stock_dde_signal_performance_list(

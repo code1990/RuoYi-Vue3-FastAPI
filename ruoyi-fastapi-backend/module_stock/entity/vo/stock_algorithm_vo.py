@@ -30,3 +30,17 @@ class StockAlgorithmExperimentSummaryModel(BaseModel):
     validation_metrics: dict[str, Any]
     status: str
     conclusion: str
+
+
+class StockAlgorithmRuleCandidateModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    experiment_key: str
+    rule_key: str
+    depth: int
+    conditions: list[dict[str, Any]]
+    train_metrics: dict[str, Any]
+    validation_metrics: dict[str, Any]
+    status: str
+    prune_reason: str
+    created_at: str | None = None
