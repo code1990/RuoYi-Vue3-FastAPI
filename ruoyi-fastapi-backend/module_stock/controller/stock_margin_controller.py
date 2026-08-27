@@ -11,9 +11,9 @@ from utils.response_util import ResponseUtil
 stock_margin_controller = APIRouterPro(prefix='/stock/margin', order_num=33, tags=['股票-融资融券'])
 
 @stock_margin_controller.get('/long-model/list', summary='查询融资融券做多强度模型', response_model=DataResponseModel[StockMarginLongModelPage])
-async def get_stock_margin_long_model_list(page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1, page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 30) -> Response:
+async def get_stock_margin_long_model_list(page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1, page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 30, start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None, end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None) -> Response:
     try:
-        result = await StockMarginService.get_long_model_services(page_num, page_size)
+        result = await StockMarginService.get_long_model_services(page_num, page_size, start_date, end_date)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)

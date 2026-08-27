@@ -56,6 +56,11 @@ class StockMarginLongModel(BaseModel):
     score: float
     rank_no: int
     signal_type: str
+    next_1d_return_pct: float | None = None
+    next_3d_return_pct: float | None = None
+    next_5d_return_pct: float | None = None
+    next_10d_return_pct: float | None = None
+    next_20d_return_pct: float | None = None
 
 class StockMarginLongModelPage(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)

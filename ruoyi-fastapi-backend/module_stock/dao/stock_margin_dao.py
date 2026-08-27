@@ -4,17 +4,24 @@ from pathlib import Path
 
 class StockMarginDao:
     @staticmethod
-    def get_long_model(database_path: str, page_num: int, page_size: int) -> tuple[list[dict], int]:
+    def get_long_model(database_path: str, page_num: int, page_size: int, start_date: str | None = None, end_date: str | None = None) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
         with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
             connection.row_factory = sqlite3.Row
-            total = connection.execute('SELECT COUNT(*) FROM t_stock_margin_long_model WHERE trade_date = (SELECT MAX(trade_date) FROM t_stock_margin_long_model)').fetchone()[0]
-            rows = connection.execute('''SELECT trade_date, stock_code, stock_name, industry_name, net_buy_ratio,
-                balance_change_ratio, price_return_20d, short_pressure, score, rank_no, signal_type
-                FROM t_stock_margin_long_model WHERE trade_date = (SELECT MAX(trade_date) FROM t_stock_margin_long_model)
-                ORDER BY rank_no LIMIT ? OFFSET ?''', (page_size, (page_num - 1) * page_size)).fetchall()
+            clauses = ['1=1']; params = {}
+            if start_date: clauses.append('model.trade_date >= :start_date'); params['start_date'] = start_date
+            if end_date: clauses.append('model.trade_date <= :end_date'); params['end_date'] = end_date
+            where = ' AND '.join(clauses)
+            total = connection.execute(f'SELECT COUNT(*) FROM t_stock_margin_long_model AS model WHERE {where}', params).fetchone()[0]
+            rows = connection.execute('''SELECT model.trade_date, model.stock_code, model.stock_name, model.industry_name, model.net_buy_ratio,
+                model.balance_change_ratio, model.price_return_20d, model.short_pressure, model.score, model.rank_no, model.signal_type,
+                analysis.next_1d_return_pct, analysis.next_3d_return_pct, analysis.next_5d_return_pct,
+                analysis.next_10d_return_pct, analysis.next_20d_return_pct
+                FROM t_stock_margin_long_model AS model
+                LEFT JOIN t_stock_margin_daily_analysis AS analysis ON analysis.trade_date=model.trade_date AND analysis.stock_code=model.stock_code
+                WHERE ''' + where + ''' ORDER BY model.trade_date DESC, rank_no LIMIT :limit OFFSET :offset''', {**params, 'limit': page_size, 'offset': (page_num - 1) * page_size}).fetchall()
         return [dict(row) for row in rows], total
     @staticmethod
     def get_combo_statistics(database_path: str, window_days: int, target_return_pct: float) -> list[dict]:
