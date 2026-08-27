@@ -4,6 +4,19 @@ from pathlib import Path
 
 class StockMarginDao:
     @staticmethod
+    def get_long_model(database_path: str, page_num: int, page_size: int) -> tuple[list[dict], int]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            total = connection.execute('SELECT COUNT(*) FROM t_stock_margin_long_model WHERE trade_date = (SELECT MAX(trade_date) FROM t_stock_margin_long_model)').fetchone()[0]
+            rows = connection.execute('''SELECT trade_date, stock_code, stock_name, industry_name, net_buy_ratio,
+                balance_change_ratio, price_return_20d, short_pressure, score, rank_no, signal_type
+                FROM t_stock_margin_long_model WHERE trade_date = (SELECT MAX(trade_date) FROM t_stock_margin_long_model)
+                ORDER BY rank_no LIMIT ? OFFSET ?''', (page_size, (page_num - 1) * page_size)).fetchall()
+        return [dict(row) for row in rows], total
+    @staticmethod
     def get_combo_statistics(database_path: str, window_days: int, target_return_pct: float) -> list[dict]:
         path = Path(database_path)
         if not path.is_file():

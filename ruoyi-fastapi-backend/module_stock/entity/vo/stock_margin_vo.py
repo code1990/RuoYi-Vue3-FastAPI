@@ -43,6 +43,28 @@ class StockMarginLongStatisticsModel(BaseModel):
     failure_count: int
     sample_count: int
 
+class StockMarginLongModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    trade_date: str
+    stock_code: str
+    stock_name: str
+    industry_name: str
+    net_buy_ratio: float
+    balance_change_ratio: float
+    price_return_20d: float | None = None
+    short_pressure: float
+    score: float
+    rank_no: int
+    signal_type: str
+
+class StockMarginLongModelPage(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    rows: list[StockMarginLongModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool
+
 
 class StockMarginComboStatisticsModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)

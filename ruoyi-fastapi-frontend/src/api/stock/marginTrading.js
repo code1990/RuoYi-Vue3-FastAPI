@@ -15,3 +15,7 @@ export function getMarginComboStatistics(params) {
 export function listMarginCombo(params) {
   return request({ url: '/stock/margin/combo/list', method: 'get', params })
 }
+
+export function listMarginLongModel(params) {
+  return request({ url: '/stock/margin/long-model/list', method: 'get', params })
+}

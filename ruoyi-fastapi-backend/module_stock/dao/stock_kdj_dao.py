@@ -12,7 +12,7 @@ class StockKdjDao:
         with sqlite3.connect(database_uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
             if not connection.execute(
-                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_kdj_daily'"
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_daily_240'"
             ).fetchone():
                 return [], []
             params = {'stock_code': stock_code, 'limit': limit}
@@ -20,10 +20,8 @@ class StockKdjDao:
                 '''
                 WITH dates AS (
                     SELECT trade_date
-                    FROM t_stock_kdj_daily
-                    WHERE stock_code = :stock_code AND period IN (9, 90)
-                    GROUP BY trade_date
-                    HAVING COUNT(DISTINCT period) = 2
+                    FROM t_stock_daily_240
+                    WHERE stock_code = :stock_code
                     ORDER BY trade_date DESC
                     LIMIT :limit
                 )
@@ -36,24 +34,26 @@ class StockKdjDao:
                 ''',
                 params,
             ).fetchall()
-            indicators = connection.execute(
-                '''
-                WITH dates AS (
-                    SELECT trade_date
-                    FROM t_stock_kdj_daily
-                    WHERE stock_code = :stock_code AND period IN (9, 90)
-                    GROUP BY trade_date
-                    HAVING COUNT(DISTINCT period) = 2
-                    ORDER BY trade_date DESC
-                    LIMIT :limit
-                )
-                SELECT kdj.trade_date, kdj.period, kdj.rsv, kdj.k, kdj.d, kdj.j,
-                       kdj.rsv_cross_k, kdj.rsv_cross_d, kdj.golden_cross
-                FROM t_stock_kdj_daily AS kdj
-                JOIN dates ON dates.trade_date = kdj.trade_date
-                WHERE kdj.stock_code = :stock_code AND kdj.period IN (9, 90)
-                ORDER BY kdj.trade_date, kdj.period
-                ''',
-                params,
-            ).fetchall()
+            indicators = []
+            if connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_kdj_daily'"
+            ).fetchone():
+                indicators = connection.execute(
+                    '''
+                    WITH dates AS (
+                        SELECT trade_date
+                        FROM t_stock_daily_240
+                        WHERE stock_code = :stock_code
+                        ORDER BY trade_date DESC
+                        LIMIT :limit
+                    )
+                    SELECT kdj.trade_date, kdj.period, kdj.rsv, kdj.k, kdj.d, kdj.j,
+                           kdj.rsv_cross_k, kdj.rsv_cross_d, kdj.golden_cross
+                    FROM t_stock_kdj_daily AS kdj
+                    JOIN dates ON dates.trade_date = kdj.trade_date
+                    WHERE kdj.stock_code = :stock_code AND kdj.period IN (9, 90)
+                    ORDER BY kdj.trade_date, kdj.period
+                    ''',
+                    params,
+                ).fetchall()
         return [dict(row) for row in candles], [dict(row) for row in indicators]

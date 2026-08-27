@@ -4,11 +4,19 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginComboStatisticsModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel
+from module_stock.entity.vo.stock_margin_vo import StockMarginComboPageModel, StockMarginComboStatisticsModel, StockMarginLongPerformancePageModel, StockMarginLongStatisticsModel, StockMarginLongModelPage
 from module_stock.service.stock_margin_service import StockMarginService
 from utils.response_util import ResponseUtil
 
 stock_margin_controller = APIRouterPro(prefix='/stock/margin', order_num=33, tags=['股票-融资融券'])
+
+@stock_margin_controller.get('/long-model/list', summary='查询融资融券做多强度模型', response_model=DataResponseModel[StockMarginLongModelPage])
+async def get_stock_margin_long_model_list(page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1, page_size: Annotated[int, Query(alias='pageSize', ge=1, le=200)] = 30) -> Response:
+    try:
+        result = await StockMarginService.get_long_model_services(page_num, page_size)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
 
 
 @stock_margin_controller.get(
