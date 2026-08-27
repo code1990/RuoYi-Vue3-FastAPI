@@ -19,3 +19,6 @@ export function listMarginCombo(params) {
 export function listMarginLongModel(params) {
   return request({ url: '/stock/margin/long-model/list', method: 'get', params })
 }
+
+export function listStockPoolFormulas() { return request({ url: '/stock/pools/formulas', method: 'get' }) }
+export function listStockPoolResults(params) { return request({ url: '/stock/pools/results', method: 'get', params }) }
