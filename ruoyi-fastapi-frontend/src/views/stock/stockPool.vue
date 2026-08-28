@@ -2,10 +2,11 @@
 <script setup>
 import { listStockPoolFormulas, listStockPoolResults } from '@/api/stock/marginTrading'
 import { getStockConcept, getStockIndustry } from '@/utils/stockMetadata'
+const route = useRoute()
 const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeCode = ref(''); const tradeDate = ref('')
 const activeName = computed(() => formulas.value.find(item => item.code === activeCode.value)?.name || activeCode.value)
 async function selectFormula(code) { activeCode.value = code; await loadResults() }
 async function loadResults() { if (!activeCode.value) return; loading.value = true; try { const response = await listStockPoolResults({ formulaCode: activeCode.value, tradeDate: tradeDate.value || undefined, limit: 500 }); rows.value = response.data?.items || [] } finally { loading.value = false } }
-onMounted(async () => { const response = await listStockPoolFormulas(); formulas.value = response.data || []; if (formulas.value.length) selectFormula(formulas.value[0].code) })
+onMounted(async () => { const response = await listStockPoolFormulas(); formulas.value = response.data || []; const formula = formulas.value.find(item => String(item.id) === String(route.query.formulaId)); if (formula) selectFormula(formula.code); else if (formulas.value.length) selectFormula(formulas.value[0].code) })
 </script>
 <style scoped>.stock-data-page{padding:20px}.header,.result-title{display:flex;align-items:center;justify-content:space-between;font-size:18px;font-weight:600}.pool-layout{display:flex;min-height:620px}.formula-menu{width:220px;flex:none}.result{padding:0 20px;flex:1;overflow:auto}.result-title{margin-bottom:16px}:deep(.el-table){white-space:nowrap}</style>

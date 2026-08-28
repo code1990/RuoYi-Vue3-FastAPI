@@ -33,6 +33,10 @@ class StockDdeDao:
         ]
 
     @staticmethod
+    def limit_up_change_sql(name_column: str, change_column: str) -> str:
+        return f"({change_column} IS NULL OR CAST({change_column} AS REAL) < CASE WHEN UPPER({name_column}) LIKE '%ST%' THEN 4.5 ELSE 9.5 END)"
+
+    @staticmethod
     def get_signal_performance_page(
         database_path: str, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
         sort_by: str | None, sort_order: str | None,
@@ -51,7 +55,7 @@ class StockDdeDao:
                 return StockDdeDao._get_saved_signal_performance_page(
                     connection, stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
                 )
-            clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", 'signal.entry_price > 0']
+            clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", 'signal.entry_price > 0', StockDdeDao.limit_up_change_sql('signal.stock_name', 'flow.change_pct')]
             params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
             if stock_code:
                 clauses.append('signal.stock_code = :stock_code')
@@ -92,7 +96,7 @@ class StockDdeDao:
 
     @staticmethod
     def _get_saved_signal_performance_page(connection: sqlite3.Connection, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None) -> tuple[list[dict], int]:
-        where_clauses = ['1 = 1']
+        where_clauses = ['1 = 1', StockDdeDao.limit_up_change_sql('stock_name', 'signal_change_pct')]
         params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
         if stock_code:
             where_clauses.append('stock_code = :stock_code')
@@ -144,14 +148,22 @@ class StockDdeDao:
         uri = f'file:{path.resolve().as_posix()}?mode=ro'
         with sqlite3.connect(uri, uri=True) as connection:
             connection.row_factory = sqlite3.Row
-            total = connection.execute(f'SELECT COUNT(*) FROM t_stock_dde_combo_signal WHERE {where_sql}', params).fetchone()[0]
+            has_fund_flow = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 't_stock_dde_fund_flow'"
+            ).fetchone()
+            combo_from = 't_stock_dde_combo_signal AS combo'
+            if has_fund_flow:
+                combo_from += " LEFT JOIN t_stock_dde_fund_flow AS close_flow ON close_flow.stock_code = combo.stock_code AND close_flow.trade_date = combo.signal_date AND close_flow.snapshot_slot = 'close'"
+                clauses.append(StockDdeDao.limit_up_change_sql('combo.stock_name', 'close_flow.change_pct'))
+            where_sql = ' AND '.join(clauses)
+            total = connection.execute(f'SELECT COUNT(*) FROM {combo_from} WHERE {where_sql}', params).fetchone()[0]
             rows = connection.execute(
-                f'''SELECT signal_date, previous_signal_date, stock_code, stock_name, previous_signal_count,
-                           today_signal_count, today_morning_count, today_noon_count, today_close_count,
-                           today_best_rank, today_main_net_ratio, previous_main_net_ratio, entry_price, current_price, combo_rank,
-                           close_return_pct, t1_max_return_pct, t2_max_return_pct, t3_max_return_pct,
-                           t4_max_return_pct, t5_max_return_pct
-                    FROM t_stock_dde_combo_signal WHERE {where_sql}
+                f'''SELECT combo.signal_date, combo.previous_signal_date, combo.stock_code, combo.stock_name, combo.previous_signal_count,
+                           combo.today_signal_count, combo.today_morning_count, combo.today_noon_count, combo.today_close_count,
+                           combo.today_best_rank, combo.today_main_net_ratio, combo.previous_main_net_ratio, combo.entry_price, combo.current_price, combo.combo_rank,
+                           combo.close_return_pct, combo.t1_max_return_pct, combo.t2_max_return_pct, combo.t3_max_return_pct,
+                           combo.t4_max_return_pct, combo.t5_max_return_pct
+                    FROM {combo_from} WHERE {where_sql}
                     ORDER BY {order_by} LIMIT :limit OFFSET :offset''', params
             ).fetchall()
         return [dict(row) for row in rows], total
@@ -198,7 +210,7 @@ class StockDdeDao:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
-        clauses, params = ['1 = 1'], {'limit': page_size, 'offset': (page_num - 1) * page_size}
+        clauses, params = ['1 = 1', StockDdeDao.limit_up_change_sql('stock_name', 'signal_change_pct')], {'limit': page_size, 'offset': (page_num - 1) * page_size}
         if signal_slot:
             clauses.append('signal_slot = :signal_slot')
             params['signal_slot'] = signal_slot
@@ -308,7 +320,7 @@ class StockDdeDao:
             ).fetchone()
             if not stat_range:
                 return [], 0, None, None
-            clauses = ['stat_start_date = :stat_start_date', 'stat_end_date = :stat_end_date']
+            clauses = ['stat_start_date = :stat_start_date', 'stat_end_date = :stat_end_date', 'is_latest_signal_limit_up = 0']
             params: dict[str, str | int] = {
                 'stat_start_date': stat_range['stat_start_date'],
                 'stat_end_date': stat_range['stat_end_date'],
@@ -354,7 +366,7 @@ class StockDdeDao:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
-        clauses = ['1 = 1']
+        clauses = ['1 = 1', 'is_limit_up = 0']
         params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
         if start_date:
             clauses.append('trade_date >= :start_date')
@@ -381,7 +393,7 @@ class StockDdeDao:
                 f'''SELECT COUNT(*) AS total, COALESCE(SUM(is_tradable), 0) AS tradable_count,
                            COALESCE(SUM(is_completed), 0) AS completed_count,
                            COALESCE(SUM(target_hit), 0) AS target_hit_count
-                    FROM {table_name} WHERE {where_sql}''',
+                    FROM {table_name} WHERE is_limit_up = 0 AND {where_sql}''',
                 params,
             ).fetchone()
             has_fund_flow = connection.execute(
