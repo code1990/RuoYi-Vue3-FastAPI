@@ -18,9 +18,8 @@ const route = useRoute()
 const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeCode = ref(''); const tradeDate = ref('')
 const activeName = computed(() => formulas.value.find(item => item.code === activeCode.value)?.name || activeCode.value)
 async function loadResults() { if (!activeCode.value) return; loading.value = true; try { const response = await listStockPoolResults({ formulaCode: activeCode.value, tradeDate: tradeDate.value || undefined, limit: 500 }); rows.value = response.data?.items || [] } finally { loading.value = false } }
-async function loadFormula() { const response = await listStockPoolFormulas(); formulas.value = response.data || []; const formula = formulas.value.find(item => String(item.id) === String(route.query.formulaId)); activeCode.value = formula?.code || ''; if (formula) await loadResults() }
-onMounted(loadFormula)
-watch(() => route.fullPath, loadFormula)
+async function loadFormula() { const formulaId = route.query.formulaId || route.path.split('/').at(-1); const response = await listStockPoolFormulas(); formulas.value = response.data || []; const formula = formulas.value.find(item => String(item.id) === String(formulaId)); activeCode.value = formula?.code || ''; rows.value = []; if (formula) await loadResults() }
+watch(() => [route.path, route.query.formulaId], loadFormula, { immediate: true })
 </script>
 
 <style scoped>.stock-data-page{padding:20px}.header,.result-title{display:flex;align-items:center;justify-content:space-between;font-size:18px;font-weight:600}.result{overflow:auto}.result-title{margin-bottom:16px}:deep(.el-table){white-space:nowrap}</style>
