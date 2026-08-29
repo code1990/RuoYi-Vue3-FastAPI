@@ -363,17 +363,7 @@ class LoginService:
             return
         with sqlite3.connect(AppConfig.stock_stat_db_path) as conn:
             formulas = conn.execute("SELECT id, name FROM t_stock_formula WHERE name<>'' ORDER BY id").fetchall()
-        children = stock_pool.children or []
-        children_by_formula_id = {str(json.loads(child.query or '{}').get('formulaId')): child for child in children}
-        synced_children = []
-        for formula_id, name in formulas:
-            child = children_by_formula_id.get(str(formula_id))
-            if child:
-                child.menu_name = name
-            else:
-                child = MenuTreeModel(menu_id=-formula_id, menu_name=name, parent_id=stock_pool.menu_id, path=f'formula-{formula_id}', component='stock/stockPool', query=json.dumps({'formulaId': str(formula_id)}), route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money')
-            synced_children.append(child)
-        stock_pool.children = synced_children
+        stock_pool.children = [MenuTreeModel(menu_id=-formula_id, menu_name=name, parent_id=stock_pool.menu_id, path=f'formula-{formula_id}', component='stock/stockPool', query=json.dumps({'formulaId': str(formula_id)}), route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money') for formula_id, name in formulas]
 
     @classmethod
     def __generate_user_router_menu(cls, permission_list: list[MenuTreeModel]) -> list[RouterModel]:
