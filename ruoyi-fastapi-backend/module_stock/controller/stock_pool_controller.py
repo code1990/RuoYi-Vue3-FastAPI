@@ -14,7 +14,7 @@ stock_pool_controller = APIRouterPro(prefix='/stock/pools', order_num=34, tags=[
 
 def formulas() -> list[dict]:
     with sqlite3.connect(AppConfig.stock_stat_db_path) as conn:
-        return [dict(id=row[0], name=row[1], code=row[2]) for row in conn.execute("SELECT id,name,code FROM t_stock_formula WHERE name<>'' ORDER BY id")]
+        return [dict(id=row[0], name=row[1]) for row in conn.execute("SELECT id,name FROM t_stock_formula WHERE name<>'' ORDER BY id")]
 
 
 @stock_pool_controller.get('/formulas')
