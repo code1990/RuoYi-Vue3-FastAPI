@@ -128,7 +128,7 @@ export const constantRoutes = [
         path: '',
         component: () => import('@/views/stock/stockPool.vue'),
         name: 'StockPoolFormula',
-        meta: { title: '股票池', activeMenu: '/stock-pools' }
+        meta: { title: '股票池', activeMenu: '/stock-pools', hideSidebar: true }
       }
     ]
   },
