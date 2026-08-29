@@ -15,10 +15,12 @@ import { listStockPoolFormulas, listStockPoolResults } from '@/api/stock/marginT
 import { getStockConcept, getStockIndustry } from '@/utils/stockMetadata'
 
 const route = useRoute()
-const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeCode = ref(''); const activeFormulaId = ref(''); const tradeDate = ref('')
+const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeCode = ref(''); const tradeDate = ref('')
 const activeName = computed(() => formulas.value.find(item => item.code === activeCode.value)?.name || activeCode.value)
 async function loadResults() { if (!activeCode.value) return; loading.value = true; try { const response = await listStockPoolResults({ formulaCode: activeCode.value, tradeDate: tradeDate.value || undefined, limit: 500 }); rows.value = response.data?.items || [] } finally { loading.value = false } }
-onMounted(async () => { const response = await listStockPoolFormulas(); formulas.value = response.data || []; const selectedId = route.query.formulaId || route.path.split('/').filter(Boolean).pop(); const formula = formulas.value.find(item => String(item.id) === String(selectedId)); if (formula) { activeFormulaId.value = String(formula.id); activeCode.value = formula.code; await loadResults() } })
+async function loadFormula() { const response = await listStockPoolFormulas(); formulas.value = response.data || []; const selectedId = route.query.formulaId || route.path.split('/').filter(Boolean).pop(); const formula = formulas.value.find(item => String(item.id) === String(selectedId)); activeCode.value = formula?.code || ''; if (formula) await loadResults() }
+onMounted(loadFormula)
+watch(() => route.fullPath, loadFormula)
 </script>
 
 <style scoped>.stock-data-page{padding:20px}.header,.result-title{display:flex;align-items:center;justify-content:space-between;font-size:18px;font-weight:600}.result{overflow:auto}.result-title{margin-bottom:16px}:deep(.el-table){white-space:nowrap}</style>

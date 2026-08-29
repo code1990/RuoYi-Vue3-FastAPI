@@ -392,8 +392,8 @@ class LoginService:
             c_menus = permission.children
             if c_menus and permission.menu_type == MenuConstant.TYPE_DIR:
                 router.always_show = True
-                router.redirect = 'noRedirect'
                 router.children = cls.__generate_user_router_menu(c_menus)
+                router.redirect = f'{router.path}/{router.children[0].path}' if permission.menu_name == '股票池' else 'noRedirect'
             elif RouterUtil.is_menu_frame(permission):
                 router.meta = None
                 children_list: list[RouterModel] = []

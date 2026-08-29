@@ -127,7 +127,6 @@ async def get_login_user_info(
     description='用于获取当前登录用户的路由信息',
     response_model=DataResponseModel[list[RouterModel]],
 )
-@ApiCache(namespace=ApiNamespace.LOGIN_USER_ROUTERS)
 async def get_login_user_routers(
     request: Request,
     current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
