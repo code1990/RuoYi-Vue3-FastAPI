@@ -1,3 +1,4 @@
+import json
 import random
 import sqlite3
 import uuid
@@ -331,7 +332,7 @@ class LoginService:
             key=lambda x: x.order_num,
         )
         menus = cls.__generate_menus(0, user_router_menu)
-        cls.__append_stock_pool_formulas(menus)
+        cls.__sync_stock_pool_formulas(menus)
         user_router = cls.__generate_user_router_menu(menus)
         return [router.model_dump(exclude_unset=True, by_alias=True) for router in user_router]
 
@@ -356,15 +357,23 @@ class LoginService:
         return menu_list
 
     @classmethod
-    def __append_stock_pool_formulas(cls, menus: list[MenuTreeModel]) -> None:
+    def __sync_stock_pool_formulas(cls, menus: list[MenuTreeModel]) -> None:
         stock_pool = next((menu for menu in menus if menu.menu_name == '股票池'), None)
         if not stock_pool or not AppConfig.stock_stat_db_path:
             return
         with sqlite3.connect(AppConfig.stock_stat_db_path) as conn:
             formulas = conn.execute("SELECT id, name FROM t_stock_formula WHERE name<>'' ORDER BY id").fetchall()
-        stock_pool.menu_type = MenuConstant.TYPE_DIR
-        stock_pool.component = MenuConstant.PARENT_VIEW
-        stock_pool.children = [MenuTreeModel(menu_id=-(formula_id), menu_name=name, parent_id=stock_pool.menu_id, path=str(formula_id), component='stock/stockPool', route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money') for formula_id, name in formulas]
+        children = stock_pool.children or []
+        children_by_formula_id = {str(json.loads(child.query or '{}').get('formulaId')): child for child in children}
+        synced_children = []
+        for formula_id, name in formulas:
+            child = children_by_formula_id.get(str(formula_id))
+            if child:
+                child.menu_name = name
+            else:
+                child = MenuTreeModel(menu_id=-formula_id, menu_name=name, parent_id=stock_pool.menu_id, path=f'formula-{formula_id}', component='stock/stockPool', query=json.dumps({'formulaId': str(formula_id)}), route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money')
+            synced_children.append(child)
+        stock_pool.children = synced_children
 
     @classmethod
     def __generate_user_router_menu(cls, permission_list: list[MenuTreeModel]) -> list[RouterModel]:
@@ -393,7 +402,7 @@ class LoginService:
             if c_menus and permission.menu_type == MenuConstant.TYPE_DIR:
                 router.always_show = True
                 router.children = cls.__generate_user_router_menu(c_menus)
-                router.redirect = f'{router.path}/{router.children[0].path}' if permission.menu_name == '股票池' else 'noRedirect'
+                router.redirect = 'noRedirect'
             elif RouterUtil.is_menu_frame(permission):
                 router.meta = None
                 children_list: list[RouterModel] = []
