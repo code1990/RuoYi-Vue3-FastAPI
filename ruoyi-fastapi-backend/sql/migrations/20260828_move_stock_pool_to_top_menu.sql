@@ -1,5 +1,5 @@
 UPDATE sys_menu
-SET parent_id=0, order_num=40, path='stock-pools', component='ParentView', route_name='StockPools', menu_type='M', update_time=NOW(), update_by='admin'
+SET parent_id=0, order_num=40, path='stock-pools', component='stock/stockPool', route_name='StockPools', menu_type='C', update_time=NOW(), update_by='admin'
 WHERE menu_name='股票池' AND menu_type='C';
 
 INSERT INTO sys_role_menu (role_id,menu_id)

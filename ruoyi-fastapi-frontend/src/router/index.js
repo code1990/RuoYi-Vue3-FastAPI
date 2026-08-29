@@ -120,6 +120,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/stock-pools/:formulaPath',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/stock/stockPool.vue'),
+        name: 'StockPoolFormula',
+        meta: { title: '股票池', activeMenu: '/stock-pools' }
+      }
+    ]
+  },
+  {
     path: '',
     component: Layout,
     redirect: '/index',
