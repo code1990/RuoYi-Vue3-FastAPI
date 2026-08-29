@@ -3,8 +3,8 @@
     <el-card shadow="never">
       <template #header><div class="header"><span>股票池</span><el-date-picker v-model="tradeDate" type="date" value-format="YYYYMMDD" placeholder="交易日" @change="loadResults" /></div></template>
       <div class="result">
-          <el-empty v-if="!activeCode" description="请选择 stock-admin 选股公式" />
-          <template v-else><div class="result-title">{{ activeName }} <el-tag type="info">stock-admin 结果</el-tag></div><el-table v-loading="loading" :data="rows" border><el-table-column label="交易日" prop="tradeDate" width="100" fixed="left"/><el-table-column label="股票" min-width="110" fixed="left"><template #default="{row}">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column><el-table-column label="行业" min-width="80" fixed="left"><template #default="{row}">{{ getStockIndustry(row.stockCode) }}</template></el-table-column><el-table-column label="概念" min-width="180" fixed="left"><template #default="{row}">{{ getStockConcept(row.stockCode) }}</template></el-table-column><el-table-column label="交易时间" prop="slotTradeDate"/><el-table-column label="买入价" prop="hitPrice"/></el-table></template>
+        <el-empty v-if="!activeCode" description="请选择选股公式" />
+        <template v-else><div class="result-title">{{ activeName }} <el-tag type="info">stock-admin 结果</el-tag></div><el-table v-loading="loading" :data="rows" border><el-table-column label="交易日" prop="tradeDate" width="100" fixed="left"/><el-table-column label="股票" min-width="110" fixed="left"><template #default="{row}">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column><el-table-column label="行业" min-width="80" fixed="left"><template #default="{row}">{{ getStockIndustry(row.stockCode) }}</template></el-table-column><el-table-column label="概念" min-width="180" fixed="left"><template #default="{row}">{{ getStockConcept(row.stockCode) }}</template></el-table-column><el-table-column label="交易时间" prop="slotTradeDate"/><el-table-column label="买入价" prop="hitPrice"/></el-table></template>
       </div>
     </el-card>
   </div>
