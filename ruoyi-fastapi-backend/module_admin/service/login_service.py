@@ -364,7 +364,7 @@ class LoginService:
             formulas = conn.execute("SELECT id, name FROM t_stock_formula WHERE name<>'' ORDER BY id").fetchall()
         stock_pool.menu_type = MenuConstant.TYPE_DIR
         stock_pool.component = MenuConstant.PARENT_VIEW
-        stock_pool.children = [MenuTreeModel(menu_id=formula_id, menu_name=name, parent_id=stock_pool.menu_id, path=str(formula_id), component='stock/stockPool', route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money') for formula_id, name in formulas]
+        stock_pool.children = [MenuTreeModel(menu_id=-(formula_id), menu_name=name, parent_id=stock_pool.menu_id, path=str(formula_id), component='stock/stockPool', route_name=f'StockPoolFormula{formula_id}', is_frame=1, is_cache=0, menu_type=MenuConstant.TYPE_MENU, visible='0', status='0', perms='stock:pools:list', icon='money') for formula_id, name in formulas]
 
     @classmethod
     def __generate_user_router_menu(cls, permission_list: list[MenuTreeModel]) -> list[RouterModel]:
