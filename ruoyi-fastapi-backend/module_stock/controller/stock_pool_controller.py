@@ -23,8 +23,12 @@ async def get_pool_formulas() -> Response:
 
 
 @stock_pool_controller.get('/results')
-async def get_pool_results(formula_code: str = Query(alias='formulaCode', min_length=1), trade_date: int | None = Query(default=None, alias='tradeDate'), limit: int = Query(default=100, ge=1, le=500)) -> Response:
-    payload = {'formulaCode': formula_code, 'limit': limit}
+async def get_pool_results(formula_id: int = Query(alias='formulaId', ge=1), trade_date: int | None = Query(default=None, alias='tradeDate'), limit: int = Query(default=100, ge=1, le=500)) -> Response:
+    with sqlite3.connect(AppConfig.stock_stat_db_path) as conn:
+        formula = conn.execute("SELECT code FROM t_stock_formula WHERE id=? AND name<>''", (formula_id,)).fetchone()
+    if not formula:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='formula not found')
+    payload = {'formulaCode': formula[0], 'limit': limit}
     if trade_date:
         payload['tradeDate'] = trade_date
     base_url = os.getenv('STOCK_ADMIN_BASE_URL', 'http://127.0.0.1:8888').rstrip('/')

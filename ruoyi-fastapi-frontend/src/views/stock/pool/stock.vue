@@ -15,10 +15,10 @@ import { listStockPoolFormulas, listStockPoolResults } from '@/api/stock/marginT
 import { getStockConcept, getStockIndustry } from '@/utils/stockMetadata'
 
 const route = useRoute()
-const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeCode = ref(''); const tradeDate = ref('')
-const activeName = computed(() => formulas.value.find(item => item.code === activeCode.value)?.name || activeCode.value)
-async function loadResults() { if (!activeCode.value) return; loading.value = true; try { const response = await listStockPoolResults({ formulaCode: activeCode.value, tradeDate: tradeDate.value || undefined, limit: 500 }); rows.value = response.data?.items || [] } finally { loading.value = false } }
-async function loadFormula() { const formulaId = route.query.formulaId || route.path.split('/').at(-1); rows.value = []; try { const response = await listStockPoolFormulas(); formulas.value = response.data || []; const formula = formulas.value.find(item => String(item.id) === String(formulaId)); activeCode.value = formula?.code || ''; if (formula) await loadResults() } catch { activeCode.value = '' } }
+const formulas = ref([]); const rows = ref([]); const loading = ref(false); const activeFormulaId = ref(''); const tradeDate = ref('')
+const activeName = computed(() => formulas.value.find(item => String(item.id) === activeFormulaId.value)?.name || '')
+async function loadResults() { if (!activeFormulaId.value) return; loading.value = true; try { const response = await listStockPoolResults({ formulaId: activeFormulaId.value, tradeDate: tradeDate.value || undefined, limit: 500 }); rows.value = response.data?.items || [] } finally { loading.value = false } }
+async function loadFormula() { const formulaId = route.query.formulaId || route.path.split('/').at(-1); rows.value = []; try { const response = await listStockPoolFormulas(); formulas.value = response.data || []; activeFormulaId.value = formulas.value.some(item => String(item.id) === String(formulaId)) ? String(formulaId) : ''; if (activeFormulaId.value) await loadResults() } catch { activeFormulaId.value = '' } }
 watch(() => [route.path, route.query.formulaId], loadFormula, { immediate: true })
 </script>
 
