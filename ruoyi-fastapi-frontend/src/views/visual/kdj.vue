@@ -1,26 +1,49 @@
 <template>
   <div class="stat-page">
-    <el-card>
+    <el-card shadow="never">
       <el-form inline @submit.prevent>
-        <el-form-item label="股票代码">
-          <el-input v-model="stockCode" maxlength="6" clearable @keyup.enter="loadChart" />
-        </el-form-item>
-        <el-button type="primary" :loading="loading" @click="loadChart">查询</el-button>
+        <el-form-item label="股票代码"><el-input v-model="stockCode" maxlength="6" clearable @keyup.enter="handleQuery" /></el-form-item>
+        <el-form-item label="年份"><el-select v-model="query.year" clearable placeholder="全部" style="width: 120px" @change="handleQuery"><el-option label="全部年份" value="" /><el-option v-for="year in years" :key="year" :label="`${year}年`" :value="year" /></el-select></el-form-item>
+        <el-form-item label="信号状态"><el-select v-model="query.signalStatus" style="width: 120px" @change="handleStatusChange"><el-option label="全部" value="all" /><el-option label="候选(≥2)" value="candidate" /><el-option label="达标" value="hit" /><el-option label="未达标" value="fail" /><el-option label="待完成" value="pending" /></el-select></el-form-item>
+        <el-button type="primary" :loading="loading" @click="handleQuery">查询</el-button>
       </el-form>
       <el-alert v-if="errorMessage" :title="errorMessage" type="warning" :closable="false" show-icon />
       <div v-show="!errorMessage" ref="chartRef" v-loading="loading" class="chart" />
+    </el-card>
+    <el-card shadow="never" class="audit-card">
+      <template #header><div class="audit-header"><span>KDJ双周期信号回测明细</span><span class="summary">候选 {{ summary.candidateCount }} ｜ 完成 {{ summary.completedCount }} ｜ 达标 {{ summary.hitCount }} ｜ 达标率 {{ rate(summary.hitRate) }}</span></div></template>
+      <el-table v-loading="tableLoading" :data="rows" border stripe height="560" @sort-change="handleSortChange">
+        <el-table-column label="交易日" prop="signalDate" width="100" sortable="custom" fixed="left" />
+        <el-table-column label="股票" min-width="110" fixed="left"><template #default="{ row }">{{ row.stockCode }} {{ row.stockName }}</template></el-table-column>
+        <el-table-column label="行业" prop="industryName" min-width="100" fixed="left" />
+        <el-table-column label="概念" prop="concept" min-width="180" fixed="left" />
+        <el-table-column label="技术状态" min-width="230"><template #default="{ row }"><div>{{ row.activeSignals || '-' }}</div><small>9(K/D/J): {{ metric(row, 'kdj9') }} · 90(K/D/J): {{ metric(row, 'kdj90') }}</small></template></el-table-column>
+        <el-table-column label="六信号" prop="signalCode" width="82" />
+        <el-table-column label="信号数" prop="signalCount" width="78" sortable="custom" />
+        <el-table-column v-for="day in 5" :key="day" :label="`T+${day}最高`" :prop="`t${day}MaxReturnPct`" width="95"><template #default="{ row }"><span :class="returnClass(row[`t${day}MaxReturnPct`])">{{ percent(row[`t${day}MaxReturnPct`]) }}</span></template></el-table-column>
+        <el-table-column v-for="day in 5" :key="`close-${day}`" :label="`T+${day}收盘`" :prop="`t${day}CloseReturnPct`" width="95"><template #default="{ row }">{{ percent(row[`t${day}CloseReturnPct`]) }}</template></el-table-column>
+        <el-table-column label="5日最高" prop="maxReturnPct" width="95" sortable="custom"><template #default="{ row }"><span :class="returnClass(row.maxReturnPct)">{{ percent(row.maxReturnPct) }}</span></template></el-table-column>
+        <el-table-column label="达标情况" width="100"><template #default="{ row }"><el-tag v-if="!row.isCompleted" type="warning" size="small">待完成</el-tag><el-tag v-else :type="row.targetHit ? 'success' : 'danger'" size="small">{{ row.targetHit ? '达标' : '未达标' }}</el-tag></template></el-table-column>
+      </el-table>
+      <pagination v-show="total > 0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="loadBacktest" />
     </el-card>
   </div>
 </template>
 
 <script setup>
 import * as echarts from 'echarts'
-import { getKdjHistory } from '@/api/stock/kdj'
+import { getKdjHistory, listKdjBacktest } from '@/api/stock/kdj'
 
 const chartRef = ref()
 const stockCode = ref('000001')
 const loading = ref(false)
 const errorMessage = ref('')
+const tableLoading = ref(false)
+const rows = ref([])
+const total = ref(0)
+const summary = reactive({ candidateCount: 0, completedCount: 0, hitCount: 0, hitRate: null })
+const query = reactive({ year: '', signalStatus: 'all', pageNum: 1, pageSize: 20, sortBy: undefined, sortOrder: undefined })
+const years = Array.from({ length: new Date().getFullYear() - 2019 }, (_, index) => new Date().getFullYear() - index)
 let chart
 
 function valueOf(row, camel, snake = camel) {
@@ -189,7 +212,7 @@ async function loadChart() {
   loading.value = true
   errorMessage.value = ''
   try {
-    const response = await getKdjHistory({ stockCode: stockCode.value })
+    const response = await getKdjHistory({ stockCode: stockCode.value, year: query.year || undefined })
     renderChart(response.data)
   } catch (error) {
     errorMessage.value = error.message || 'KDJ 数据加载失败'
@@ -198,9 +221,29 @@ async function loadChart() {
   }
 }
 
+function handleQuery() { query.pageNum = 1; loadChart(); loadBacktest() }
+function handleStatusChange() { query.pageNum = 1; loadBacktest() }
+function handleSortChange({ prop, order }) { query.sortBy = order ? prop : undefined; query.sortOrder = order || undefined; query.pageNum = 1; loadBacktest() }
+async function loadBacktest() {
+  tableLoading.value = true
+  try {
+    const response = await listKdjBacktest({ ...query, stockCode: stockCode.value || undefined, year: query.year || undefined })
+    rows.value = response.data.rows || []
+    total.value = response.data.total || 0
+    Object.assign(summary, response.data)
+  } finally { tableLoading.value = false }
+}
+function percent(value) { return value == null ? '-' : `${Number(value).toFixed(2)}%` }
+function rate(value) { return value == null ? '-' : `${(Number(value) * 100).toFixed(2)}%` }
+function returnClass(value) { return value == null ? '' : Number(value) >= 1.8 ? 'return-high' : 'return-low' }
+function metric(row, prefix) {
+  const values = [row[`${prefix}K`], row[`${prefix}D`], row[`${prefix}J`]].map(value => value == null ? '-' : Number(value).toFixed(1))
+  return `${values.join('/') } ${row[`${prefix}JTrend`] || 'flat'}`
+}
+
 onMounted(() => {
   chart = echarts.init(chartRef.value)
-  loadChart()
+  loadChart(); loadBacktest()
   window.addEventListener('resize', chart.resize)
 })
 
@@ -213,4 +256,10 @@ onBeforeUnmount(() => {
 <style scoped>
 .stat-page { padding: 20px; }
 .chart { height: 720px; margin-top: 12px; }
+.audit-card { margin-top: 16px; }
+.audit-header { display: flex; justify-content: space-between; align-items: center; }
+.summary { color: #606266; font-size: 13px; }
+.return-high { color: #f56c6c; font-weight: 600; }
+.return-low { color: #67c23a; }
+:deep(.el-table) { white-space: nowrap; }
 </style>
