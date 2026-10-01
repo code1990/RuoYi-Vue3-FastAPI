@@ -2,11 +2,11 @@
   <div class="future-market-page">
     <el-card class="quote-chart" shadow="never">
       <template #header>本页涨幅概览</template>
-      <div class="chart-rows">
-        <div v-for="row in chartRows" :key="row.contractCode" class="chart-row">
-          <span class="chart-name">{{ row.contractName }}</span>
-          <div class="chart-track"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ width: `${Math.abs(row.pxChangeRate || 0) / chartMax * 100}%` }" /></div>
+      <div class="chart-columns">
+        <div v-for="row in chartRows" :key="row.contractCode" class="chart-column" :title="`${row.contractName} ${percent(row.pxChangeRate)}`">
           <span :class="['chart-value', color(row.pxChangeRate)]">{{ percent(row.pxChangeRate) }}</span>
+          <div class="chart-bar-area"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ height: `${Math.abs(row.pxChangeRate || 0) / chartMax * 60}px` }" /></div>
+          <span class="chart-name">{{ row.contractName }}</span>
         </div>
       </div>
     </el-card>
@@ -58,11 +58,11 @@ getList()
 <style scoped>
 .future-market-page { padding: 20px; }
 .quote-chart { margin-bottom: 16px; }
-.chart-rows { max-height: 280px; overflow-y: auto; }
-.chart-row { display: flex; align-items: center; gap: 10px; height: 25px; min-width: 460px; }
-.chart-name { width: 130px; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-.chart-track { flex: 1; height: 13px; background: #f5f7fa; }
-.chart-bar { display: block; height: 100%; min-width: 1px; }.chart-value { width: 70px; }
+.chart-columns { display: flex; gap: 5px; height: 190px; overflow-x: auto; padding: 0 4px; }
+.chart-column { display: grid; grid-template-rows: 20px 120px 50px; flex: 0 0 32px; min-width: 32px; text-align: center; }
+.chart-value { font-size: 11px; white-space: nowrap; }.chart-bar-area { position: relative; }.chart-bar-area::after { position: absolute; top: 60px; right: 0; left: 0; border-top: 1px solid #dcdfe6; content: ''; }
+.chart-bar { position: absolute; bottom: 60px; left: 8px; width: 16px; min-height: 1px; }.chart-bar.fall { top: 60px; bottom: auto; }
+.chart-name { overflow: hidden; padding-top: 4px; font-size: 12px; line-height: 16px; writing-mode: vertical-rl; }
 .header, .header > div { display: flex; align-items: center; gap: 10px; }
 .header { justify-content: space-between; font-size: 18px; font-weight: 600; }
 :deep(.el-table) { white-space: nowrap; }
