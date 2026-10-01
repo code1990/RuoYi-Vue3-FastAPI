@@ -6,6 +6,7 @@
         <el-table-column label="排名" width="65"><template #default="{ $index }">{{ (query.pageNum - 1) * query.pageSize + $index + 1 }}</template></el-table-column>
         <el-table-column label="代码" prop="contractCode" min-width="130" />
         <el-table-column label="名称" prop="contractName" min-width="120" />
+        <el-table-column label="交易日" prop="marketDate" min-width="95" />
         <el-table-column label="现价" prop="lastPx" min-width="90"><template #default="{ row }">{{ number(row.lastPx) }}</template></el-table-column>
         <el-table-column label="涨幅%" prop="pxChangeRate" min-width="90"><template #default="{ row }"><span :class="color(row.pxChangeRate)">{{ percent(row.pxChangeRate) }}</span></template></el-table-column>
         <el-table-column label="涨速%" prop="min5Chgpct" min-width="90"><template #default="{ row }"><span :class="color(row.min5Chgpct)">{{ percent(row.min5Chgpct) }}</span></template></el-table-column>
