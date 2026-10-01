@@ -11,7 +11,7 @@ SELECT 1, @future_menu_id WHERE @future_menu_id IS NOT NULL AND NOT EXISTS (SELE
 
 INSERT INTO sys_menu (menu_name, parent_id, order_num, path, component, query, route_name, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, update_by, update_time, remark)
 SELECT menu_name, @future_menu_id, order_num, path, 'future/market', query, route_name, 1, 0, 'C', '0', '0', 'future:quote:list', 'trend', 'admin', NOW(), 'admin', NOW(), menu_name
-FROM (SELECT '国内行情' menu_name, 1 order_num, 'domestic' path, '' query, 'FutureDomestic' route_name UNION ALL SELECT '国际行情', 2, 'overseas', 'scope=overseas', 'FutureOverseas') menus
+FROM (SELECT '国内行情' menu_name, 1 order_num, 'domestic' path, '' query, 'FutureDomestic' route_name UNION ALL SELECT '国际行情', 2, 'overseas', '{"scope":"overseas"}', 'FutureOverseas') menus
 WHERE @future_menu_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu existing WHERE existing.parent_id = @future_menu_id AND existing.menu_name = menus.menu_name);
 
 INSERT INTO sys_role_menu (role_id, menu_id)
