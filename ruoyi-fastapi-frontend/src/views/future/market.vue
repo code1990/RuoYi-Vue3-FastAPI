@@ -32,7 +32,7 @@ const title = computed(() => scope.value === 'overseas' ? '国际期货行情' :
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
-const query = reactive({ pageNum: 1, pageSize: 50, keyword: '' })
+const query = reactive({ pageNum: 1, pageSize: 100, keyword: '' })
 
 function getList() { loading.value = true; listFutureQuote({ ...query, scope: scope.value, keyword: query.keyword || undefined }).then(response => { rows.value = response.data.rows; total.value = response.data.total }).finally(() => { loading.value = false }) }
 function handleQuery() { query.pageNum = 1; getList() }
