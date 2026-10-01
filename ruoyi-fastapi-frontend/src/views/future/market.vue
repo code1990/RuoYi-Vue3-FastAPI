@@ -4,8 +4,7 @@
       <template #header>本页涨幅概览</template>
       <div class="chart-columns">
         <div v-for="row in chartRows" :key="row.contractCode" class="chart-column" :title="`${row.contractName} ${percent(row.pxChangeRate)}`">
-          <span :class="['chart-value', color(row.pxChangeRate)]">{{ percent(row.pxChangeRate) }}</span>
-          <div class="chart-bar-area"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ height: `${Math.abs(row.pxChangeRate || 0) / chartMax * 60}px` }" /></div>
+          <div class="chart-bar-area"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ height: barHeight(row) }" /><span :class="['chart-value', color(row.pxChangeRate)]" :style="{ bottom: `calc(${barHeight(row)} + 2px)` }">{{ percent(row.pxChangeRate) }}</span></div>
           <span class="chart-name">{{ row.contractName }}</span>
         </div>
       </div>
@@ -51,6 +50,7 @@ function handleQuery() { query.pageNum = 1; getList() }
 function number(value, signed = false) { if (value === null || value === undefined) return '-'; const number = Number(value); return `${signed && number > 0 ? '+' : ''}${number}` }
 function percent(value) { return value === null || value === undefined ? '-' : `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}%` }
 function color(value) { return Number(value) > 0 ? 'rise' : Number(value) < 0 ? 'fall' : '' }
+function barHeight(row) { return `${Math.abs(Number(row.pxChangeRate || 0)) / chartMax.value * 190}px` }
 watch(scope, handleQuery)
 getList()
 </script>
@@ -58,11 +58,11 @@ getList()
 <style scoped>
 .future-market-page { padding: 20px; }
 .quote-chart { margin-bottom: 16px; }
-.chart-columns { display: flex; gap: 5px; height: 190px; overflow-x: auto; padding: 0 4px; }
-.chart-column { display: grid; grid-template-rows: 20px 120px 50px; flex: 0 0 32px; min-width: 32px; text-align: center; }
-.chart-value { font-size: 11px; white-space: nowrap; }.chart-bar-area { position: relative; }.chart-bar-area::after { position: absolute; top: 60px; right: 0; left: 0; border-top: 1px solid #dcdfe6; content: ''; }
-.chart-bar { position: absolute; bottom: 60px; left: 8px; width: 16px; min-height: 1px; }.chart-bar.fall { top: 60px; bottom: auto; }
-.chart-name { overflow: hidden; padding-top: 4px; font-size: 12px; line-height: 16px; writing-mode: vertical-rl; }
+.chart-columns { display: flex; gap: 5px; height: 365px; overflow-x: auto; padding: 0 4px; }
+.chart-column { display: grid; grid-template-rows: 210px 155px; flex: 0 0 36px; min-width: 36px; text-align: center; }
+.chart-bar-area { position: relative; border-bottom: 1px solid #dcdfe6; }.chart-bar { position: absolute; bottom: 0; left: 10px; width: 16px; min-height: 1px; }
+.chart-value { position: absolute; left: 50%; font-size: 11px; transform: translateX(-50%); white-space: nowrap; }
+.chart-name { padding-top: 0; font-size: 12px; line-height: 16px; writing-mode: vertical-rl; }
 .header, .header > div { display: flex; align-items: center; gap: 10px; }
 .header { justify-content: space-between; font-size: 18px; font-weight: 600; }
 :deep(.el-table) { white-space: nowrap; }
