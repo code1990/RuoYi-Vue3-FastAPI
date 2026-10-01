@@ -34,6 +34,7 @@ class AppSettings(BaseSettings):
     test_auto_login_username: str = ''
     test_auto_login_password: str = ''
     stock_stat_db_path: str = ''
+    future_stat_db_path: str = '/root/data/disk/future_cron/future_stat.db'
 
     @property
     def is_production(self) -> bool:
