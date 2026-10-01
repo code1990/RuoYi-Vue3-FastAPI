@@ -1,5 +1,15 @@
 <template>
   <div class="future-market-page">
+    <el-card class="quote-chart" shadow="never">
+      <template #header>本页涨幅概览</template>
+      <div class="chart-rows">
+        <div v-for="row in chartRows" :key="row.contractCode" class="chart-row">
+          <span class="chart-name">{{ row.contractName }}</span>
+          <div class="chart-track"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ width: `${Math.abs(row.pxChangeRate || 0) / chartMax * 100}%` }" /></div>
+          <span :class="['chart-value', color(row.pxChangeRate)]">{{ percent(row.pxChangeRate) }}</span>
+        </div>
+      </div>
+    </el-card>
     <el-card shadow="never">
       <template #header><div class="header"><span>{{ title }}</span><div><el-input v-model="query.keyword" placeholder="代码或名称" clearable @keyup.enter="handleQuery" /><el-button type="primary" icon="Search" @click="handleQuery">查询</el-button></div></div></template>
       <el-table v-loading="loading" :data="rows" border>
@@ -33,6 +43,8 @@ const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
 const query = reactive({ pageNum: 1, pageSize: 100, keyword: '' })
+const chartRows = computed(() => [...rows.value].sort((a, b) => Number(b.pxChangeRate || 0) - Number(a.pxChangeRate || 0)))
+const chartMax = computed(() => Math.max(1, ...chartRows.value.map(row => Math.abs(Number(row.pxChangeRate || 0)))))
 
 function getList() { loading.value = true; listFutureQuote({ ...query, scope: scope.value, keyword: query.keyword || undefined }).then(response => { rows.value = response.data.rows; total.value = response.data.total }).finally(() => { loading.value = false }) }
 function handleQuery() { query.pageNum = 1; getList() }
@@ -45,8 +57,14 @@ getList()
 
 <style scoped>
 .future-market-page { padding: 20px; }
+.quote-chart { margin-bottom: 16px; }
+.chart-rows { max-height: 280px; overflow-y: auto; }
+.chart-row { display: flex; align-items: center; gap: 10px; height: 25px; min-width: 460px; }
+.chart-name { width: 130px; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.chart-track { flex: 1; height: 13px; background: #f5f7fa; }
+.chart-bar { display: block; height: 100%; min-width: 1px; }.chart-value { width: 70px; }
 .header, .header > div { display: flex; align-items: center; gap: 10px; }
 .header { justify-content: space-between; font-size: 18px; font-weight: 600; }
 :deep(.el-table) { white-space: nowrap; }
-.rise { color: #f56c6c; }.fall { color: #67c23a; }
+.rise { color: #f56c6c; }.fall { color: #67c23a; }.chart-bar.rise { background: #f56c6c; }.chart-bar.fall { background: #67c23a; }
 </style>
