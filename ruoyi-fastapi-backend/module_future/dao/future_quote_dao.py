@@ -37,6 +37,8 @@ class FutureQuoteDao:
         selected = {}
         for row in result:
             item = dict(row)
+            if cls.number(item['open_px']) == 0:
+                continue
             payload = json.loads(item.pop('payload_json'))
             item['contract_name'] = payload.get('prod_name') or payload.get('prod_name_ext') or item['product_name'] or ''
             item['min5_chgpct'] = payload.get('min5_chgpct')
