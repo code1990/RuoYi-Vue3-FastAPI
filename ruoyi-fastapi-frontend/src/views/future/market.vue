@@ -36,7 +36,7 @@
 import { listFutureQuote } from '@/api/future/market'
 
 const route = useRoute()
-const scope = computed(() => route.query.scope === 'overseas' ? 'overseas' : 'domestic')
+const scope = computed(() => route.path.endsWith('/overseas') ? 'overseas' : 'domestic')
 const title = computed(() => scope.value === 'overseas' ? '国际期货行情' : '国内期货行情')
 const chartTitle = computed(() => scope.value === 'overseas' ? '国际主力合约涨幅排名' : '国内主力合约涨幅排名')
 const loading = ref(false)
