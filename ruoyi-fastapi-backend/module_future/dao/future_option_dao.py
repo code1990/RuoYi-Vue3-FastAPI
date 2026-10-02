@@ -21,6 +21,18 @@ class FutureOptionDao:
             raise FileNotFoundError(f'Future statistics database does not exist: {path}')
         return sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True)
 
+    @staticmethod
+    def parse_option_code(thscode: str) -> tuple[str, str, float] | None:
+        code = thscode.rsplit('.', 1)[0]
+        parts = code.split('-')
+        if len(parts) >= 3 and parts[-2] in ('C', 'P'):
+            try:
+                return parts[0], 'call' if parts[-2] == 'C' else 'put', float(parts[-1])
+            except ValueError:
+                return None
+        match = re.fullmatch(r'([A-Z]+\d+)([CP])(\d+(?:\.\d+)?)', code)
+        return (match.group(1), 'call' if match.group(2) == 'C' else 'put', float(match.group(3))) if match else None
+
     @classmethod
     def get_contract_summaries(cls, database_path: str, page_num: int, page_size: int, variety_code: str | None = None, exchange_code: str | None = None) -> tuple[list[dict], int]:
         where, params = ('WHERE variety_code=? AND exchange_code=?', [variety_code, exchange_code]) if variety_code and exchange_code else ('', [])
@@ -46,22 +58,25 @@ class FutureOptionDao:
     @classmethod
     def get_underlying_chain(cls, database_path: str, underlying_code: str) -> list[dict]:
         with cls._connect(database_path) as connection:
-            contracts = connection.execute('SELECT thscode, name FROM t_option_contract WHERE thscode LIKE ? ORDER BY thscode', (f'{underlying_code}-%',)).fetchall()
+            contracts = [(code, name, parsed) for code, name in connection.execute('SELECT thscode, name FROM t_option_contract ORDER BY thscode') if (parsed := cls.parse_option_code(code)) and parsed[0] == underlying_code]
             has_quotes = bool(connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_option_quote'").fetchone())
             has_change_rate = has_quotes and 'day_change_rate' in {row[1] for row in connection.execute('PRAGMA table_info(t_option_quote)')}
             result = []
-            for thscode, name in contracts:
-                parts = thscode.rsplit('.', 1)[0].split('-')
+            for thscode, name, parsed in contracts:
                 latest = connection.execute('SELECT day_change_rate FROM t_option_quote WHERE thscode=? ORDER BY trade_date DESC LIMIT 1', (thscode,)).fetchone() if has_change_rate else []
                 change = latest[0] if latest else None
-                result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[-2].upper() == 'C' else 'put', 'strike_price': float(parts[-1]), 'day_change_rate': change})
+                result.append({'thscode': thscode, 'name': name, 'option_type': parsed[1], 'strike_price': parsed[2], 'day_change_rate': change})
         return result
 
     @classmethod
     def get_underlyings(cls, database_path: str) -> list[dict]:
         with cls._connect(database_path) as connection:
-            rows = connection.execute("SELECT substr(thscode, 1, instr(thscode, '-') - 1), MIN(name) FROM t_option_contract WHERE instr(thscode, '-') > 0 GROUP BY 1 ORDER BY 1").fetchall()
-        return [{'underlying_code': code, 'name': re.sub(r'[购沽]\d+(?:\.\d+)?$', '', name or '')} for code, name in rows]
+            rows = connection.execute('SELECT thscode, name FROM t_option_contract').fetchall()
+        grouped = {}
+        for thscode, name in rows:
+            if parsed := cls.parse_option_code(thscode):
+                grouped.setdefault(parsed[0], name)
+        return [{'underlying_code': code, 'name': re.sub(r'[购沽]\d+(?:\.\d+)?$', '', name or '')} for code, name in sorted(grouped.items())]
 
     @classmethod
     def get_underlying_future(cls, database_path: str, underlying_code: str) -> dict:
