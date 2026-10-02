@@ -64,7 +64,7 @@ getList()
 .chart-column { display: grid; grid-template-rows: 210px 155px; flex: 0 0 36px; min-width: 36px; text-align: center; }
 .chart-bar-area { position: relative; border-bottom: 1px solid #dcdfe6; }.chart-bar { position: absolute; bottom: 0; left: 10px; width: 16px; min-height: 1px; }
 .chart-value { position: absolute; left: 50%; font-size: 11px; transform: translateX(-50%); white-space: nowrap; }
-.chart-name { display: flex; align-items: flex-start; justify-content: center; padding-top: 0; font-size: 12px; line-height: 16px; writing-mode: vertical-rl; }
+.chart-name { display: flex; align-items: center; justify-content: center; padding-top: 0; font-size: 12px; line-height: 16px; writing-mode: vertical-rl; }
 .header, .header > div { display: flex; align-items: center; gap: 10px; }
 .header { justify-content: space-between; font-size: 18px; font-weight: 600; }
 :deep(.el-table) { white-space: nowrap; }
