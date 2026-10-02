@@ -5,6 +5,8 @@ from pathlib import Path
 
 class FutureQuoteDao:
     STOCK_DAILY_LIMIT_RATE = 10.0
+    DEFAULT_MARGIN_RATE = 0.10
+    DEFAULT_FEE = 2.0
     MARKETS = {
         'domestic': ('XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'),
         'overseas': ('CBOT', 'CME', 'NYMEX', 'COMEX'),
@@ -75,21 +77,20 @@ class FutureQuoteDao:
         quotes = {}
         for contract_code, market_date, last_px, open_px, payload_json in raw_quotes:
             contract_prefix = ''.join(char for char in str(contract_code).split('.', 1)[0] if char.isalpha())
-            if contract_prefix not in cls.PROFIT_SPECS:
-                continue
             payload = json.loads(payload_json)
             name = str(payload.get('prod_name') or payload.get('prod_name_ext') or '')
             priority = 2 if '主力' in name or '888' in str(contract_code) else 1 if '主连' in name or '连续' in name else 0
+            if priority < 2 or cls.number(payload.get('contract_unit')) <= 0:
+                continue
             turnover = cls.number(payload.get('current_amount') or payload.get('amount') or payload.get('business_amount'))
             if contract_prefix not in quotes or (priority, turnover) > quotes[contract_prefix][0]:
-                quotes[contract_prefix] = ((priority, turnover), {'contract_code': contract_code, 'contract_name': name, 'market_date': market_date, 'open_px': open_px, 'last_px': last_px})
+                quotes[contract_prefix] = ((priority, turnover), {'contract_code': contract_code, 'contract_name': name, 'market_date': market_date, 'open_px': open_px, 'last_px': last_px, 'contract_unit': payload.get('contract_unit')})
         rows = []
         for contract_prefix, (_, quote) in quotes.items():
-            spec = cls.PROFIT_SPECS.get(contract_prefix)
+            multiplier, margin_rate, fee = cls.PROFIT_SPECS.get(contract_prefix, (cls.number(quote['contract_unit']), cls.DEFAULT_MARGIN_RATE, cls.DEFAULT_FEE))
             open_px, last_px = cls.number(quote['open_px']), cls.number(quote['last_px'])
-            if not spec or open_px <= 0 or last_px <= 0:
+            if open_px <= 0 or last_px <= 0:
                 continue
-            multiplier, margin_rate, fee = spec
             spread = abs(last_px - open_px)
             margin = open_px * multiplier * margin_rate
             capital = margin + fee

@@ -1,6 +1,6 @@
 <template>
   <div class="profit-effect-page">
-    <el-alert title="开盘方向一致的事后收益效应：国内主力合约按当日开盘价开仓 1 手，按最新价计算；股票比较固定为只能做多，且按普通 A 股单日涨跌停 ±10% 封顶。" type="warning" :closable="false" show-icon />
+    <el-alert title="开盘方向一致的事后收益效应：全部国内主力合约按当日开盘价开仓 1 手，按最新价计算；股票比较固定为只能做多，且按普通 A 股单日涨跌停 ±10% 封顶。未单独校准的合约按 10% 参考保证金率、开平 2 元参考成本试算。" type="warning" :closable="false" show-icon />
     <el-table v-loading="loading" :data="rows" stripe class="table">
       <el-table-column type="index" label="排名" width="64" />
       <el-table-column prop="contractName" label="合约名称" min-width="135" />

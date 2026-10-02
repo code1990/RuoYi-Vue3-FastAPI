@@ -25,11 +25,13 @@ class FutureQuoteDaoTest(unittest.TestCase):
             path = Path(directory) / 'future.db'
             with sqlite3.connect(path) as connection:
                 connection.executescript('CREATE TABLE t_future_quote (contract_code TEXT, market_code TEXT, product_code TEXT, market_date TEXT, last_px TEXT, px_change TEXT, px_change_rate TEXT, open_px TEXT, high_px TEXT, low_px TEXT, prev_settlement TEXT, payload_json TEXT); CREATE TABLE t_future_product (market_code TEXT, product_code TEXT, market_name TEXT, product_name TEXT);')
-                connection.execute("INSERT INTO t_future_quote VALUES ('C888.XDCE','XDCE','FC.CORN','20261002','2000','-300','-13','2300','2325','1990','2300','{\"prod_name\":\"玉米主力\"}')")
+                connection.execute("INSERT INTO t_future_quote VALUES ('C888.XDCE','XDCE','FC.CORN','20261002','2000','-300','-13','2300','2325','1990','2300','{\"prod_name\":\"玉米主力\",\"contract_unit\":10}')")
+                connection.execute("INSERT INTO t_future_quote VALUES ('AU888.XSGE','XSGE','FC.GOLD','20261002','1001','1','0.1','1000','1002','999','1000','{\"prod_name\":\"沪金主力\",\"contract_unit\":1000}')")
                 connection.execute("INSERT INTO t_future_product VALUES ('XDCE','FC.CORN','大连商品交易所','玉米')")
             row = FutureQuoteDao.get_profit_effect(str(path))[0]
             self.assertEqual(('做空', row['net_profit'], row['margin'], row['fee']), ('做空', 2997.6, 2300.0, 2.4))
             self.assertAlmostEqual(row['stock_same_move_profit'], -230.24)
+            self.assertTrue(any(item['contract_name'] == '沪金主力' and item['net_profit'] == 998 for item in FutureQuoteDao.get_profit_effect(str(path))))
 
 
 if __name__ == '__main__':
