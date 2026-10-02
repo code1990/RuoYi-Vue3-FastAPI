@@ -42,6 +42,19 @@ class FutureOptionDao:
         return [dict(zip(('variety_code', 'name', 'exchange_code', 'exchange_name', 'settlement_type', 'contract_multiplier'), row)) for row in rows], total
 
     @classmethod
+    def get_underlying_chain(cls, database_path: str, underlying_code: str) -> list[dict]:
+        with cls._connect(database_path) as connection:
+            contracts = connection.execute('SELECT thscode, name FROM t_option_contract WHERE thscode LIKE ? ORDER BY thscode', (f'{underlying_code}-%',)).fetchall()
+            has_quotes = bool(connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_option_quote'").fetchone())
+            result = []
+            for thscode, name in contracts:
+                parts = thscode.rsplit('.', 1)[0].split('-')
+                latest = connection.execute('SELECT close_price FROM t_option_quote WHERE thscode=? ORDER BY trade_date DESC LIMIT 2', (thscode,)).fetchall() if has_quotes else []
+                change = (latest[0][0] / latest[1][0] - 1) * 100 if len(latest) == 2 and latest[0][0] and latest[1][0] else None
+                result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[1].upper() == 'C' else 'put', 'strike_price': float(parts[2]), 'day_change_rate': change})
+        return result
+
+    @classmethod
     def is_market_contract(cls, database_path: str, thscode: str) -> bool:
         where, params = cls._pool_where()
         with cls._connect(database_path) as connection:

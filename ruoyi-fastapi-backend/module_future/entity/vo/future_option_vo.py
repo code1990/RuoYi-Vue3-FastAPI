@@ -40,3 +40,13 @@ class FutureOptionVarietyPageModel(BaseModel):
     page_num: int
     page_size: int
     has_next: bool
+
+
+class FutureOptionChainModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    thscode: str
+    name: str | None = None
+    option_type: str
+    strike_price: float
+    day_change_rate: float | None = None

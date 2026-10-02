@@ -6,7 +6,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionContractSummaryPageModel, FutureOptionVarietyPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionChainModel, FutureOptionContractSummaryPageModel, FutureOptionVarietyPageModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
@@ -35,6 +35,20 @@ async def get_option_contract_summaries(
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Option data source unavailable') from error
     return ResponseUtil.success(data=result)
+
+
+@future_option_controller.get('/chain', summary='查询期货标的对应期权链', response_model=DataResponseModel[list[FutureOptionChainModel]])
+async def get_option_chain(underlying_code: Annotated[str, Query(alias='underlyingCode', min_length=2, max_length=40)]) -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_underlying_chain(underlying_code.upper()))
+
+
+@future_option_controller.get('/chain/daily-research', summary='更新期货标的对应期权链日线')
+async def refresh_option_chain_daily(underlying_code: Annotated[str, Query(alias='underlyingCode', min_length=2, max_length=40)]) -> Response:
+    try:
+        await asyncio.to_thread(FutureOptionPriceService.refresh_underlying_daily_research, underlying_code.upper())
+    except (RuntimeError, requests.RequestException) as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Option chain daily data source unavailable') from error
+    return ResponseUtil.success()
 
 
 @future_option_controller.get('/prices/intraday', summary='查询沪深300期权当前分时')

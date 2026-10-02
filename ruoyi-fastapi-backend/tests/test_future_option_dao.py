@@ -7,6 +7,15 @@ from module_future.dao.future_option_dao import FutureOptionDao
 
 
 class FutureOptionDaoTest(unittest.TestCase):
+    def test_lists_underlying_option_chain_without_quote_cache(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'option.db'
+            with sqlite3.connect(path) as connection:
+                connection.execute('CREATE TABLE t_option_contract (thscode TEXT, name TEXT)')
+                connection.executemany('INSERT INTO t_option_contract VALUES (?, ?)', [('I2709-C-780.DCE', '铁矿石购'), ('I2709-P-780.DCE', '铁矿石沽')])
+            rows = FutureOptionDao.get_underlying_chain(str(path), 'I2709')
+            self.assertEqual([('call', 780.0), ('put', 780.0)], [(row['option_type'], row['strike_price']) for row in rows])
+
     def test_lists_all_varieties(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'option.db'

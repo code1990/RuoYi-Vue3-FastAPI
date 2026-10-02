@@ -55,3 +55,10 @@ class FutureOptionPriceService:
                 turnover=excluded.turnover, source_timestamp=excluded.source_timestamp, synced_at=CURRENT_TIMESTAMP''', rows,
             )
         return data
+
+    @classmethod
+    def refresh_underlying_daily_research(cls, underlying_code: str) -> None:
+        with FutureOptionDao._connect(AppConfig.future_stat_db_path) as connection:
+            contracts = [row[0] for row in connection.execute('SELECT thscode FROM t_option_contract WHERE thscode LIKE ?', (f'{underlying_code}-%',))]
+        for thscode in contracts:
+            cls.get_daily_research(thscode)
