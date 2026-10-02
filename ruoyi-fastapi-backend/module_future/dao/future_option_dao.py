@@ -48,11 +48,12 @@ class FutureOptionDao:
         with cls._connect(database_path) as connection:
             contracts = connection.execute('SELECT thscode, name FROM t_option_contract WHERE thscode LIKE ? ORDER BY thscode', (f'{underlying_code}-%',)).fetchall()
             has_quotes = bool(connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_option_quote'").fetchone())
+            has_change_rate = has_quotes and 'day_change_rate' in {row[1] for row in connection.execute('PRAGMA table_info(t_option_quote)')}
             result = []
             for thscode, name in contracts:
                 parts = thscode.rsplit('.', 1)[0].split('-')
-                latest = connection.execute('SELECT close_price FROM t_option_quote WHERE thscode=? ORDER BY trade_date DESC LIMIT 2', (thscode,)).fetchall() if has_quotes else []
-                change = (latest[0][0] / latest[1][0] - 1) * 100 if len(latest) == 2 and latest[0][0] and latest[1][0] else None
+                latest = connection.execute('SELECT day_change_rate FROM t_option_quote WHERE thscode=? ORDER BY trade_date DESC LIMIT 1', (thscode,)).fetchone() if has_change_rate else []
+                change = latest[0] if latest else None
                 result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[1].upper() == 'C' else 'put', 'strike_price': float(parts[2]), 'day_change_rate': change})
         return result
 

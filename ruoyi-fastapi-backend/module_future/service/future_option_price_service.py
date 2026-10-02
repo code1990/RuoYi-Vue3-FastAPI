@@ -40,19 +40,26 @@ class FutureOptionPriceService:
             connection.execute(
                 '''CREATE TABLE IF NOT EXISTS t_option_quote (thscode TEXT NOT NULL, trade_date TEXT NOT NULL,
                 open_price REAL, high_price REAL, low_price REAL, close_price REAL, volume REAL, turnover REAL,
-                source_timestamp INTEGER, synced_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(thscode, trade_date))'''
+                source_timestamp INTEGER, day_change_rate REAL, synced_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(thscode, trade_date))'''
             )
-            rows = []
-            for item in data.get('item') or []:
-                if item.get('timestamp') is None:
-                    continue
-                trade_date = datetime.fromtimestamp(int(item['timestamp']) / 1000, ZoneInfo('Asia/Shanghai')).strftime('%Y%m%d')
-                rows.append((thscode, trade_date, item.get('open_price'), item.get('high_price'), item.get('low_price'), item.get('close_price'), item.get('volume'), item.get('turnover'), data.get('timestamp')))
-            connection.executemany(
-                '''INSERT INTO t_option_quote (thscode, trade_date, open_price, high_price, low_price, close_price, volume, turnover, source_timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(thscode, trade_date) DO UPDATE SET open_price=excluded.open_price,
+            try:
+                connection.execute('ALTER TABLE t_option_quote ADD COLUMN day_change_rate REAL')
+            except sqlite3.OperationalError:
+                pass
+            items = sorted((item for item in data.get('item') or [] if item.get('timestamp') is not None), key=lambda item: item['timestamp'])
+            if not items:
+                return data
+            item, previous = items[-1], items[-2] if len(items) > 1 else None
+            close, previous_close = item.get('close_price'), previous and previous.get('close_price')
+            change_rate = (float(close) / float(previous_close) - 1) * 100 if close and previous_close else None
+            trade_date = datetime.fromtimestamp(int(item['timestamp']) / 1000, ZoneInfo('Asia/Shanghai')).strftime('%Y%m%d')
+            connection.execute('DELETE FROM t_option_quote WHERE thscode=? AND trade_date<>?', (thscode, trade_date))
+            connection.execute(
+                '''INSERT INTO t_option_quote (thscode, trade_date, open_price, high_price, low_price, close_price, volume, turnover, source_timestamp, day_change_rate)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(thscode, trade_date) DO UPDATE SET open_price=excluded.open_price,
                 high_price=excluded.high_price, low_price=excluded.low_price, close_price=excluded.close_price, volume=excluded.volume,
-                turnover=excluded.turnover, source_timestamp=excluded.source_timestamp, synced_at=CURRENT_TIMESTAMP''', rows,
+                turnover=excluded.turnover, source_timestamp=excluded.source_timestamp, day_change_rate=excluded.day_change_rate, synced_at=CURRENT_TIMESTAMP''',
+                (thscode, trade_date, item.get('open_price'), item.get('high_price'), item.get('low_price'), close, item.get('volume'), item.get('turnover'), data.get('timestamp'), change_rate),
             )
         return data
 
