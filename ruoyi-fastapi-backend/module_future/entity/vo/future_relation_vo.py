@@ -22,3 +22,5 @@ class FutureRelationModel(BaseModel):
     source_change_rate: float | None = None
     related_contract: str = ''
     related_change_rate: float | None = None
+    signal_type: str = ''
+    signal_strength: float | None = None

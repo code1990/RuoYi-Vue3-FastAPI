@@ -42,4 +42,18 @@ class FutureRelationService:
             related = selected.get((row.related_market_code, row.related_product_code, row.related_contract_prefix), (0, '', None))
             row.source_contract, row.source_change_rate = source[1:]
             row.related_contract, row.related_change_rate = related[1:]
+            row.signal_type, row.signal_strength = FutureRelationService._signal(row)
         return rows
+
+    @staticmethod
+    def _signal(row: FutureRelationModel) -> tuple[str, float | None]:
+        left, right = row.source_change_rate, row.related_change_rate
+        if left is None or right is None or not left or not right:
+            return '', None
+        same_direction = left * right > 0
+        expected = not same_direction if row.relation_type == 'inverse' else same_direction
+        spread = abs(left - right)
+        if not expected:
+            return ('divergence', spread) if spread >= 1.5 else ('', None)
+        strength = min(abs(left), abs(right)) / max(abs(left), abs(right))
+        return ('strong_resonance', strength) if abs(left) + abs(right) >= 1.5 and strength >= 0.65 else ('', None)

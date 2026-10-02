@@ -4,7 +4,7 @@
       <template #header>合约关联</template>
       <el-table v-loading="loading" :data="groups" border>
         <el-table-column label="品种" prop="groupName" min-width="100" />
-        <el-table-column label="合约汇总详情" min-width="520"><template #default="{ row }"><div v-for="item in row.items" :key="item.linkId" class="relation-line"><el-tag :type="tagType(item.relationType)">{{ relationLabel(item.relationType) }}</el-tag> {{ contractName(item.sourceContract, item.marketCode, item.contractPrefix) }}（<span :class="rateClass(item.sourceChangeRate)">{{ percent(item.sourceChangeRate) }}</span>） → {{ contractName(item.relatedContract, item.relatedMarketCode, item.relatedContractPrefix) }}（<span :class="rateClass(item.relatedChangeRate)">{{ percent(item.relatedChangeRate) }}</span>）<span class="remark">{{ item.remark }}</span></div></template></el-table-column>
+        <el-table-column label="合约汇总详情" min-width="520"><template #default="{ row }"><div v-for="item in row.items" :key="item.linkId" :class="['relation-line', item.signalType]"><el-tag :type="tagType(item.relationType)">{{ relationLabel(item.relationType) }}</el-tag> {{ contractName(item.sourceContract, item.marketCode, item.contractPrefix) }}（<span :class="rateClass(item.sourceChangeRate)">{{ percent(item.sourceChangeRate) }}</span>） → {{ contractName(item.relatedContract, item.relatedMarketCode, item.relatedContractPrefix) }}（<span :class="rateClass(item.relatedChangeRate)">{{ percent(item.relatedChangeRate) }}</span>）<b v-if="item.signalType">（{{ item.signalType === 'divergence' ? '市场行情背离' : '强共振' }}）</b><span class="remark">{{ item.remark }}</span></div></template></el-table-column>
       </el-table>
     </el-card>
   </div>
@@ -31,5 +31,5 @@ getList()
 
 <style scoped>
 .future-relation-page { padding: 20px; }
-.relation-line { display: flex; align-items: center; gap: 8px; min-height: 32px; }.remark { color: #909399; }.rise { color: #f56c6c; }.fall { color: #67c23a; }
+.relation-line { display: flex; align-items: center; gap: 8px; min-height: 32px; }.remark { color: #909399; }.rise { color: #f56c6c; }.fall { color: #67c23a; }.divergence { font-weight: 700; }.strong_resonance { font-weight: 700; color: #d99a00; }
 </style>
