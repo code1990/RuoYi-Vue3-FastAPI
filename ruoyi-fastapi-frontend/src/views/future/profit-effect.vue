@@ -7,6 +7,7 @@
       <el-table-column prop="marketDate" label="行情日" width="105" />
       <el-table-column prop="direction" label="假设方向" width="90"><template #default="{ row }"><span :class="row.direction === '做多' ? 'rise' : 'fall'">{{ row.direction }}</span></template></el-table-column>
       <el-table-column label="开盘 / 最新" min-width="140"><template #default="{ row }">{{ price(row.openPx) }} / {{ price(row.lastPx) }}</template></el-table-column>
+      <el-table-column label="涨跌幅" width="100"><template #default="{ row }"><span :class="changeRate(row) > 0 ? 'rise' : changeRate(row) < 0 ? 'fall' : ''">{{ signedPercent(changeRate(row)) }}</span></template></el-table-column>
       <el-table-column label="盈利价差" width="115"><template #default="{ row }">{{ price(row.priceSpread) }}</template></el-table-column>
       <el-table-column label="1手净赚" width="115"><template #default="{ row }"><span class="rise">+{{ money(row.netProfit) }}</span></template></el-table-column>
       <el-table-column label="保证金" width="110"><template #default="{ row }">{{ money(row.margin) }}</template></el-table-column>
@@ -29,6 +30,8 @@ const money = value => `${Number(value || 0).toFixed(2)} 元`
 const signedMoney = value => `${Number(value || 0) >= 0 ? '+' : ''}${money(value)}`
 const price = value => Number(value || 0).toFixed(2)
 const percent = value => `${Number(value || 0).toFixed(2)}%`
+const signedPercent = value => `${Number(value || 0) >= 0 ? '+' : ''}${percent(value)}`
+const changeRate = row => (Number(row.lastPx) - Number(row.openPx)) / Number(row.openPx) * 100
 const stockRequired = value => `${percent(value)}${Number(value || 0) > 10 ? '（超单日涨停）' : ''}`
 function getList() { loading.value = true; listFutureProfitEffect().then(response => { rows.value = response.data || [] }).finally(() => { loading.value = false }) }
 getList()
