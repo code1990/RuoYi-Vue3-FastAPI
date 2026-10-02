@@ -10,7 +10,7 @@ from module_future.service.future_option_price_service import FutureOptionPriceS
 
 class FutureOptionPriceServiceTest(unittest.TestCase):
     @patch.dict(os.environ, {'FUYAO_API_KEY': 'test-key'}, clear=False)
-    @patch('module_future.service.future_option_price_service.FutureOptionDao.is_market_contract', return_value=True)
+    @patch('module_future.service.future_option_price_service.FutureOptionDao.is_option_contract', return_value=True)
     @patch('module_future.service.future_option_price_service.requests.get')
     def test_caches_io_daily_research_quote(self, get, _market_contract):
         response = Mock()
@@ -25,7 +25,7 @@ class FutureOptionPriceServiceTest(unittest.TestCase):
                 self.assertEqual(('IO2601-C-4000.CFE', 35.2), connection.execute('SELECT thscode, close_price FROM t_option_quote').fetchone())
         self.assertEqual('IO2601-C-4000.CFE', get.call_args.kwargs['params']['thscode'])
 
-    @patch('module_future.service.future_option_price_service.FutureOptionDao.is_market_contract', return_value=False)
-    def test_rejects_non_io_contract(self, _market_contract) -> None:
-        with self.assertRaisesRegex(ValueError, 'market-pool'):
+    @patch('module_future.service.future_option_price_service.FutureOptionDao.is_option_contract', return_value=False)
+    def test_rejects_unknown_contract(self, _market_contract) -> None:
+        with self.assertRaisesRegex(ValueError, 'Unknown option contract'):
             FutureOptionPriceService.get_intraday('10011425.SH')

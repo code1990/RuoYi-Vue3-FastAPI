@@ -16,8 +16,8 @@ class FutureOptionPriceService:
 
     @classmethod
     def _request(cls, endpoint: str, thscode: str) -> dict:
-        if not FutureOptionDao.is_market_contract(AppConfig.future_stat_db_path, thscode):
-            raise ValueError('Only market-pool option contracts are supported')
+        if not FutureOptionDao.is_option_contract(AppConfig.future_stat_db_path, thscode):
+            raise ValueError('Unknown option contract')
         load_dotenv(Path(AppConfig.future_stat_db_path).parent / '.env')
         key = os.getenv('HITHINK_FINANCE_API_KEY') or os.getenv('FUYAO_API_KEY')
         if not key:

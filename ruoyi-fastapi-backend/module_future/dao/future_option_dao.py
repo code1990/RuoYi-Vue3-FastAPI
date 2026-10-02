@@ -46,3 +46,8 @@ class FutureOptionDao:
         where, params = cls._pool_where()
         with cls._connect(database_path) as connection:
             return bool(connection.execute(f'SELECT 1 FROM t_option_contract WHERE thscode=? AND ({where})', [thscode, *params]).fetchone())
+
+    @classmethod
+    def is_option_contract(cls, database_path: str, thscode: str) -> bool:
+        with cls._connect(database_path) as connection:
+            return bool(connection.execute('SELECT 1 FROM t_option_contract WHERE thscode=?', (thscode,)).fetchone())
