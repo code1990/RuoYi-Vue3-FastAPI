@@ -2,25 +2,24 @@
   <div class="future-relation-page">
     <el-card shadow="never">
       <template #header>合约关联</template>
-      <el-table v-loading="loading" :data="rows" border>
+      <el-table v-loading="loading" :data="groups" border>
         <el-table-column label="品种" prop="groupName" min-width="100" />
-        <el-table-column label="类别" min-width="90"><template #default="{ row }"><el-tag :type="tagType(row.relationType)">{{ relationLabel(row.relationType) }}</el-tag></template></el-table-column>
-        <el-table-column label="合约汇总详情" min-width="300"><template #default="{ row }">{{ contract(row.marketCode, row.contractPrefix) }} → {{ contract(row.relatedMarketCode, row.relatedContractPrefix) }}</template></el-table-column>
-        <el-table-column label="状态" min-width="100"><template #default="{ row }"><el-tag type="warning">{{ row.reviewStatus === 'pending' ? '待验证' : row.reviewStatus }}</el-tag></template></el-table-column>
-        <el-table-column label="说明" prop="remark" min-width="220" />
+        <el-table-column label="合约汇总详情" min-width="520"><template #default="{ row }"><div v-for="item in row.items" :key="item.linkId" class="relation-line"><el-tag :type="tagType(item.relationType)">{{ relationLabel(item.relationType) }}</el-tag> {{ contract(item.sourceContract, item.marketCode, item.contractPrefix, item.sourceChangeRate) }} → {{ contract(item.relatedContract, item.relatedMarketCode, item.relatedContractPrefix, item.relatedChangeRate) }}<span class="remark">{{ item.remark }}</span></div></template></el-table-column>
       </el-table>
     </el-card>
   </div>
 </template>
 
 <script setup name="FutureRelation">
+import { computed, ref } from 'vue'
 import { listFutureRelations } from '@/api/future/relation'
 
 const loading = ref(false)
 const rows = ref([])
 const labels = { similar: '相似', positive: '正向', inverse: '反向' }
+const groups = computed(() => Object.values(rows.value.reduce((result, item) => { (result[item.groupName] ||= { groupName: item.groupName, items: [] }).items.push(item); return result }, {})))
 
-function contract(market, prefix) { return `${market}/${prefix}` }
+function contract(name, market, prefix, rate) { return `${name || `${market}/${prefix}`}（${rate === null || rate === undefined ? '--' : `${Number(rate).toFixed(2)}%`}）` }
 function relationLabel(type) { return labels[type] || type }
 function tagType(type) { return type === 'positive' ? 'success' : type === 'inverse' ? 'danger' : 'info' }
 function getList() { loading.value = true; listFutureRelations().then(response => { rows.value = response.data || [] }).finally(() => { loading.value = false }) }
@@ -30,4 +29,5 @@ getList()
 
 <style scoped>
 .future-relation-page { padding: 20px; }
+.relation-line { display: flex; align-items: center; gap: 8px; min-height: 32px; }.remark { color: #909399; }
 </style>
