@@ -6,22 +6,27 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
 
 
-future_option_controller = APIRouterPro(prefix='/future/option', order_num=38, tags=['期权-沪深300'])
+future_option_controller = APIRouterPro(prefix='/future/option', order_num=38, tags=['期权-大盘期权池'])
 
 
-@future_option_controller.get('/contracts/io', summary='查询沪深300股指期权合约目录', response_model=DataResponseModel[FutureOptionContractPageModel])
-async def get_io_option_contracts(
+@future_option_controller.get('/varieties/market', summary='查询大盘期权品种', response_model=DataResponseModel[list[FutureOptionVarietyModel]])
+async def get_market_option_varieties() -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_market_varieties())
+
+
+@future_option_controller.get('/contracts/market', summary='查询大盘期权合约目录', response_model=DataResponseModel[FutureOptionContractPageModel])
+async def get_market_option_contracts(
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
     page_size: Annotated[int, Query(alias='pageSize', ge=1, le=1000)] = 100,
 ) -> Response:
     try:
-        result = await FutureOptionService.get_io_contracts(page_num, page_size)
+        result = await FutureOptionService.get_market_contracts(page_num, page_size)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Option data source unavailable') from error
     return ResponseUtil.success(data=result)

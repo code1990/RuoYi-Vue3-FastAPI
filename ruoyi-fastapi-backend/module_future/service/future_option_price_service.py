@@ -8,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 
 from config.env import AppConfig
+from module_future.dao.future_option_dao import FutureOptionDao
 
 
 class FutureOptionPriceService:
@@ -15,8 +16,8 @@ class FutureOptionPriceService:
 
     @classmethod
     def _request(cls, endpoint: str, thscode: str) -> dict:
-        if not thscode.startswith('IO'):
-            raise ValueError('Only CSI 300 index option contracts (IO) are supported')
+        if not FutureOptionDao.is_market_contract(AppConfig.future_stat_db_path, thscode):
+            raise ValueError('Only market-pool option contracts are supported')
         load_dotenv(Path(AppConfig.future_stat_db_path).parent / '.env')
         key = os.getenv('HITHINK_FINANCE_API_KEY') or os.getenv('FUYAO_API_KEY')
         if not key:
