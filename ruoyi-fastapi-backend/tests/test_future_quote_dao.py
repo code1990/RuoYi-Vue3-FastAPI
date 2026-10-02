@@ -20,6 +20,17 @@ class FutureQuoteDaoTest(unittest.TestCase):
             rows, total = FutureQuoteDao.get_page(str(path), 'domestic', None, 1, 50)
             self.assertEqual((total, rows[0]['contract_code'], rows[0]['contract_name'], rows[0]['min5_chgpct']), (1, 'RU888.XSGE', '橡胶主力', 0.2))
 
+    def test_calculates_opening_profit_effect_and_stock_comparison(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'future.db'
+            with sqlite3.connect(path) as connection:
+                connection.executescript('CREATE TABLE t_future_quote (contract_code TEXT, market_code TEXT, product_code TEXT, market_date TEXT, last_px TEXT, px_change TEXT, px_change_rate TEXT, open_px TEXT, high_px TEXT, low_px TEXT, prev_settlement TEXT, payload_json TEXT); CREATE TABLE t_future_product (market_code TEXT, product_code TEXT, market_name TEXT, product_name TEXT);')
+                connection.execute("INSERT INTO t_future_quote VALUES ('C888.XDCE','XDCE','FC.CORN','20261002','2323','23','1','2300','2325','2290','2300','{\"prod_name\":\"玉米主力\"}')")
+                connection.execute("INSERT INTO t_future_product VALUES ('XDCE','FC.CORN','大连商品交易所','玉米')")
+            row = FutureQuoteDao.get_profit_effect(str(path))[0]
+            self.assertEqual(('做多', row['net_profit'], row['margin'], row['fee']), ('做多', 227.6, 2300.0, 2.4))
+            self.assertAlmostEqual(row['stock_same_move_profit'], 23.024)
+
 
 if __name__ == '__main__':
     unittest.main()
