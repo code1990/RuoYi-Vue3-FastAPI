@@ -1,6 +1,6 @@
 <template>
   <div class="profit-effect-page">
-    <el-alert title="开盘方向一致的事后收益效应：国内主力合约按当日开盘价开仓 1 手，按最新价计算；保证金和手续费为参考试算参数，不代表券商实际标准。" type="warning" :closable="false" show-icon />
+    <el-alert title="开盘方向一致的事后收益效应：国内主力合约按当日开盘价开仓 1 手，按最新价计算；股票比较固定为只能做多，期货做空盈利时，同步下跌的股票仍会亏损。" type="warning" :closable="false" show-icon />
     <el-table v-loading="loading" :data="rows" stripe class="table">
       <el-table-column type="index" label="排名" width="64" />
       <el-table-column prop="contractName" label="合约名称" min-width="135" />
@@ -13,7 +13,7 @@
       <el-table-column label="开平成本" width="100"><template #default="{ row }">{{ money(row.fee) }}</template></el-table-column>
       <el-table-column label="需准备资金" width="120"><template #default="{ row }">{{ money(row.capital) }}</template></el-table-column>
       <el-table-column label="期货收益率" width="115"><template #default="{ row }"><span class="rise">+{{ percent(row.profitRate) }}</span></template></el-table-column>
-      <el-table-column label="同成本股票同步赚" min-width="145"><template #default="{ row }">{{ money(row.stockSameMoveProfit) }}</template></el-table-column>
+      <el-table-column label="同成本股票结果" min-width="145"><template #default="{ row }"><span :class="row.stockSameMoveProfit >= 0 ? 'rise' : 'fall'">{{ signedMoney(row.stockSameMoveProfit) }}</span></template></el-table-column>
       <el-table-column label="股票等额需涨" min-width="135"><template #default="{ row }">{{ percent(row.stockRequiredChangeRate) }}</template></el-table-column>
     </el-table>
   </div>
@@ -26,6 +26,7 @@ import { listFutureProfitEffect } from '@/api/future/profit-effect'
 const loading = ref(false)
 const rows = ref([])
 const money = value => `${Number(value || 0).toFixed(2)} 元`
+const signedMoney = value => `${Number(value || 0) >= 0 ? '+' : ''}${money(value)}`
 const price = value => Number(value || 0).toFixed(2)
 const percent = value => `${Number(value || 0).toFixed(2)}%`
 function getList() { loading.value = true; listFutureProfitEffect().then(response => { rows.value = response.data || [] }).finally(() => { loading.value = false }) }

@@ -93,7 +93,7 @@ class FutureQuoteDao:
             margin = open_px * multiplier * margin_rate
             capital = margin + fee
             net_profit = spread * multiplier - fee
-            price_change_rate = spread / open_px * 100
+            price_change_rate = (last_px - open_px) / open_px * 100
             rows.append({
                 'contract_code': quote['contract_code'], 'contract_name': quote['contract_name'], 'market_date': quote['market_date'],
                 'open_px': open_px, 'last_px': last_px, 'direction': '做多' if last_px >= open_px else '做空',
