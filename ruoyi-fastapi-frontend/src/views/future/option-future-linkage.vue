@@ -16,7 +16,7 @@ const underlyingCode = ref('I2709'); const underlyings = ref([]); const loading 
 const rows = computed(() => chainRows.value)
 function percent(value) { return value === null || value === undefined ? '--' : `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}%` }
 function color(value) { return Number(value) > 0 ? 'rise' : Number(value) < 0 ? 'fall' : '' }
-function signal(row) { if (row.dayChangeRate === null || row.dayChangeRate === undefined) return '暂无日线数据'; return row.optionType === 'call' ? '看涨权利金升温，偏多' : '看跌权利金升温，偏空或对冲增强' }
+function signal(row) { if (row.dayChangeRate === null || row.dayChangeRate === undefined) return '暂无日线数据'; if (row.optionType === 'call') return Number(row.dayChangeRate) > 0 ? '看涨权利金升温，偏多增强' : Number(row.dayChangeRate) < 0 ? '看涨权利金下降，看多预期减弱' : '看涨权利金持平'; return Number(row.dayChangeRate) > 0 ? '看跌权利金升温，偏空或对冲增强' : Number(row.dayChangeRate) < 0 ? '看跌权利金下降，偏空预期减弱' : '看跌权利金持平' }
 function load() { loading.value = true; getOptionChain(underlyingCode.value).then(response => { chainRows.value = response.data.rows || []; future.value = response.data.future || {} }).catch(() => ElMessage.error('期权链查询失败')).finally(() => { loading.value = false }) }
 function refreshDaily() { refreshing.value = true; refreshOptionChainDaily(underlyingCode.value).then(() => { ElMessage.success('期权链日线已更新'); load() }).catch(() => ElMessage.error('日线更新失败')).finally(() => { refreshing.value = false }) }
 listOptionUnderlyings().then(response => { underlyings.value = response.data || [] }); load()
