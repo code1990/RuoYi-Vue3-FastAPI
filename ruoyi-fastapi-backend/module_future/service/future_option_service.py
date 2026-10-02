@@ -2,7 +2,7 @@ import asyncio
 
 from config.env import AppConfig
 from module_future.dao.future_option_dao import FutureOptionDao
-from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyModel
+from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyModel, FutureOptionVarietyPageModel
 
 
 class FutureOptionService:
@@ -12,6 +12,6 @@ class FutureOptionService:
         return FutureOptionContractPageModel(rows=rows, total=total, page_num=page_num, page_size=page_size, has_next=page_num * page_size < total)
 
     @classmethod
-    async def get_market_varieties(cls) -> list[FutureOptionVarietyModel]:
-        rows = await asyncio.to_thread(FutureOptionDao.get_market_varieties, AppConfig.future_stat_db_path)
-        return [FutureOptionVarietyModel.model_validate(row) for row in rows]
+    async def get_varieties(cls, page_num: int, page_size: int) -> FutureOptionVarietyPageModel:
+        rows, total = await asyncio.to_thread(FutureOptionDao.get_varieties, AppConfig.future_stat_db_path, page_num, page_size)
+        return FutureOptionVarietyPageModel(rows=rows, total=total, page_num=page_num, page_size=page_size, has_next=page_num * page_size < total)

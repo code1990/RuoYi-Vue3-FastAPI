@@ -6,7 +6,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyModel
+from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyPageModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
@@ -15,9 +15,12 @@ from utils.response_util import ResponseUtil
 future_option_controller = APIRouterPro(prefix='/future/option', order_num=38, tags=['期权-大盘期权池'])
 
 
-@future_option_controller.get('/varieties/market', summary='查询大盘期权品种', response_model=DataResponseModel[list[FutureOptionVarietyModel]])
-async def get_market_option_varieties() -> Response:
-    return ResponseUtil.success(data=await FutureOptionService.get_market_varieties())
+@future_option_controller.get('/varieties', summary='查询期权品种目录', response_model=DataResponseModel[FutureOptionVarietyPageModel])
+async def get_option_varieties(
+    page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
+    page_size: Annotated[int, Query(alias='pageSize', ge=1, le=100)] = 100,
+) -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_varieties(page_num, page_size))
 
 
 @future_option_controller.get('/contracts/market', summary='查询大盘期权合约目录', response_model=DataResponseModel[FutureOptionContractPageModel])

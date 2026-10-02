@@ -33,3 +33,13 @@ class FutureOptionVarietyModel(BaseModel):
     exchange_name: str | None = None
     settlement_type: str | None = None
     contract_multiplier: float | None = None
+
+
+class FutureOptionVarietyPageModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    rows: list[FutureOptionVarietyModel]
+    total: int
+    page_num: int
+    page_size: int
+    has_next: bool

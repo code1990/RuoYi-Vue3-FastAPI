@@ -31,13 +31,14 @@ class FutureOptionDao:
         return [dict(zip(('thscode', 'ticker', 'name', 'variety_code', 'exchange_code', 'list_date', 'last_trade_date'), row)) for row in rows], total
 
     @classmethod
-    def get_market_varieties(cls, database_path: str) -> list[dict]:
-        where, params = cls._pool_where()
+    def get_varieties(cls, database_path: str, page_num: int, page_size: int) -> tuple[list[dict], int]:
         with cls._connect(database_path) as connection:
+            total = connection.execute('SELECT COUNT(*) FROM t_option_base').fetchone()[0]
             rows = connection.execute(
-                f'SELECT variety_code, name, exchange_code, exchange_name, settlement_type, contract_multiplier FROM t_option_base WHERE {where} ORDER BY variety_code', params
+                'SELECT variety_code, name, exchange_code, exchange_name, settlement_type, contract_multiplier FROM t_option_base '
+                'ORDER BY exchange_code, variety_code LIMIT ? OFFSET ?', (page_size, (page_num - 1) * page_size),
             ).fetchall()
-        return [dict(zip(('variety_code', 'name', 'exchange_code', 'exchange_name', 'settlement_type', 'contract_multiplier'), row)) for row in rows]
+        return [dict(zip(('variety_code', 'name', 'exchange_code', 'exchange_name', 'settlement_type', 'contract_multiplier'), row)) for row in rows], total
 
     @classmethod
     def is_market_contract(cls, database_path: str, thscode: str) -> bool:
