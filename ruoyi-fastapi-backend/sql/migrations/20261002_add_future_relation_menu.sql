@@ -7,3 +7,6 @@ WHERE @future_menu_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sys_menu WHERE p
 INSERT INTO sys_role_menu (role_id, menu_id)
 SELECT 1, menu_id FROM sys_menu WHERE parent_id = @future_menu_id AND path = 'relation'
 AND NOT EXISTS (SELECT 1 FROM sys_role_menu role_menu WHERE role_menu.role_id = 1 AND role_menu.menu_id = sys_menu.menu_id);
+
+UPDATE sys_menu SET icon = 'chart', update_by = 'admin', update_time = NOW()
+WHERE parent_id = @future_menu_id AND path = 'relation';
