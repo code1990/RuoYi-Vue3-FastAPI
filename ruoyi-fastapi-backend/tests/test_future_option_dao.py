@@ -16,7 +16,7 @@ class FutureOptionDaoTest(unittest.TestCase):
             rows, total = FutureOptionDao.get_varieties(str(path), 1, 100)
             self.assertEqual((2, 'i'), (total, rows[1]['variety_code']))
 
-    def test_lists_only_io_contracts(self) -> None:
+    def test_lists_contract_summaries(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'option.db'
             with sqlite3.connect(path) as connection:
@@ -25,5 +25,5 @@ class FutureOptionDaoTest(unittest.TestCase):
                     ('IO2601-C-4000.CFE', 'IO2601-C-4000', '沪深300', 'IO', 'CFFEX', '2026-01-01', '2026-01-16'),
                     ('10011425.SH', '510050', '50ETF', '510050O', 'SSE', '2026-01-01', '2026-01-16'),
                 ])
-            rows, total = FutureOptionDao.get_market_contracts(str(path), 1, 100)
-            self.assertEqual((2, '10011425.SH'), (total, rows[0]['thscode']))
+            rows, total = FutureOptionDao.get_contract_summaries(str(path), 1, 100)
+            self.assertEqual((2, 'SSE/510050O'), (total, rows[1]['code']))

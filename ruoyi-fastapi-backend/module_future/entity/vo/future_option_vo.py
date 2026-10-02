@@ -2,22 +2,19 @@ from pydantic import BaseModel, ConfigDict
 from pydantic.alias_generators import to_camel
 
 
-class FutureOptionContractModel(BaseModel):
+class FutureOptionContractSummaryModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    thscode: str
-    ticker: str | None = None
+    code: str
     name: str | None = None
-    variety_code: str | None = None
-    exchange_code: str | None = None
-    list_date: str | None = None
-    last_trade_date: str | None = None
+    contract_code_summary: str | None = None
+    name_summary: str | None = None
 
 
-class FutureOptionContractPageModel(BaseModel):
+class FutureOptionContractSummaryPageModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    rows: list[FutureOptionContractModel]
+    rows: list[FutureOptionContractSummaryModel]
     total: int
     page_num: int
     page_size: int

@@ -6,7 +6,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionContractPageModel, FutureOptionVarietyPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionContractSummaryPageModel, FutureOptionVarietyPageModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
@@ -23,13 +23,15 @@ async def get_option_varieties(
     return ResponseUtil.success(data=await FutureOptionService.get_varieties(page_num, page_size))
 
 
-@future_option_controller.get('/contracts/market', summary='查询大盘期权合约目录', response_model=DataResponseModel[FutureOptionContractPageModel])
-async def get_market_option_contracts(
+@future_option_controller.get('/contracts', summary='查询全部期权合约汇总', response_model=DataResponseModel[FutureOptionContractSummaryPageModel])
+async def get_option_contract_summaries(
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
-    page_size: Annotated[int, Query(alias='pageSize', ge=1, le=1000)] = 100,
+    page_size: Annotated[int, Query(alias='pageSize', ge=1, le=100)] = 100,
+    variety_code: Annotated[str | None, Query(alias='varietyCode', max_length=40)] = None,
+    exchange_code: Annotated[str | None, Query(alias='exchangeCode', max_length=40)] = None,
 ) -> Response:
     try:
-        result = await FutureOptionService.get_market_contracts(page_num, page_size)
+        result = await FutureOptionService.get_contract_summaries(page_num, page_size, variety_code, exchange_code)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Option data source unavailable') from error
     return ResponseUtil.success(data=result)

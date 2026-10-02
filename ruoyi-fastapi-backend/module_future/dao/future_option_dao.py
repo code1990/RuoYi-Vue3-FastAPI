@@ -20,15 +20,16 @@ class FutureOptionDao:
         return sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True)
 
     @classmethod
-    def get_market_contracts(cls, database_path: str, page_num: int, page_size: int) -> tuple[list[dict], int]:
-        where, params = cls._pool_where()
+    def get_contract_summaries(cls, database_path: str, page_num: int, page_size: int, variety_code: str | None = None, exchange_code: str | None = None) -> tuple[list[dict], int]:
+        where, params = ('WHERE variety_code=? AND exchange_code=?', [variety_code, exchange_code]) if variety_code and exchange_code else ('', [])
         with cls._connect(database_path) as connection:
-            total = connection.execute(f'SELECT COUNT(*) FROM t_option_contract WHERE {where}', params).fetchone()[0]
+            total = connection.execute(f'SELECT COUNT(*) FROM (SELECT 1 FROM t_option_contract {where} GROUP BY exchange_code, variety_code)', params).fetchone()[0]
             rows = connection.execute(
-                f'SELECT thscode, ticker, name, variety_code, exchange_code, list_date, last_trade_date FROM t_option_contract WHERE {where} '
-                'ORDER BY variety_code, last_trade_date, thscode LIMIT ? OFFSET ?', [*params, page_size, (page_num - 1) * page_size],
+                f"SELECT exchange_code || '/' || variety_code AS code, MAX(name), GROUP_CONCAT(thscode, '、'), GROUP_CONCAT(DISTINCT name) "
+                f'FROM t_option_contract {where} GROUP BY exchange_code, variety_code ORDER BY exchange_code, variety_code LIMIT ? OFFSET ?',
+                [*params, page_size, (page_num - 1) * page_size],
             ).fetchall()
-        return [dict(zip(('thscode', 'ticker', 'name', 'variety_code', 'exchange_code', 'list_date', 'last_trade_date'), row)) for row in rows], total
+        return [dict(zip(('code', 'name', 'contract_code_summary', 'name_summary'), row)) for row in rows], total
 
     @classmethod
     def get_varieties(cls, database_path: str, page_num: int, page_size: int) -> tuple[list[dict], int]:
