@@ -3,9 +3,9 @@
     <el-card class="quote-chart" shadow="never">
       <template #header>{{ chartTitle }}</template>
       <div class="chart-columns">
-        <div v-for="row in chartRows" :key="row.contractCode" class="chart-column" :title="`${chartName(row.contractName)} ${chartPercent(row.pxChangeRate)}`">
+        <div v-for="row in chartRows" :key="row.contractCode" class="chart-column" :title="`${row.contractName} ${chartPercent(row.pxChangeRate)}`">
           <div class="chart-bar-area"><span :class="['chart-bar', color(row.pxChangeRate)]" :style="{ height: barHeight(row) }" /><span :class="['chart-value', color(row.pxChangeRate)]" :style="{ bottom: `calc(${barHeight(row)} + 2px)` }">{{ chartPercent(row.pxChangeRate) }}</span></div>
-          <span class="chart-name">{{ chartName(row.contractName) }}</span>
+          <span class="chart-name">{{ row.contractName }}</span>
         </div>
       </div>
     </el-card>
@@ -38,7 +38,7 @@ import { listFutureQuote } from '@/api/future/market'
 const route = useRoute()
 const scope = computed(() => route.query.scope === 'overseas' ? 'overseas' : 'domestic')
 const title = computed(() => scope.value === 'overseas' ? '国际期货行情' : '国内期货行情')
-const chartTitle = computed(() => scope.value === 'overseas' ? '国际主力连续合约涨跌幅排名' : '国内主力连续合约涨跌幅排名')
+const chartTitle = computed(() => scope.value === 'overseas' ? '国际主力合约涨幅排名' : '国内主力合约涨幅排名')
 const loading = ref(false)
 const rows = ref([])
 const total = ref(0)
@@ -51,7 +51,6 @@ function handleQuery() { query.pageNum = 1; getList() }
 function number(value, signed = false) { if (value === null || value === undefined) return '-'; const number = Number(value); return `${signed && number > 0 ? '+' : ''}${number}` }
 function percent(value) { return value === null || value === undefined ? '-' : `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}%` }
 function chartPercent(value) { return value === null || value === undefined ? '-' : `${Number(value).toFixed(2)}%` }
-function chartName(value) { return String(value || '').replace(/主力/g, '') }
 function color(value) { return Number(value) > 0 ? 'rise' : Number(value) < 0 ? 'fall' : '' }
 function barHeight(row) { return `${Math.abs(Number(row.pxChangeRate || 0)) / chartMax.value * 190}px` }
 watch(scope, handleQuery)
@@ -60,7 +59,7 @@ getList()
 
 <style scoped>
 .future-market-page { padding: 20px; }
-.quote-chart { margin-bottom: 16px; }
+.quote-chart { margin-bottom: 16px; }.quote-chart :deep(.el-card__body) { overflow-y: hidden; }
 .chart-columns { display: flex; gap: 5px; height: 365px; overflow-x: auto; overflow-y: hidden; padding: 0 4px; }
 .chart-column { display: grid; grid-template-rows: 210px 155px; flex: 0 0 36px; min-width: 36px; text-align: center; }
 .chart-bar-area { position: relative; border-bottom: 1px solid #dcdfe6; }.chart-bar { position: absolute; bottom: 0; left: 10px; width: 16px; min-height: 1px; }
