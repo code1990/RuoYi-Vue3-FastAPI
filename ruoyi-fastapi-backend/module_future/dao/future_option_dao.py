@@ -54,7 +54,7 @@ class FutureOptionDao:
                 parts = thscode.rsplit('.', 1)[0].split('-')
                 latest = connection.execute('SELECT day_change_rate FROM t_option_quote WHERE thscode=? ORDER BY trade_date DESC LIMIT 1', (thscode,)).fetchone() if has_change_rate else []
                 change = latest[0] if latest else None
-                result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[1].upper() == 'C' else 'put', 'strike_price': float(parts[2]), 'day_change_rate': change})
+                result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[-2].upper() == 'C' else 'put', 'strike_price': float(parts[-1]), 'day_change_rate': change})
         return result
 
     @classmethod
