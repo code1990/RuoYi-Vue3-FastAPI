@@ -6,7 +6,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionChainModel, FutureOptionContractSummaryPageModel, FutureOptionVarietyPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionChainResponseModel, FutureOptionContractSummaryPageModel, FutureOptionUnderlyingModel, FutureOptionVarietyPageModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
@@ -37,7 +37,12 @@ async def get_option_contract_summaries(
     return ResponseUtil.success(data=result)
 
 
-@future_option_controller.get('/chain', summary='查询期货标的对应期权链', response_model=DataResponseModel[list[FutureOptionChainModel]])
+@future_option_controller.get('/underlyings', summary='查询可关联期货标的', response_model=DataResponseModel[list[FutureOptionUnderlyingModel]])
+async def get_option_underlyings() -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_underlyings())
+
+
+@future_option_controller.get('/chain', summary='查询期货标的对应期权链', response_model=DataResponseModel[FutureOptionChainResponseModel])
 async def get_option_chain(underlying_code: Annotated[str, Query(alias='underlyingCode', min_length=2, max_length=40)]) -> Response:
     return ResponseUtil.success(data=await FutureOptionService.get_underlying_chain(underlying_code.upper()))
 

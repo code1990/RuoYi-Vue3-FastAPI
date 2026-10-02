@@ -1,4 +1,6 @@
 import sqlite3
+import json
+import re
 from pathlib import Path
 
 
@@ -53,6 +55,21 @@ class FutureOptionDao:
                 change = (latest[0][0] / latest[1][0] - 1) * 100 if len(latest) == 2 and latest[0][0] and latest[1][0] else None
                 result.append({'thscode': thscode, 'name': name, 'option_type': 'call' if parts[1].upper() == 'C' else 'put', 'strike_price': float(parts[2]), 'day_change_rate': change})
         return result
+
+    @classmethod
+    def get_underlyings(cls, database_path: str) -> list[dict]:
+        with cls._connect(database_path) as connection:
+            rows = connection.execute("SELECT substr(thscode, 1, instr(thscode, '-') - 1), MIN(name) FROM t_option_contract WHERE instr(thscode, '-') > 0 GROUP BY 1 ORDER BY 1").fetchall()
+        return [{'underlying_code': code, 'name': re.sub(r'[购沽]\d+(?:\.\d+)?$', '', name or '')} for code, name in rows]
+
+    @classmethod
+    def get_underlying_future(cls, database_path: str, underlying_code: str) -> dict:
+        with cls._connect(database_path) as connection:
+            row = connection.execute("SELECT contract_code, last_px, px_change_rate, payload_json FROM t_future_quote WHERE contract_code LIKE ? LIMIT 1", (f'{underlying_code}.%',)).fetchone()
+        if not row:
+            return {'contract_code': underlying_code, 'contract_name': '', 'last_px': None, 'px_change_rate': None}
+        contract_code, last_px, change_rate, payload = row
+        return {'contract_code': contract_code, 'contract_name': json.loads(payload).get('prod_name', ''), 'last_px': last_px, 'px_change_rate': change_rate}
 
     @classmethod
     def is_market_contract(cls, database_path: str, thscode: str) -> bool:

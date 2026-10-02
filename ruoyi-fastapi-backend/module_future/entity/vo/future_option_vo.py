@@ -50,3 +50,26 @@ class FutureOptionChainModel(BaseModel):
     option_type: str
     strike_price: float
     day_change_rate: float | None = None
+
+
+class FutureOptionUnderlyingModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    underlying_code: str
+    name: str | None = None
+
+
+class FutureOptionUnderlyingFutureModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    contract_code: str
+    contract_name: str = ''
+    last_px: float | None = None
+    px_change_rate: float | None = None
+
+
+class FutureOptionChainResponseModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    future: FutureOptionUnderlyingFutureModel
+    rows: list[FutureOptionChainModel]
