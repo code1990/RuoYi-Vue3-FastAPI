@@ -2,7 +2,7 @@ import asyncio
 
 from config.env import AppConfig
 from module_future.dao.future_option_dao import FutureOptionDao
-from module_future.entity.vo.future_option_vo import FutureOptionChainModel, FutureOptionChainResponseModel, FutureOptionContractSummaryPageModel, FutureOptionUnderlyingModel, FutureOptionVarietyModel, FutureOptionVarietyPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionChainModel, FutureOptionChainResponseModel, FutureOptionContractSummaryPageModel, FutureOptionLinkageSummaryModel, FutureOptionUnderlyingModel, FutureOptionVarietyModel, FutureOptionVarietyPageModel
 
 
 class FutureOptionService:
@@ -28,3 +28,8 @@ class FutureOptionService:
     async def get_underlyings(cls) -> list[FutureOptionUnderlyingModel]:
         rows = await asyncio.to_thread(FutureOptionDao.get_underlyings, AppConfig.future_stat_db_path)
         return [FutureOptionUnderlyingModel.model_validate(row) for row in rows]
+
+    @classmethod
+    async def get_linkage_summary(cls) -> list[FutureOptionLinkageSummaryModel]:
+        rows = await asyncio.to_thread(FutureOptionDao.get_linkage_summary, AppConfig.future_stat_db_path)
+        return [FutureOptionLinkageSummaryModel.model_validate(row) for row in rows]

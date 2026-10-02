@@ -88,6 +88,35 @@ class FutureOptionDao:
         return {'contract_code': contract_code, 'contract_name': json.loads(payload).get('prod_name', ''), 'last_px': last_px, 'px_change_rate': change_rate}
 
     @classmethod
+    def get_linkage_summary(cls, database_path: str) -> list[dict]:
+        with cls._connect(database_path) as connection:
+            quotes = {row[0].split('.', 1)[0]: row for row in connection.execute('SELECT contract_code, market_date, last_px, px_change_rate, payload_json FROM t_future_quote')}
+            option_rates = {row[0]: (row[1], row[2]) for row in connection.execute('SELECT thscode, trade_date, day_change_rate FROM t_option_quote')}
+            contracts = connection.execute('SELECT thscode FROM t_option_contract').fetchall()
+        grouped = {}
+        for (thscode,) in contracts:
+            parsed = cls.parse_option_code(thscode)
+            cached = option_rates.get(thscode)
+            if not parsed or not cached or cached[1] is None:
+                continue
+            underlying, option_type, _ = parsed
+            future = quotes.get(underlying)
+            future_rate, option_rate = float(future[3] or 0) if future else 0, float(cached[1] or 0)
+            if not future or future[1] != cached[0] or not future_rate or not option_rate:
+                continue
+            entry = grouped.setdefault(underlying, {'future': future, 'call': [0, 0], 'put': [0, 0]})
+            bucket = entry[option_type]
+            bucket[1] += 1
+            aligned = future_rate * option_rate > 0 if option_type == 'call' else future_rate * option_rate < 0
+            bucket[0] += int(aligned)
+        rows = []
+        for underlying, entry in grouped.items():
+            contract_code, _, last_px, rate, payload = entry['future']
+            def result(values): return None if values[1] < 3 else {'aligned': values[0], 'total': values[1], 'rate': values[0] / values[1] * 100}
+            rows.append({'contract_code': contract_code, 'contract_name': json.loads(payload).get('prod_name', ''), 'last_px': last_px, 'px_change_rate': rate, 'put': result(entry['put']), 'call': result(entry['call'])})
+        return sorted(rows, key=lambda row: row['contract_code'])
+
+    @classmethod
     def is_market_contract(cls, database_path: str, thscode: str) -> bool:
         where, params = cls._pool_where()
         with cls._connect(database_path) as connection:

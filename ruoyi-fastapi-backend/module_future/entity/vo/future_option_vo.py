@@ -73,3 +73,14 @@ class FutureOptionChainResponseModel(BaseModel):
 
     future: FutureOptionUnderlyingFutureModel
     rows: list[FutureOptionChainModel]
+
+
+class FutureOptionLinkageSummaryModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    contract_code: str
+    contract_name: str = ''
+    last_px: float | None = None
+    px_change_rate: float | None = None
+    put: dict | None = None
+    call: dict | None = None

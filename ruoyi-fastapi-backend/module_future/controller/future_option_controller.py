@@ -6,7 +6,7 @@ from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_future.entity.vo.future_option_vo import FutureOptionChainResponseModel, FutureOptionContractSummaryPageModel, FutureOptionUnderlyingModel, FutureOptionVarietyPageModel
+from module_future.entity.vo.future_option_vo import FutureOptionChainResponseModel, FutureOptionContractSummaryPageModel, FutureOptionLinkageSummaryModel, FutureOptionUnderlyingModel, FutureOptionVarietyPageModel
 from module_future.service.future_option_price_service import FutureOptionPriceService
 from module_future.service.future_option_service import FutureOptionService
 from utils.response_util import ResponseUtil
@@ -40,6 +40,11 @@ async def get_option_contract_summaries(
 @future_option_controller.get('/underlyings', summary='查询可关联期货标的', response_model=DataResponseModel[list[FutureOptionUnderlyingModel]])
 async def get_option_underlyings() -> Response:
     return ResponseUtil.success(data=await FutureOptionService.get_underlyings())
+
+
+@future_option_controller.get('/linkage/summary', summary='查询期权期货联动汇总', response_model=DataResponseModel[list[FutureOptionLinkageSummaryModel]])
+async def get_option_linkage_summary() -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_linkage_summary())
 
 
 @future_option_controller.get('/chain', summary='查询期货标的对应期权链', response_model=DataResponseModel[FutureOptionChainResponseModel])
