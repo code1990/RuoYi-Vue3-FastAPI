@@ -4,6 +4,7 @@ from pathlib import Path
 
 
 class FutureQuoteDao:
+    STOCK_DAILY_LIMIT_RATE = 10.0
     MARKETS = {
         'domestic': ('XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'),
         'overseas': ('CBOT', 'CME', 'NYMEX', 'COMEX'),
@@ -98,7 +99,8 @@ class FutureQuoteDao:
                 'contract_code': quote['contract_code'], 'contract_name': quote['contract_name'], 'market_date': quote['market_date'],
                 'open_px': open_px, 'last_px': last_px, 'direction': '做多' if last_px >= open_px else '做空',
                 'price_spread': spread, 'net_profit': net_profit, 'margin': margin, 'fee': fee, 'capital': capital,
-                'profit_rate': net_profit / capital * 100, 'stock_same_move_profit': capital * price_change_rate / 100,
+                'profit_rate': net_profit / capital * 100,
+                'stock_same_move_profit': capital * max(-cls.STOCK_DAILY_LIMIT_RATE, min(cls.STOCK_DAILY_LIMIT_RATE, price_change_rate)) / 100,
                 'stock_required_change_rate': net_profit / capital * 100,
             })
         return sorted(rows, key=lambda row: row['net_profit'], reverse=True)
