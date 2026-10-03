@@ -47,6 +47,16 @@ async def get_option_linkage_summary() -> Response:
     return ResponseUtil.success(data=await FutureOptionService.get_linkage_summary())
 
 
+@future_option_controller.get('/linkage/history/contracts', summary='查询期权期货历史联动合约')
+async def get_option_linkage_history_contracts() -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_linkage_history_contracts())
+
+
+@future_option_controller.get('/linkage/history', summary='查询期权期货历史联动')
+async def get_option_linkage_history(underlying_contract: Annotated[str, Query(alias='underlyingContract', min_length=2, max_length=40)]) -> Response:
+    return ResponseUtil.success(data=await FutureOptionService.get_linkage_history(underlying_contract.upper()))
+
+
 @future_option_controller.get('/chain', summary='查询期货标的对应期权链', response_model=DataResponseModel[FutureOptionChainResponseModel])
 async def get_option_chain(underlying_code: Annotated[str, Query(alias='underlyingCode', min_length=2, max_length=40)]) -> Response:
     return ResponseUtil.success(data=await FutureOptionService.get_underlying_chain(underlying_code.upper()))

@@ -33,3 +33,11 @@ class FutureOptionService:
     async def get_linkage_summary(cls) -> list[FutureOptionLinkageSummaryModel]:
         rows = await asyncio.to_thread(FutureOptionDao.get_linkage_summary, AppConfig.future_stat_db_path)
         return [FutureOptionLinkageSummaryModel.model_validate(row) for row in rows]
+
+    @classmethod
+    async def get_linkage_history_contracts(cls) -> list[dict]:
+        return await asyncio.to_thread(FutureOptionDao.get_linkage_history_contracts, AppConfig.future_stat_db_path)
+
+    @classmethod
+    async def get_linkage_history(cls, underlying_contract: str) -> dict:
+        return await asyncio.to_thread(FutureOptionDao.get_linkage_history, AppConfig.future_stat_db_path, underlying_contract)

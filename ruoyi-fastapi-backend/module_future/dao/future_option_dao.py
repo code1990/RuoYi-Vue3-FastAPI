@@ -117,6 +117,48 @@ class FutureOptionDao:
         return sorted(rows, key=lambda row: row['contract_code'])
 
     @classmethod
+    def get_linkage_history_contracts(cls, database_path: str) -> list[dict]:
+        with cls._connect(database_path) as connection:
+            try:
+                rows = connection.execute(
+                    "SELECT underlying_contract,product_code,MIN(trade_date),MAX(trade_date),COUNT(*) "
+                    "FROM t_option_future_linkage_daily GROUP BY underlying_contract,product_code ORDER BY underlying_contract"
+                ).fetchall()
+            except sqlite3.OperationalError:
+                return []
+        return [dict(zip(('underlying_contract', 'product_code', 'first_trade_date', 'last_trade_date', 'samples'), row)) for row in rows]
+
+    @classmethod
+    def get_linkage_history(cls, database_path: str, underlying_contract: str) -> dict:
+        with cls._connect(database_path) as connection:
+            try:
+                summary = connection.execute(
+                    "SELECT product_code,MIN(trade_date),MAX(trade_date),SUM(is_aligned),COUNT(*) "
+                    "FROM t_option_future_linkage_daily WHERE underlying_contract=? GROUP BY product_code", (underlying_contract,)
+                ).fetchone()
+                rows = connection.execute(
+                    "SELECT trade_date,MAX(future_continuous_code),MAX(future_change_rate),"
+                    "SUM(CASE WHEN option_type='call' THEN is_aligned ELSE 0 END),SUM(CASE WHEN option_type='call' THEN 1 ELSE 0 END),"
+                    "SUM(CASE WHEN option_type='put' THEN is_aligned ELSE 0 END),SUM(CASE WHEN option_type='put' THEN 1 ELSE 0 END) "
+                    "FROM t_option_future_linkage_daily WHERE underlying_contract=? GROUP BY trade_date ORDER BY trade_date DESC", (underlying_contract,)
+                ).fetchall()
+            except sqlite3.OperationalError:
+                summary, rows = None, []
+        if not summary:
+            return {'contract_code': underlying_contract, 'rows': [], 'call': None, 'put': None}
+        product, first_day, last_day, aligned, total = summary
+        def result(values: tuple[int, int]) -> dict | None:
+            return None if not values[1] else {'aligned': values[0], 'total': values[1], 'rate': values[0] / values[1] * 100}
+        output = []
+        calls, puts = [0, 0], [0, 0]
+        for day, continuous, rate, call_aligned, call_total, put_aligned, put_total in rows:
+            calls[0] += call_aligned; calls[1] += call_total; puts[0] += put_aligned; puts[1] += put_total
+            output.append({'trade_date': day, 'future_continuous_code': continuous, 'future_change_rate': rate,
+                           'call': result((call_aligned, call_total)), 'put': result((put_aligned, put_total))})
+        return {'contract_code': underlying_contract, 'product_code': product, 'first_trade_date': first_day, 'last_trade_date': last_day,
+                'aligned': aligned, 'total': total, 'rate': aligned / total * 100, 'call': result(tuple(calls)), 'put': result(tuple(puts)), 'rows': output}
+
+    @classmethod
     def is_market_contract(cls, database_path: str, thscode: str) -> bool:
         where, params = cls._pool_where()
         with cls._connect(database_path) as connection:
