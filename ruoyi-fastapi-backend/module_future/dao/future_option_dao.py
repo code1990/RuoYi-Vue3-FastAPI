@@ -137,7 +137,7 @@ class FutureOptionDao:
                     "FROM t_option_future_linkage_daily WHERE underlying_contract=? GROUP BY product_code", (underlying_contract,)
                 ).fetchone()
                 rows = connection.execute(
-                    "SELECT trade_date,MAX(future_continuous_code),MAX(future_change_rate),"
+                    "SELECT trade_date,MAX(future_continuous_code),MAX(future_series_type),MAX(future_change_rate),"
                     "SUM(CASE WHEN option_type='call' THEN is_aligned ELSE 0 END),SUM(CASE WHEN option_type='call' THEN 1 ELSE 0 END),"
                     "SUM(CASE WHEN option_type='put' THEN is_aligned ELSE 0 END),SUM(CASE WHEN option_type='put' THEN 1 ELSE 0 END) "
                     "FROM t_option_future_linkage_daily WHERE underlying_contract=? GROUP BY trade_date ORDER BY trade_date DESC", (underlying_contract,)
@@ -151,9 +151,9 @@ class FutureOptionDao:
             return None if not values[1] else {'aligned': values[0], 'total': values[1], 'rate': values[0] / values[1] * 100}
         output = []
         calls, puts = [0, 0], [0, 0]
-        for day, continuous, rate, call_aligned, call_total, put_aligned, put_total in rows:
+        for day, reference, series_type, rate, call_aligned, call_total, put_aligned, put_total in rows:
             calls[0] += call_aligned; calls[1] += call_total; puts[0] += put_aligned; puts[1] += put_total
-            output.append({'trade_date': day, 'future_continuous_code': continuous, 'future_change_rate': rate,
+            output.append({'trade_date': day, 'future_reference_code': reference, 'future_series_type': series_type, 'future_change_rate': rate,
                            'call': result((call_aligned, call_total)), 'put': result((put_aligned, put_total))})
         return {'contract_code': underlying_contract, 'product_code': product, 'first_trade_date': first_day, 'last_trade_date': last_day,
                 'aligned': aligned, 'total': total, 'rate': aligned / total * 100, 'call': result(tuple(calls)), 'put': result(tuple(puts)), 'rows': output}
