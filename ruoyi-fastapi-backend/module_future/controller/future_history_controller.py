@@ -10,6 +10,14 @@ from utils.response_util import ResponseUtil
 future_history_controller = APIRouterPro(prefix='/future/history', order_num=39, tags=['期货-历史日线'])
 
 
+@future_history_controller.get('/basis', summary='查询期货主连基差')
+async def get_future_history_basis(thscode: Annotated[str | None, Query(min_length=3, max_length=40)] = None) -> Response:
+    try:
+        return ResponseUtil.success(data=await FutureHistoryService.get_basis(thscode.upper() if thscode else None))
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Future basis data source unavailable') from error
+
+
 @future_history_controller.get('/contracts', summary='查询期货合约目录')
 async def get_future_history_contracts(
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,

@@ -11,6 +11,26 @@ class FutureHistoryDao:
         return sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True)
 
     @classmethod
+    def get_basis(cls, database_path: str, thscode: str | None = None) -> list[dict]:
+        with cls._connect(database_path) as connection:
+            try:
+                if thscode:
+                    rows = connection.execute(
+                        "SELECT thscode,trade_date,contract_name,variety_name,spot_price,close_price,close_basis,close_basis_rate,settle_basis,settle_basis_rate "
+                        "FROM t_future_basis_daily WHERE thscode=? ORDER BY trade_date DESC", (thscode,)
+                    ).fetchall()
+                else:
+                    rows = connection.execute(
+                        "SELECT b.thscode,b.trade_date,b.contract_name,b.variety_name,b.spot_price,b.close_price,b.close_basis,b.close_basis_rate,b.settle_basis,b.settle_basis_rate "
+                        "FROM t_future_basis_daily b JOIN (SELECT thscode,MAX(trade_date) trade_date FROM t_future_basis_daily GROUP BY thscode) latest "
+                        "ON latest.thscode=b.thscode AND latest.trade_date=b.trade_date ORDER BY b.thscode"
+                    ).fetchall()
+            except sqlite3.OperationalError:
+                return []
+        fields = ('thscode', 'trade_date', 'contract_name', 'variety_name', 'spot_price', 'close_price', 'close_basis', 'close_basis_rate', 'settle_basis', 'settle_basis_rate')
+        return [dict(zip(fields, row)) for row in rows]
+
+    @classmethod
     def get_contracts(cls, database_path: str, page_num: int, page_size: int, keyword: str | None) -> tuple[list[dict], int]:
         with cls._connect(database_path) as connection:
             where, params = '', []
