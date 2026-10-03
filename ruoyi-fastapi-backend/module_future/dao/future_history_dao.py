@@ -3,6 +3,18 @@ from pathlib import Path
 
 
 class FutureHistoryDao:
+    @classmethod
+    def get_catalog(cls, database_path: str, kind: str) -> list[dict]:
+        queries = {
+            'varieties': ('SELECT variety_code,name,exchange_code,exchange_name,has_night_session,margin_rate,main_contract_thscode FROM t_future_variety ORDER BY exchange_code,variety_code', ('variety_code','name','exchange_code','exchange_name','has_night_session','margin_rate','main_contract_thscode')),
+            'plates': ('SELECT variety_code,variety_name,plate_level,plate_name FROM t_future_variety_plate ORDER BY plate_name,plate_level,variety_code', ('variety_code','variety_name','plate_level','plate_name')),
+            'roles': ('SELECT role_type,thscode,ticker,contract_name,variety_code,variety_name,exchange_code FROM t_future_contract_role_current ORDER BY role_type,thscode', ('role_type','thscode','ticker','contract_name','variety_code','variety_name','exchange_code')),
+        }
+        sql, fields = queries[kind]
+        with cls._connect(database_path) as connection:
+            try: rows = connection.execute(sql).fetchall()
+            except sqlite3.OperationalError: return []
+        return [dict(zip(fields, row)) for row in rows]
     @staticmethod
     def _connect(database_path: str) -> sqlite3.Connection:
         path = Path(database_path)
