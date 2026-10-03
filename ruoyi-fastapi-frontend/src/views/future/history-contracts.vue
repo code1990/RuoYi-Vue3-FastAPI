@@ -1,0 +1,6 @@
+<template><div class="app-container"><el-card><template #header><el-input v-model="query.keyword" placeholder="代码、名称或品种" clearable style="width:260px" @keyup.enter="search" /><el-button type="primary" @click="search">查询</el-button></template><el-table v-loading="loading" :data="rows" border><el-table-column prop="thscode" label="合约代码" /><el-table-column prop="ticker" label="交易代码" /><el-table-column prop="contract_name" label="名称" /><el-table-column prop="product_code" label="品种" /><el-table-column prop="exchange_code" label="交易所" /><el-table-column prop="list_date" label="上市日" /><el-table-column prop="last_trade_date" label="最后交易日" /></el-table><pagination v-show="total>0" v-model:page="query.pageNum" v-model:limit="query.pageSize" :total="total" @pagination="load" /></el-card></div></template>
+<script setup name="FutureHistoryContracts">
+import { reactive, ref } from 'vue'; import { listFutureHistoryContracts } from '@/api/future/history'
+const rows=ref([]), total=ref(0), loading=ref(false), query=reactive({pageNum:1,pageSize:50,keyword:''})
+function load(){loading.value=true;listFutureHistoryContracts(query).then(r=>{rows.value=r.data.rows;total.value=r.data.total}).finally(()=>loading.value=false)} function search(){query.pageNum=1;load()} load()
+</script>

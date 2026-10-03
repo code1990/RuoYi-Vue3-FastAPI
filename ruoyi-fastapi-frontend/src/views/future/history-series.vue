@@ -1,0 +1,5 @@
+<template><div class="app-container"><el-alert title="连续、主连、加权均为研究序列，并非可直接交易的具体合约。" type="info" :closable="false" show-icon /><el-table v-loading="loading" :data="rows" border class="table"><el-table-column prop="thscode" label="序列代码" /><el-table-column prop="series_name" label="名称" /><el-table-column prop="series_type" label="类型"><template #default="{row}">{{ label(row.series_type) }}</template></el-table-column><el-table-column prop="product_code" label="品种" /><el-table-column prop="exchange_code" label="交易所" /><el-table-column prop="first_trade_date" label="起始日" /><el-table-column prop="last_trade_date" label="最新日" /><el-table-column prop="samples" label="日线数" /></el-table></div></template>
+<script setup name="FutureHistorySeries">
+import { ref } from 'vue'; import { listFutureHistorySeries } from '@/api/future/history'
+const rows=ref([]),loading=ref(false);const label=v=>({continuous:'连续',main:'主连',weighted:'加权'}[v]||v);loading.value=true;listFutureHistorySeries().then(r=>rows.value=r.data||[]).finally(()=>loading.value=false)
+</script><style scoped>.table{margin-top:16px}</style>

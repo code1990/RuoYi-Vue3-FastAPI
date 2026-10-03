@@ -11,6 +11,22 @@ class FutureHistoryDao:
         return sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True)
 
     @classmethod
+    def get_contracts(cls, database_path: str, page_num: int, page_size: int, keyword: str | None) -> tuple[list[dict], int]:
+        with cls._connect(database_path) as connection:
+            where, params = '', []
+            if keyword:
+                where, params = 'WHERE thscode LIKE ? OR contract_name LIKE ? OR product_code LIKE ?', [f'%{keyword}%', f'%{keyword}%', f'%{keyword}%']
+            try:
+                total = connection.execute(f'SELECT COUNT(*) FROM t_future_contract {where}', params).fetchone()[0]
+                rows = connection.execute(
+                    f"SELECT thscode,ticker,contract_name,exchange_code,product_code,list_date,last_trade_date FROM t_future_contract {where} "
+                    "ORDER BY product_code,exchange_code,thscode LIMIT ? OFFSET ?", [*params, page_size, (page_num - 1) * page_size]
+                ).fetchall()
+            except sqlite3.OperationalError:
+                return [], 0
+        return [dict(zip(('thscode', 'ticker', 'contract_name', 'exchange_code', 'product_code', 'list_date', 'last_trade_date'), row)) for row in rows], total
+
+    @classmethod
     def get_series(cls, database_path: str) -> list[dict]:
         with cls._connect(database_path) as connection:
             try:
