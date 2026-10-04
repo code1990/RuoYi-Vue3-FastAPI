@@ -6,6 +6,9 @@ from module_future.dao.future_history_dao import FutureHistoryDao
 
 class FutureHistoryService:
     @classmethod
+    async def get_calendar(cls) -> list[dict]:
+        return await asyncio.to_thread(FutureHistoryDao.get_calendar, AppConfig.future_stat_db_path)
+    @classmethod
     async def get_research_rows(cls, kind: str) -> list[dict]:
         return await asyncio.to_thread(FutureHistoryDao.get_research_rows, AppConfig.future_stat_db_path, kind)
     @classmethod

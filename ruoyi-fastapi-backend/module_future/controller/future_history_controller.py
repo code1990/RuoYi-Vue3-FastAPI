@@ -17,6 +17,8 @@ async def get_future_catalog(kind: str) -> Response:
 async def get_future_research(kind: str) -> Response:
     if kind not in {'warehouse','positions'}: raise HTTPException(status_code=404, detail='Research type not found')
     return ResponseUtil.success(data=await FutureHistoryService.get_research_rows(kind))
+@future_history_controller.get('/calendar', summary='查询期货交易日与时段')
+async def get_future_calendar() -> Response: return ResponseUtil.success(data=await FutureHistoryService.get_calendar())
 
 
 @future_history_controller.get('/basis', summary='查询期货主连基差')

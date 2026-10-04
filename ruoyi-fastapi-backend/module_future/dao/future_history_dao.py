@@ -4,6 +4,12 @@ from pathlib import Path
 
 class FutureHistoryDao:
     @classmethod
+    def get_calendar(cls, database_path: str) -> list[dict]:
+        with cls._connect(database_path) as c:
+            try: rows=c.execute('SELECT exchange_code,representative_contract,trade_date,session_times,timezone FROM t_future_trading_calendar ORDER BY trade_date DESC,exchange_code').fetchall()
+            except sqlite3.OperationalError:return []
+        return [dict(zip(('exchange_code','representative_contract','trade_date','session_times','timezone'),r)) for r in rows]
+    @classmethod
     def get_research_rows(cls, database_path: str, kind: str) -> list[dict]:
         tables={'warehouse':('t_future_warehouse_receipt_daily',('thscode','trade_date','amount','amount_change','equivalent_lots')),'positions':('t_future_contract_position_daily',('trade_date','thscode','company_name','long_position','long_position_change','short_position','short_position_change','net_position','net_position_change'))}
         table,fields=tables[kind]
