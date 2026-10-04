@@ -13,6 +13,10 @@ future_history_controller = APIRouterPro(prefix='/future/history', order_num=39,
 async def get_future_catalog(kind: str) -> Response:
     if kind not in {'varieties', 'plates', 'roles'}: raise HTTPException(status_code=404, detail='Catalog type not found')
     return ResponseUtil.success(data=await FutureHistoryService.get_catalog(kind))
+@future_history_controller.get('/research/{kind}', summary='查询期货仓单或持仓')
+async def get_future_research(kind: str) -> Response:
+    if kind not in {'warehouse','positions'}: raise HTTPException(status_code=404, detail='Research type not found')
+    return ResponseUtil.success(data=await FutureHistoryService.get_research_rows(kind))
 
 
 @future_history_controller.get('/basis', summary='查询期货主连基差')

@@ -4,6 +4,14 @@ from pathlib import Path
 
 class FutureHistoryDao:
     @classmethod
+    def get_research_rows(cls, database_path: str, kind: str) -> list[dict]:
+        tables={'warehouse':('t_future_warehouse_receipt_daily',('thscode','trade_date','amount','amount_change','equivalent_lots')),'positions':('t_future_contract_position_daily',('trade_date','thscode','company_name','long_position','long_position_change','short_position','short_position_change','net_position','net_position_change'))}
+        table,fields=tables[kind]
+        with cls._connect(database_path) as c:
+            try: rows=c.execute(f"SELECT {','.join(fields)} FROM {table} ORDER BY trade_date DESC,thscode LIMIT 5000").fetchall()
+            except sqlite3.OperationalError:return []
+        return [dict(zip(fields,row)) for row in rows]
+    @classmethod
     def get_catalog(cls, database_path: str, kind: str) -> list[dict]:
         queries = {
             'varieties': ('SELECT variety_code,name,exchange_code,exchange_name,has_night_session,margin_rate,main_contract_thscode FROM t_future_variety ORDER BY exchange_code,variety_code', ('variety_code','name','exchange_code','exchange_name','has_night_session','margin_rate','main_contract_thscode')),
