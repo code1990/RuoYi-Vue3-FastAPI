@@ -23,19 +23,78 @@
 >
 > 另外谨慎升级 `package.json` 中锁定的 `pinia`/`vue`/`@vue/*` 相关包的版本，新版本可能 `uni-app` 没有兼容，造成一些奇怪的 bug
 
-## Windows 开发与 APK 打包
+## Windows 开发与 APK 打包（可直接复制）
 
-1. 安装 Node.js 20.19+ 和最新版 HBuilderX，使用终端进入本目录后执行 `corepack enable`、`pnpm install`。
-2. 先执行 `pnpm build:app`。该命令成功才继续使用 HBuilderX 云打包；它只生成 App 资源，不生成签名 APK。
-3. 用 HBuilderX 导入 `ruoyi-fastapi-app` 目录，打开 `src/manifest.json`，选择“发行 → 原生 App-云打包 → Android”。首次发布前替换自己的 AppID 和签名证书。
-4. 生产 APK 接口为 `http://101.34.90.245/prod-api`。云打包时需在 Android 配置中允许 HTTP 明文网络访问；该服务接入 HTTPS 后应改回 HTTPS。
+### 0. 只需安装一次
 
-### 编译失败排查
+1. 安装 [Node.js 20 LTS](https://nodejs.org/)，安装后关闭并重新打开 PowerShell。
+2. 安装最新版 [HBuilderX](https://www.dcloud.io/hbuilderx.html)。
 
-- 仅显示“项目编译失败”不能定位原因。请在 HBuilderX 底部“控制台”展开本次任务，复制第一条 `ERROR` 及其后完整堆栈。
-- 删除 Windows 本机 `node_modules` 后重新执行 `pnpm install`，不要把 `node_modules` 提交到 Git。
-- 确认 HBuilderX 使用的 Node.js 路径为 Node 20.19+，并重新执行 `pnpm build:app`；若命令失败，优先按命令输出修复。
-- 若 HBuilderX 仍提示图标文件不存在，确认已拉取提交 `6925be4` 或更新版本，并在项目根目录检查 `src/static/logo.png` 是否存在。
+在 PowerShell 执行，输出的 Node 版本必须是 `v20.19.0` 或更高：
+
+```powershell
+node -v
+corepack enable
+```
+
+### 1. 拉取代码并安装依赖
+
+将下面第一行的路径改成你的仓库实际位置后，整段复制到 PowerShell 执行：
+
+```powershell
+$project = "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
+Set-Location $project
+git pull origin master
+corepack pnpm install
+```
+
+出现 `ERR_PNPM`、`node 不是内部或外部命令` 或安装失败时，不要进入 HBuilderX；先将完整错误复制出来处理。
+
+### 2. 先在命令行验证编译
+
+仍在同一个 PowerShell 窗口执行：
+
+```powershell
+pnpm build:app
+```
+
+必须看到命令正常结束（退出码为 `0`）才进行云打包。此命令只生成 App 资源，**不会**生成 APK。
+
+如果依赖损坏或切换过 Node 版本，使用下面整段重装后，再执行 `pnpm build:app`：
+
+```powershell
+Set-Location "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
+Remove-Item -Recurse -Force node_modules
+Remove-Item -Force pnpm-lock.yaml -ErrorAction SilentlyContinue
+corepack pnpm install
+pnpm build:app
+```
+
+不要提交 `node_modules` 或本机生成的 `dist`、`unpackage` 目录。
+
+### 3. HBuilderX 云打包 APK
+
+1. 打开 HBuilderX，选择“文件 → 导入 → 从本地目录导入”，选择 `ruoyi-fastapi-app` 文件夹，**不要**选择 `src` 文件夹。
+2. 在项目中打开 `src/manifest.json`，确认 Android 图标路径均为 `src/static/logo.png`，并确认该文件存在。
+3. 若发布为独立 App，在 `src/manifest.json` 替换 `appid` 为自己申请的 DCloud AppID；测试可保留现有 AppID。
+4. 选择“发行 → 原生 App-云打包 → Android”，架构勾选 `armeabi-v7a` 和 `arm64-v8a`；正式发布时填入自己的 Android 签名证书。
+5. 项目接口地址已经固定为 `http://101.34.90.245/prod-api`。如 HBuilderX 出现 Android 网络安全/HTTP 明文访问选项，请开启它；服务器接入 HTTPS 后应将 `src/config.js` 改回 HTTPS 地址并关闭该选项。
+6. 下载 APK，安装到手机，验证登录、首页、头像上传及接口访问。
+
+### 4. HBuilderX 显示“编译失败”时
+
+“项目编译失败”是状态行，不能说明故障原因。按下面顺序处理：
+
+1. 先执行上面的 `pnpm build:app`。若失败，复制 PowerShell 从第一条 `ERROR` 开始的全部内容。
+2. 若命令成功但 HBuilderX 失败，打开 HBuilderX 底部“控制台”，展开最后一次“发行/运行”任务，复制第一条 `ERROR` 及其后的完整堆栈。
+3. 如果错误是图标不存在，执行：
+
+```powershell
+Test-Path "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app\src\static\logo.png"
+```
+
+输出必须为 `True`；否则先执行 `git pull origin master`。
+4. 不要只复制“项目编译失败”这一行；它没有包含可修复的信息。
 
 ### vscode
 
