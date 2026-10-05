@@ -23,12 +23,13 @@ import { listFutureHistoryDaily, listFutureHistorySeries, listFutureBasis, listF
 const chartRef = ref(), chart = ref(), loading = ref(false), series = ref([]), thscode = ref(''), bars = ref([]), roles = ref([]), bases = ref([]), warehouses = ref([]), positions = ref([])
 const current = computed(() => series.value.find(item => item.thscode === thscode.value) || {})
 const title = computed(() => `${thscode.value || '期货'}｜${current.value.series_name || current.value.product_code || ''}`)
-const relatedRole = computed(() => roles.value.find(item => item.thscode === thscode.value) || roles.value.find(item => item.variety_code === current.value.product_code && item.role_type === 'main_continuous') || {})
-const roleLabel = computed(() => ({ main_continuous: '主连', main: '主力', secondary_main: '次主力', commodity_index: '商品指数' })[relatedRole.value.role_type] || '-')
+const mainContract = computed(() => roles.value.find(item => item.variety_code === current.value.product_code && item.role_type === 'main') || {})
+const mainSeriesCode = computed(() => thscode.value.replace(/00(\.[A-Z]+)$/, 'ZL$1'))
+const roleLabel = computed(() => mainContract.value.thscode ? `主力 ${mainContract.value.thscode}` : '-')
 const latest = computed(() => bars.value.at(-1) || {})
-const basis = computed(() => bases.value.find(item => item.thscode === relatedRole.value.thscode) || bases.value.find(item => item.thscode === thscode.value) || {})
-const warehouse = computed(() => warehouses.value.find(item => item.thscode === relatedRole.value.thscode) || warehouses.value.find(item => item.thscode === thscode.value) || {})
-const position = computed(() => positions.value.find(item => item.thscode === relatedRole.value.thscode) || positions.value.find(item => item.thscode === thscode.value) || {})
+const basis = computed(() => bases.value.find(item => item.thscode === mainSeriesCode.value) || bases.value.find(item => item.thscode === thscode.value) || {})
+const warehouse = computed(() => warehouses.value.find(item => item.thscode === mainContract.value.thscode) || warehouses.value.find(item => item.thscode === thscode.value) || {})
+const position = computed(() => positions.value.find(item => item.thscode === mainContract.value.thscode) || positions.value.find(item => item.thscode === thscode.value) || {})
 
 function display(value) { return value === null || value === undefined ? '-' : Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) }
 function percent(value) { return value === null || value === undefined ? '-' : `${(Number(value) * 100).toFixed(2)}%` }
