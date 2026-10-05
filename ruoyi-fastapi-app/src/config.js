@@ -1,6 +1,12 @@
+// APP 打包后不能使用 localhost；生产构建连接已部署的 FastAPI 服务。
+const baseUrl =
+  process.env.NODE_ENV === "production"
+    ? "https://vfadmin.insistence.tech/prod-api"
+    : "http://localhost:9099";
+
 // 应用全局配置
 export default {
-  baseUrl: "http://localhost:9099",
+  baseUrl,
   // 应用信息
   appInfo: {
     // 应用名称
