@@ -39,13 +39,13 @@ corepack enable
 
 ### 1. 拉取代码并安装依赖
 
-将下面第一行的路径改成你的仓库实际位置后，整段复制到 PowerShell 执行：
+**不要在 `src` 目录执行 `npm install`。** 必须在 `ruoyi-fastapi-app` 根目录使用 pnpm。你的目录可直接复制以下命令：
 
 ```powershell
-$project = "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
+$project = "D:\dev\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
 Set-Location $project
 git pull origin master
-corepack pnpm install
+corepack pnpm@10.28.1 install
 ```
 
 出现 `ERR_PNPM`、`node 不是内部或外部命令` 或安装失败时，不要进入 HBuilderX；先将完整错误复制出来处理。
@@ -63,10 +63,10 @@ pnpm build:app
 如果依赖损坏或切换过 Node 版本，使用下面整段重装后，再执行 `pnpm build:app`：
 
 ```powershell
-Set-Location "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
+Set-Location "D:\dev\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"
 Remove-Item -Recurse -Force node_modules
 Remove-Item -Force pnpm-lock.yaml -ErrorAction SilentlyContinue
-corepack pnpm install
+corepack pnpm@10.28.1 install
 pnpm build:app
 ```
 
@@ -90,7 +90,7 @@ pnpm build:app
 3. 如果错误是图标不存在，执行：
 
 ```powershell
-Test-Path "D:\code\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app\src\static\logo.png"
+Test-Path "D:\dev\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app\src\static\logo.png"
 ```
 
 输出必须为 `True`；否则先执行 `git pull origin master`。
