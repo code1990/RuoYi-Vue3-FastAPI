@@ -49,10 +49,10 @@
       "sdkConfigs": {},
       "icons": {
         "android": {
-          "hdpi": "static/logo.png",
-          "xhdpi": "static/logo.png",
-          "xxhdpi": "static/logo.png",
-          "xxxhdpi": "static/logo.png"
+          "hdpi": "src/static/logo.png",
+          "xhdpi": "src/static/logo.png",
+          "xxhdpi": "src/static/logo.png",
+          "xxxhdpi": "src/static/logo.png"
         }
       }
     }
