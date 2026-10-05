@@ -23,6 +23,20 @@
 >
 > 另外谨慎升级 `package.json` 中锁定的 `pinia`/`vue`/`@vue/*` 相关包的版本，新版本可能 `uni-app` 没有兼容，造成一些奇怪的 bug
 
+## Windows 开发与 APK 打包
+
+1. 安装 Node.js 20.19+ 和最新版 HBuilderX，使用终端进入本目录后执行 `corepack enable`、`pnpm install`。
+2. 先执行 `pnpm build:app`。该命令成功才继续使用 HBuilderX 云打包；它只生成 App 资源，不生成签名 APK。
+3. 用 HBuilderX 导入 `ruoyi-fastapi-app` 目录，打开 `src/manifest.json`，选择“发行 → 原生 App-云打包 → Android”。首次发布前替换自己的 AppID 和签名证书。
+4. 生产 APK 接口为 `http://101.34.90.245/prod-api`。云打包时需在 Android 配置中允许 HTTP 明文网络访问；该服务接入 HTTPS 后应改回 HTTPS。
+
+### 编译失败排查
+
+- 仅显示“项目编译失败”不能定位原因。请在 HBuilderX 底部“控制台”展开本次任务，复制第一条 `ERROR` 及其后完整堆栈。
+- 删除 Windows 本机 `node_modules` 后重新执行 `pnpm install`，不要把 `node_modules` 提交到 Git。
+- 确认 HBuilderX 使用的 Node.js 路径为 Node 20.19+，并重新执行 `pnpm build:app`；若命令失败，优先按命令输出修复。
+- 若 HBuilderX 仍提示图标文件不存在，确认已拉取提交 `6925be4` 或更新版本，并在项目根目录检查 `src/static/logo.png` 是否存在。
+
 ### vscode
 
 使用 `vscode` 的开发者，请先安装 [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) 智能提示与感应插件
