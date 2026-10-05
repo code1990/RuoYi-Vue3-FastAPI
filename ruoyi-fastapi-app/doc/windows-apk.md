@@ -7,6 +7,6 @@
 3. 选择“发行 → 原生 App-云打包”，平台选 Android，架构保留 `armeabi-v7a`、`arm64-v8a`，按需配置自己的证书后生成 APK。
 4. 安装到真机验证登录、头像上传和接口访问。
 
-开发运行时接口为 `http://localhost:9099`；生产构建自动使用 `https://vfadmin.insistence.tech/prod-api`，因此 APK 不会尝试访问手机自身的 localhost。若部署地址变更，只修改 `src/config.js` 的生产地址后重新云打包。
+开发运行时接口为 `http://localhost:9099`；生产构建自动使用 `http://101.34.90.245/prod-api`，因此 APK 不会尝试访问手机自身的 localhost。该服务器当前未配置 HTTPS，云打包时请在 HBuilderX 的 Android 配置中启用 HTTP 明文网络访问；接入 HTTPS 域名后应立即改回 HTTPS 地址。若部署地址变更，只修改 `src/config.js` 的生产地址后重新云打包。
 
 命令行的 `pnpm build:app` 仅生成 App 资源；最终签名 APK 仍在 HBuilderX 的原生 App 云打包流程生成。
