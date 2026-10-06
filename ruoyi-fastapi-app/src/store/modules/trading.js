@@ -14,10 +14,15 @@ export const useTradingStore = defineStore("trading", () => {
   const selectContract = (code) => { selectedCode.value = code; };
   async function refreshQuotes() { await sync(); }
   async function sync() {
-    const [account, orderRows, quoteRows] = await Promise.all([getPaperAccount(), getPaperOrders(), getFutureQuotes()]);
-    cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl; positions.value = account.data.positions; orders.value = orderRows.data;
+    const quoteRows = await getFutureQuotes();
     quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, price: item.lastPx, change: item.pxChangeRate, multiplier: 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
+    try {
+      const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
+      cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl; positions.value = account.data.positions; orders.value = orderRows.data;
+    } catch {
+      // 未登录时首页仍可查看公开行情，账户数据保持为空。
+    }
   }
   async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); await sync(); }
   async function closePosition(id) { await closePaperPosition(id); await sync(); }
