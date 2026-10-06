@@ -66,16 +66,8 @@ function createChart() {
   // #endif
 }
 function changePeriod(value) {
-  const minuteView = value === "minute" || value === "5d";
-  const wasMinuteView = isMinuteView.value;
   period.value = value;
-  // HQChart can switch periods within the same container. Recreating two minute
-  // charts races the old asynchronous callback and can feed it to a destroyed chart.
-  if (minuteView === wasMinuteView && chart) {
-    if (minuteView) chart.ChangeDayCount?.(value === "5d" ? 5 : 1);
-    else chart.ChangePeriod?.(hqPeriod[value]);
-    return;
-  }
+  // ChangeDayCount 会保留旧的多日数据；切换周期必须用独立实例，防止五日图混入旧日期。
   clearChart();
   nextTick(createChart);
 }
