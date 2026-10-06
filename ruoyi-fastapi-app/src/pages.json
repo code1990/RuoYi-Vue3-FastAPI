@@ -26,6 +26,12 @@
       }
     },
     {
+      "path": "pages/kline/index",
+      "style": {
+        "navigationBarTitleText": "技术分析"
+      }
+    },
+    {
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "模拟账户"
