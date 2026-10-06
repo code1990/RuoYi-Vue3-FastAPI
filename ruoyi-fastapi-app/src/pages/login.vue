@@ -52,33 +52,6 @@
         />
       </view>
 
-      <!-- Captcha -->
-      <view
-        class="mb-8 flex items-center justify-between"
-        v-if="captchaEnabled"
-      >
-        <view class="group relative mr-3 flex-1">
-          <view
-            class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-blue-500"
-          >
-            <view class="i-mdi-security text-xl"></view>
-          </view>
-          <input
-            v-model="loginForm.code"
-            type="number"
-            class="h-12 w-full rounded-xl bg-gray-50 pl-12 pr-4 text-sm text-gray-700 outline-none transition-all focus:bg-white focus:ring-2 focus:ring-blue-400"
-            placeholder="验证码"
-            maxlength="4"
-          />
-        </view>
-        <view
-          class="h-12 w-28 overflow-hidden rounded-xl bg-gray-100 shadow-sm transition-opacity active:opacity-80"
-          @click="getCode"
-        >
-          <image :src="codeUrl" class="size-full object-cover"></image>
-        </view>
-      </view>
-
       <!-- Login Button -->
       <button
         @click="handleLogin"
@@ -121,23 +94,15 @@
 
 <script setup>
 import { ref, getCurrentInstance } from "vue";
-import { onLoad } from "@dcloudio/uni-app";
-import { getToken } from "@/utils/auth";
-import { getCodeImg } from "@/api/login";
 import { useConfigStore, useUserStore } from "@/store";
 
 const { proxy } = getCurrentInstance();
 const globalConfig = useConfigStore().config;
-const codeUrl = ref("");
-// 验证码开关
-const captchaEnabled = ref(true);
 // 用户注册开关
 const register = ref(false);
 const loginForm = ref({
-  username: "admin",
-  password: "admin123",
-  code: "",
-  uuid: "",
+  username: "",
+  password: "",
 });
 
 // 用户注册
@@ -155,26 +120,12 @@ function handleUserAgrement() {
   proxy.$tab.navigateTo(`/pages/common/agreement/index`);
 }
 
-// 获取图形验证码
-function getCode() {
-  getCodeImg().then((res) => {
-    captchaEnabled.value =
-      res.captchaEnabled === undefined ? true : res.captchaEnabled;
-    if (captchaEnabled.value) {
-      codeUrl.value = "data:image/gif;base64," + res.img;
-      loginForm.value.uuid = res.uuid;
-    }
-  });
-}
-
 // 登录方法
 async function handleLogin() {
   if (loginForm.value.username === "") {
     proxy.$modal.msgError("请输入账号");
   } else if (loginForm.value.password === "") {
     proxy.$modal.msgError("请输入密码");
-  } else if (loginForm.value.code === "" && captchaEnabled.value) {
-    proxy.$modal.msgError("请输入验证码");
   } else {
     proxy.$modal.loading("登录中，请耐心等待...");
     pwdLogin();
@@ -189,11 +140,7 @@ async function pwdLogin() {
       proxy.$modal.closeLoading();
       loginSuccess();
     })
-    .catch(() => {
-      if (captchaEnabled.value) {
-        getCode();
-      }
-    });
+    .catch(() => proxy.$modal.closeLoading());
 }
 
 // 登录成功后，处理函数
@@ -206,15 +153,6 @@ function loginSuccess(result) {
     });
 }
 
-onLoad(() => {
-  //#ifdef H5
-  if (getToken()) {
-    proxy.$tab.reLaunch("/pages/index");
-  }
-  //#endif
-});
-
-getCode();
 </script>
 
 <style lang="scss" scoped>

@@ -46,10 +46,8 @@ export const useUserStore = defineStore("user", () => {
   const loginAction = (userInfo) => {
     const username = userInfo.username.trim();
     const password = userInfo.password;
-    const code = userInfo.code;
-    const uuid = userInfo.uuid;
     return new Promise((resolve, reject) => {
-      login(username, password, code, uuid)
+      login(username, password)
         .then((res) => {
           setToken(res.token);
           SET_TOKEN(res.token);
