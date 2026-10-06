@@ -21,15 +21,19 @@ import { useTradingStore } from "@/store";
 
 const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("MACD"); const error = ref(""); let chart;
 const trading = useTradingStore(); const quote = computed(() => trading.quotes.find(item => item.code === code.value) || { name: name.value, code: code.value });
-const periods = [{ label: "1分", value: "1m" }, { label: "5分", value: "5m" }, { label: "15分", value: "15m" }, { label: "30分", value: "30m" }, { label: "60分", value: "60m" }, { label: "日", value: "1d" }, { label: "周", value: "1w" }, { label: "月", value: "1mo" }];
+const periods = [{ label: "分时", value: "minute" }, { label: "五日", value: "5d" }, { label: "日线", value: "1d" }, { label: "周线", value: "1w" }, { label: "月线", value: "1mo" }, { label: "年线", value: "1y" }, { label: "1分", value: "1m" }, { label: "5分", value: "5m" }, { label: "15分", value: "15m" }, { label: "30分", value: "30m" }, { label: "60分", value: "60m" }];
 const indicators = ["MA", "BOLL", "MACD", "KDJ", "RSI"];
-const hqPeriod = { "1m": 4, "5m": 5, "15m": 6, "30m": 7, "60m": 8, "1d": 0, "1w": 1, "1mo": 2 };
-const apiPeriod = { 0: "1d", 1: "1w", 2: "1mo", 4: "1m", 5: "5m", 6: "15m", 7: "30m", 8: "60m" };
+const hqPeriod = { "1m": 4, "5m": 5, "15m": 6, "30m": 7, "60m": 8, "1d": 0, "1w": 1, "1mo": 2, "1y": 3 };
+const apiPeriod = { 0: "1d", 1: "1w", 2: "1mo", 3: "1y", 4: "1m", 5: "5m", 6: "15m", 7: "30m", 8: "60m" };
+const isMinuteView = computed(() => period.value === "minute" || period.value === "5d");
 function hqRows(rows) { let previous; return rows.map(item => { const text = String(item.time); const row = [Number(text.slice(0, 8)), previous ?? item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; if (text.length > 8) row.push(Number(text.slice(8))); previous = item.close; return row; }); }
 async function network(data, callback) {
   data.PreventDefault = true;
-  const requestedPeriod = apiPeriod[data?.Request?.Data?.period] || period.value;
-  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 300 }); const result = { name: name.value || code.value, symbol: code.value, data: hqRows(response.data.rows || []) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; callback(result); }
+  const requestedPeriod = isMinuteView.value ? period.value : (apiPeriod[data?.Request?.Data?.period] || period.value);
+  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 500 }); const rows = response.data.rows || [];
+    if (data.Name === "MinuteChartContainer::RequestMinuteData") { const last = rows[rows.length - 1]; callback({ code: 0, stock: [{ name: name.value || code.value, symbol: code.value, date: Number(String(last?.time || "").slice(0, 8)), yclose: rows[0]?.open || 0, minute: rows.map(item => { const text = String(item.time); return { date: Number(text.slice(0, 8)), time: Number(text.slice(8)), price: item.close, open: item.open, high: item.high, low: item.low, vol: item.volume || 0, amount: item.turnover || 0, avprice: item.close }; }) }] }); return; }
+    if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); rows.forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); callback({ code: 0, name: name.value || code.value, symbol: code.value, data: [...groups].map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], minute })) }); return; }
+    const result = { name: name.value || code.value, symbol: code.value, data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; callback(result); }
   catch { error.value = "行情暂不可用，请稍后重试"; callback({ name: code.value, symbol: code.value, data: [] }); }
 }
 function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: indicator.value === "MA" || indicator.value === "BOLL" ? "VOL" : indicator.value }]; }
@@ -37,10 +41,10 @@ function createChart() {
   // #ifdef H5
   const target = document.getElementById("future-hqchart"); if (!target || chart) return;
   HQChart.JSChart.GetResource().FrameLogo.Text = null;
-  chart = HQChart.JSChart.Init(target); chart.SetOption({ Type: "历史K线图", Symbol: code.value, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
+  chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: code.value, DayCount: period.value === "5d" ? 5 : 1, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: code.value, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
   // #endif
 }
-function changePeriod(value) { period.value = value; chart?.ChangePeriod?.(hqPeriod[value]); }
+function changePeriod(value) { const minuteView = value === "minute" || value === "5d"; const recreate = isMinuteView.value !== minuteView || (minuteView && period.value !== value); period.value = value; if (recreate) { chart?.Destroy?.(); chart = null; nextTick(createChart); } else chart?.ChangePeriod?.(hqPeriod[value]); }
 function changeIndicator(value) { indicator.value = value; if (!chart) return; chart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); chart.ChangeIndex?.(1, value === "MA" || value === "BOLL" ? "VOL" : value); }
 const number = value => value === null || value === undefined ? "--" : Number(value).toFixed(2);
 const signed = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;

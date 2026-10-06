@@ -4,7 +4,7 @@ import requests
 
 
 class FutureKlineService:
-    PERIODS = {'1m': 1, '5m': 2, '15m': 3, '30m': 4, '60m': 5, '1d': 6, '1w': 7, '1mo': 8, '1y': 9}
+    PERIODS = {'1m': 1, '5m': 2, '15m': 3, '30m': 4, '60m': 5, '1d': 6, '1w': 7, '1mo': 8, '1y': 9, 'minute': 10, '5d': 11}
 
     @classmethod
     def get(cls, contract_code: str, period: str, count: int) -> dict[str, Any]:
