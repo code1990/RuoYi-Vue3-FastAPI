@@ -94,6 +94,7 @@
 
 <script setup>
 import { ref, getCurrentInstance } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import { useConfigStore, useUserStore } from "@/store";
 
 const { proxy } = getCurrentInstance();
@@ -101,8 +102,8 @@ const globalConfig = useConfigStore().config;
 // 用户注册开关
 const register = ref(false);
 const loginForm = ref({
-  username: "",
-  password: "",
+  username: "admin",
+  password: "admin123",
 });
 
 // 用户注册
@@ -152,6 +153,8 @@ function loginSuccess(result) {
       proxy.$tab.reLaunch("/pages/index");
     });
 }
+
+onLoad(() => handleLogin());
 
 </script>
 
