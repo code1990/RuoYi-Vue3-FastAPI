@@ -1,8 +1,5 @@
-// APP 打包后不能使用 localhost；生产构建连接已部署的 FastAPI 服务。
-const baseUrl =
-  process.env.NODE_ENV === "production"
-    ? "http://101.34.90.245/prod-api"
-    : "http://localhost:9099";
+// H5、App 和生产构建统一连接线上 FastAPI；不要指向运行 H5 的本机 localhost。
+const baseUrl = "http://101.34.90.245/prod-api";
 
 // 应用全局配置
 export default {
