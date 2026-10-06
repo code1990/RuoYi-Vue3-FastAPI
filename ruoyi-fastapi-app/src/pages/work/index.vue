@@ -10,7 +10,7 @@
     <view class="card order">
       <view class="label">下单手数</view>
       <view class="quantity"><text @click="change(-1)">−</text><input v-model="quantity" type="number" /><text @click="change(1)">＋</text></view>
-      <view class="estimate">预计保证金 ¥ {{ format(margin) }}　·　10 倍杠杆</view>
+      <view class="estimate">预计占用资金 ¥ {{ format(margin) }}　·　无杠杆训练</view>
       <view class="actions"><button class="short" @click="submit('空')">卖出开空</button><button class="long" @click="submit('多')">买入开多</button></view>
     </view>
     <view class="section"><text>当前持仓</text><text class="sub">可用 ¥ {{ format(trading.cash) }}</text></view>
@@ -25,7 +25,7 @@ import { useTradingStore } from "@/store";
 const trading = useTradingStore();
 const quantity = ref(1);
 const quote = computed(() => trading.selectedQuote);
-const margin = computed(() => quote.value.price * quote.value.multiplier * Number(quantity.value || 0) / 10);
+const margin = computed(() => quote.value.price * quote.value.multiplier * Number(quantity.value || 0));
 const format = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 function change(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }

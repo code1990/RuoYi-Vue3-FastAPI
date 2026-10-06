@@ -12,7 +12,7 @@ from config.env import AppConfig
 
 class PaperTradingService:
     INITIAL_CASH = 100000.0
-    MARGIN_RATE = 0.10
+    MARGIN_RATE = 1.0
 
     @classmethod
     async def _quote(cls, contract_code: str) -> dict:

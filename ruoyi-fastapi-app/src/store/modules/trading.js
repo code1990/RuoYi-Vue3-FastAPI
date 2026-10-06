@@ -14,7 +14,7 @@ export const useTradingStore = defineStore("trading", () => {
   const selectContract = (code) => { selectedCode.value = code; };
   async function refreshQuotes() { await sync(); }
   async function sync() {
-    const quoteRows = await getFutureQuotes();
+    const quoteRows = await getFutureQuotes({ pageSize: 100 });
     quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, price: item.lastPx, change: item.pxChangeRate, multiplier: 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
     try {
