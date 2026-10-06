@@ -9,12 +9,12 @@ const seedQuotes = [
 ];
 
 export const useTradingStore = defineStore("trading", () => {
-  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code);
+  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic");
   const selectedQuote = computed(() => quotes.value.find((item) => item.code === selectedCode.value) || quotes.value[0]);
   const selectContract = (code) => { selectedCode.value = code; };
   async function refreshQuotes() { await sync(); }
   async function sync() {
-    const quoteRows = await getFutureQuotes({ pageSize: 100 });
+    const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
     quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, price: item.lastPx, change: item.pxChangeRate, multiplier: 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
     try {
@@ -26,5 +26,6 @@ export const useTradingStore = defineStore("trading", () => {
   }
   async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); await sync(); }
   async function closePosition(id) { await closePaperPosition(id); await sync(); }
-  return { cash, equity, unrealizedPnl, positions, orders, quotes, selectedQuote, refreshQuotes, selectContract, sync, openPosition, closePosition };
+  async function setScope(value) { if (scope.value !== value) { scope.value = value; await sync(); } }
+  return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, refreshQuotes, selectContract, setScope, sync, openPosition, closePosition };
 });
