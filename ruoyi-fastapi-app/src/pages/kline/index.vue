@@ -7,7 +7,7 @@
     <view class="contract-switch"><text @click="switchContract(-1)">‹ 上一合约</text><text>{{ code }}</text><text @click="switchContract(1)">下一合约 ›</text></view>
     <scroll-view scroll-x class="tabs" :show-scrollbar="false"><text v-for="item in periods" :key="item.value" :class="period === item.value ? 'active' : ''" @click="changePeriod(item.value)">{{ item.label }}</text></scroll-view>
     <view class="chart"><!-- #ifdef H5 --><div id="future-hqchart"></div><!-- #endif --><text v-if="error" class="error">{{ error }}</text></view>
-    <scroll-view scroll-x class="tabs indicators" :show-scrollbar="false"><text v-for="item in indicators" :key="item" :class="indicator === item ? 'active' : ''" @click="changeIndicator(item)">{{ item }}</text></scroll-view>
+    <scroll-view scroll-x class="tabs indicators" :show-scrollbar="false"><text v-for="item in activeIndicators" :key="item" :class="indicator === item ? 'active' : ''" @click="changeIndicator(item)">{{ item }}</text></scroll-view>
     <view class="footer"><button size="mini" @click="trade">模拟交易</button><text>数据：新华财经</text></view>
   </view>
 </template>
@@ -23,10 +23,12 @@ const code = ref(""); const name = ref(""); const period = ref("1d"); const indi
 const trading = useTradingStore(); const quote = computed(() => trading.quotes.find(item => item.code === code.value) || { name: name.value, code: code.value });
 const periods = [{ label: "分时", value: "minute" }, { label: "五日", value: "5d" }, { label: "日线", value: "1d" }, { label: "周线", value: "1w" }, { label: "月线", value: "1mo" }, { label: "年线", value: "1y" }, { label: "1分", value: "1m" }, { label: "5分", value: "5m" }, { label: "15分", value: "15m" }, { label: "30分", value: "30m" }, { label: "60分", value: "60m" }];
 const indicators = ["MA", "BOLL", "MACD", "KDJ", "RSI"];
+const minuteIndicators = ["MACD", "KDJ", "RSI"];
 const hqPeriod = { "1m": 4, "5m": 5, "15m": 6, "30m": 7, "60m": 8, "1d": 0, "1w": 1, "1mo": 2, "1y": 3 };
 const apiPeriod = { 0: "1d", 1: "1w", 2: "1mo", 3: "1y", 4: "1m", 5: "5m", 6: "15m", 7: "30m", 8: "60m" };
 const hqSymbol = value => String(value || "").replace(/\.XSGE$/i, ".SHFE").replace(/\.XDCE$/i, ".DCE").replace(/\.XZCE$/i, ".CZCE").replace(/\.XGFE$/i, ".GZFE").replace(/\.XCFE$/i, ".CFFEX").replace(/\.SHGE$/i, ".SHFE");
 const isMinuteView = computed(() => period.value === "minute" || period.value === "5d");
+const activeIndicators = computed(() => isMinuteView.value ? minuteIndicators : indicators);
 function hqRows(rows) { let previous; return rows.map(item => { const text = String(item.time); const row = [Number(text.slice(0, 8)), previous ?? item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; if (text.length > 8) row.push(Number(text.slice(8))); previous = item.close; return row; }); }
 function fillMinuteRows(rows) {
   const byDate = new Map();
@@ -62,16 +64,17 @@ function createChart() {
   // #ifdef H5
   const target = document.getElementById("future-hqchart"); if (!target || chart) return; target.innerHTML = "";
   HQChart.JSChart.GetResource().FrameLogo.Text = null;
-  chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: hqSymbol(code.value), DayCount: period.value === "5d" ? 5 : 1, MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
+  chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: hqSymbol(code.value), DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: minuteIndicators.includes(indicator.value) ? indicator.value : "MACD" }], MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
   // #endif
 }
 function changePeriod(value) {
   period.value = value;
+  if (isMinuteView.value && !minuteIndicators.includes(indicator.value)) indicator.value = "MACD";
   // ChangeDayCount 会保留旧的多日数据；切换周期必须用独立实例，防止五日图混入旧日期。
   clearChart();
   nextTick(createChart);
 }
-function changeIndicator(value) { indicator.value = value; if (!chart) return; chart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); chart.ChangeIndex?.(1, value === "MA" || value === "BOLL" ? "VOL" : value); }
+function changeIndicator(value) { indicator.value = value; if (!chart) return; if (isMinuteView.value) { chart.ChangeIndex?.(2, value); return; } chart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); chart.ChangeIndex?.(1, value === "MA" || value === "BOLL" ? "VOL" : value); }
 const number = value => value === null || value === undefined ? "--" : Number(value).toFixed(2);
 const signed = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 const priceClass = computed(() => Number(quote.value.change) >= 0 ? "up" : "down");
