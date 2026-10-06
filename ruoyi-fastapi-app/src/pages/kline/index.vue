@@ -40,6 +40,9 @@ async function network(data, callback) {
   catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") callback(emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") callback(emptyHistoryMinute()); else callback({ name: code.value, symbol: code.value, data: [] }); }
 }
 function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: indicator.value === "MA" || indicator.value === "BOLL" ? "VOL" : indicator.value }]; }
+function clearChart() { chart?.ChartDestroy?.(); chart = null; // #ifdef H5
+  const target = document.getElementById("future-hqchart"); while (target?.hasChildNodes()) target.removeChild(target.lastChild); // #endif
+}
 function createChart() {
   // #ifdef H5
   const target = document.getElementById("future-hqchart"); if (!target || chart) return; target.innerHTML = "";
@@ -47,7 +50,7 @@ function createChart() {
   chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: code.value, DayCount: period.value === "5d" ? 5 : 1, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: code.value, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
   // #endif
 }
-function changePeriod(value) { const minuteView = value === "minute" || value === "5d"; const recreate = isMinuteView.value !== minuteView || (minuteView && period.value !== value); period.value = value; if (recreate) { chart?.Destroy?.(); chart = null; nextTick(createChart); } else chart?.ChangePeriod?.(hqPeriod[value]); }
+function changePeriod(value) { const minuteView = value === "minute" || value === "5d"; const recreate = isMinuteView.value !== minuteView || (minuteView && period.value !== value); period.value = value; if (recreate) { clearChart(); nextTick(createChart); } else chart?.ChangePeriod?.(hqPeriod[value]); }
 function changeIndicator(value) { indicator.value = value; if (!chart) return; chart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); chart.ChangeIndex?.(1, value === "MA" || value === "BOLL" ? "VOL" : value); }
 const number = value => value === null || value === undefined ? "--" : Number(value).toFixed(2);
 const signed = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
@@ -55,7 +58,7 @@ const priceClass = computed(() => Number(quote.value.change) >= 0 ? "up" : "down
 function switchContract(direction) { const contracts = trading.quotes; if (!contracts.length) return; const index = Math.max(0, contracts.findIndex(item => item.code === code.value)); const next = contracts[(index + direction + contracts.length) % contracts.length]; code.value = next.code; name.value = next.name; uni.setNavigationBarTitle({ title: next.name || next.code }); chart?.ChangeSymbol?.(next.code); }
 function trade() { uni.switchTab({ url: "/pages/work/index" }); }
 onLoad(async query => { code.value = query.code || ""; name.value = query.name || ""; uni.setNavigationBarTitle({ title: name.value || code.value }); try { await trading.refreshQuotes(); } catch {} await nextTick(); createChart(); });
-onBeforeUnmount(() => { chart?.Destroy?.(); chart = null; });
+onBeforeUnmount(clearChart);
 </script>
 
 <style scoped>
