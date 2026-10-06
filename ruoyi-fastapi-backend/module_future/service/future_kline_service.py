@@ -47,4 +47,7 @@ class FutureKlineService:
             if history:
                 last_date = max(str(item['time'])[:8] for item in history)
                 rows = [item for item in history if str(item['time'])[:8] == last_date]
+        if period == '5d':
+            dates = sorted({str(item['time'])[:8] for item in rows})[-5:]
+            rows = [item for item in rows if str(item['time'])[:8] in dates]
         return {'contractCode': contract_code, 'period': period, 'rows': rows}
