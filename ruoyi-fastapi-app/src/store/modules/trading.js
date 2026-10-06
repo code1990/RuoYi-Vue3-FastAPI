@@ -15,7 +15,7 @@ export const useTradingStore = defineStore("trading", () => {
   async function refreshQuotes() { await sync(); }
   async function sync() {
     const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
-    quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, price: item.lastPx, change: item.pxChangeRate, multiplier: 1 }));
+    quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, multiplier: 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
     try {
       const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
