@@ -1,235 +1,39 @@
 <template>
-  <view class="flex h-full flex-col bg-gray-50 overflow-hidden">
-    <scroll-view scroll-y class="flex-1" :show-scrollbar="false">
-      <view class="p-4 pb-24 space-y-6">
-        <!-- Banner -->
-        <view
-          class="relative h-40 w-full overflow-hidden rounded-2xl shadow-lg shadow-indigo-100"
-        >
-          <swiper
-            class="h-40 w-full"
-            :current="swiperDotIndex"
-            @change="changeSwiper"
-            autoplay
-            interval="3000"
-            circular
-          >
-            <swiper-item v-for="(item, index) in data" :key="index">
-              <view class="h-full w-full" @click="clickBannerItem(item)">
-                <image
-                  :src="item.image"
-                  mode="scaleToFill"
-                  class="block h-full w-full"
-                />
-              </view>
-            </swiper-item>
-          </swiper>
-          <!-- Custom Dots -->
-          <view
-            class="absolute bottom-3 right-0 left-0 flex justify-center space-x-2 pointer-events-none"
-          >
-            <view
-              v-for="(item, index) in data"
-              :key="index"
-              class="h-1.5 rounded-full transition-all duration-300"
-              :class="current === index ? 'bg-white w-4' : 'bg-white/50 w-1.5'"
-            >
-            </view>
-          </view>
-        </view>
-
-        <!-- AI Tools Section -->
-        <view>
-          <view class="mb-4 flex items-center space-x-2">
-            <view class="h-4 w-1 rounded-full bg-indigo-500"></view>
-            <text class="text-base font-bold text-gray-800">AI 生产力</text>
-          </view>
-          <view class="grid grid-cols-2 gap-4">
-            <view
-              class="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all active:scale-95"
-              @click="handleToAiChat"
-            >
-              <view
-                class="absolute -right-4 -top-4 size-20 rounded-full bg-indigo-50 opacity-50"
-              ></view>
-              <view class="relative z-10 flex flex-col">
-                <view
-                  class="mb-3 flex size-10 items-center justify-center rounded-xl bg-indigo-500 text-white shadow-md shadow-indigo-200"
-                >
-                  <view class="i-mdi-chat text-xl"></view>
-                </view>
-                <text class="font-bold text-gray-800">智能对话</text>
-                <text class="mt-1 text-xs text-gray-500">智能助手</text>
-              </view>
-            </view>
-            <view
-              class="group relative overflow-hidden rounded-2xl bg-white p-5 shadow-sm transition-all active:scale-95"
-              @click="handleBuilding"
-            >
-              <view
-                class="absolute -right-4 -top-4 size-20 rounded-full bg-purple-50 opacity-50"
-              ></view>
-              <view class="relative z-10 flex flex-col">
-                <view
-                  class="mb-3 flex size-10 items-center justify-center rounded-xl bg-purple-500 text-white shadow-md shadow-purple-200"
-                >
-                  <view class="i-mdi-image-multiple text-xl"></view>
-                </view>
-                <text class="font-bold text-gray-800">图像生成</text>
-                <text class="mt-1 text-xs text-gray-500">创意工坊</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- System Management Section -->
-        <view>
-          <view class="mb-4 flex items-center space-x-2">
-            <view class="h-4 w-1 rounded-full bg-blue-500"></view>
-            <text class="text-base font-bold text-gray-800">系统管理</text>
-          </view>
-          <view class="rounded-2xl bg-white p-5 shadow-sm">
-            <view class="flex flex-wrap justify-between gap-y-4">
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleToUserList"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-500 transition-colors group-active:bg-blue-100"
-                >
-                  <view class="i-mdi-account text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >用户管理</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-orange-50 text-orange-500 transition-colors group-active:bg-orange-100"
-                >
-                  <view class="i-mdi-badge-account text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >角色管理</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-green-50 text-green-500 transition-colors group-active:bg-green-100"
-                >
-                  <view class="i-mdi-office-building text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >部门管理</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-red-50 text-red-500 transition-colors group-active:bg-red-100"
-                >
-                  <view class="i-mdi-cog text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >配置管理</text
-                >
-              </view>
-
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-cyan-50 text-cyan-500 transition-colors group-active:bg-cyan-100"
-                >
-                  <view class="i-mdi-book-open-page-variant text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >字典管理</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-yellow-50 text-yellow-500 transition-colors group-active:bg-yellow-100"
-                >
-                  <view class="i-mdi-bullhorn text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >通知公告</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-pink-50 text-pink-500 transition-colors group-active:bg-pink-100"
-                >
-                  <view class="i-mdi-file-document-outline text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600"
-                  >日志管理</text
-                >
-              </view>
-              <view
-                class="w-[22%] flex flex-col items-center space-y-1.5 active:opacity-60"
-                @click="handleBuilding"
-              >
-                <view
-                  class="flex size-10 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition-colors group-active:bg-gray-100"
-                >
-                  <view class="i-mdi-dots-horizontal text-xl"></view>
-                </view>
-                <text class="text-[11px] font-medium text-gray-600">更多</text>
-              </view>
-            </view>
-          </view>
-        </view>
-      </view>
-    </scroll-view>
+  <view class="page">
+    <view class="notice">模拟下单，不会提交至任何交易所</view>
+    <view class="card quote-card">
+      <view class="contract">{{ quote.name }} <text>{{ quote.code }}</text></view>
+      <view class="price" :class="quote.change >= 0 ? 'up' : 'down'">{{ quote.price }}</view>
+      <text :class="quote.change >= 0 ? 'up' : 'down'">{{ signed(quote.change) }}%</text>
+      <view class="picker"><text v-for="item in trading.quotes" :key="item.code" :class="item.code === quote.code ? 'active' : ''" @click="trading.selectContract(item.code)">{{ item.code }}</text></view>
+    </view>
+    <view class="card order">
+      <view class="label">下单手数</view>
+      <view class="quantity"><text @click="change(-1)">−</text><input v-model="quantity" type="number" /><text @click="change(1)">＋</text></view>
+      <view class="estimate">预计保证金 ¥ {{ format(margin) }}　·　10 倍杠杆</view>
+      <view class="actions"><button class="short" @click="submit('空')">卖出开空</button><button class="long" @click="submit('多')">买入开多</button></view>
+    </view>
+    <view class="section"><text>当前持仓</text><text class="sub">可用 ¥ {{ format(trading.cash) }}</text></view>
+    <view v-if="trading.positions.length" class="card positions"><view v-for="item in trading.positions" :key="item.id" class="position"><view><view class="contract">{{ item.name }} <text>{{ item.code }}</text></view><text class="side" :class="item.side === '多' ? 'up' : 'down'">{{ item.side }} {{ item.quantity }} 手</text></view><button @click="close(item.id)">平仓</button></view></view>
+    <view v-else class="empty">暂无持仓，选择合约后开始模拟交易</view>
   </view>
 </template>
 
 <script setup>
-import { ref, getCurrentInstance } from "vue";
-
-const { proxy } = getCurrentInstance();
-const current = ref(0);
-const swiperDotIndex = ref(0);
-const data = ref([
-  { image: "/static/images/banner/banner01.jpg" },
-  { image: "/static/images/banner/banner02.jpg" },
-  { image: "/static/images/banner/banner03.jpg" },
-]);
-
-function clickBannerItem(item) {
-  console.info(item);
-}
-
-function changeSwiper(e) {
-  current.value = e.detail.current;
-}
-
-function handleToAiChat() {
-  handleBuilding();
-}
-
-function handleToUserList() {
-  handleBuilding();
-}
-
-function handleBuilding() {
-  proxy.$modal.msg("模块建设中~");
-}
+import { computed, ref } from "vue";
+import { useTradingStore } from "@/store";
+const trading = useTradingStore();
+const quantity = ref(1);
+const quote = computed(() => trading.selectedQuote);
+const margin = computed(() => quote.value.price * quote.value.multiplier * Number(quantity.value || 0) / 10);
+const format = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
+function change(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }
+async function submit(side) { await trading.openPosition(side, quantity.value); uni.showToast({ title: `已模拟开${side}`, icon: "none" }); }
+async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
+trading.sync();
 </script>
+
+<style scoped>
+.page{min-height:100vh;background:#f5f7fb;padding:28rpx 30rpx}.notice{font-size:23rpx;color:#8b6731;background:#fff3d8;padding:16rpx 20rpx;border-radius:12rpx;margin-bottom:22rpx}.card{background:#fff;border-radius:24rpx;padding:30rpx;margin-bottom:28rpx}.quote-card{position:relative}.contract{font-size:30rpx;font-weight:650;color:#1e293b}.contract text{font-size:22rpx;color:#9aa5b5;font-weight:400}.price{font-size:54rpx;font-weight:700;margin:22rpx 0 8rpx}.up{color:#e44848}.down{color:#18a56c}.picker{display:flex;gap:14rpx;margin-top:30rpx;overflow:auto}.picker text{font-size:21rpx;background:#f1f4f9;padding:10rpx 15rpx;border-radius:10rpx;color:#718097;white-space:nowrap}.picker .active{background:#e8edff;color:#3556d4}.label{font-size:26rpx;color:#4a5568}.quantity{display:flex;align-items:center;justify-content:space-between;border:1rpx solid #e5eaf2;border-radius:14rpx;margin:18rpx 0;padding:0 22rpx;height:82rpx}.quantity text{font-size:42rpx;color:#3659d6}.quantity input{text-align:center;font-size:32rpx;font-weight:600}.estimate{font-size:22rpx;color:#8b96a8;margin-bottom:26rpx}.actions{display:flex;gap:18rpx}.actions button{flex:1;color:white;border:0;border-radius:14rpx;font-size:28rpx}.short{background:#1fa76d}.long{background:#e44848}.section{display:flex;justify-content:space-between;align-items:center;font-size:30rpx;font-weight:700;color:#17233d;margin:38rpx 0 18rpx}.sub{font-size:22rpx;color:#8290a5;font-weight:400}.positions{padding:0}.position{display:flex;justify-content:space-between;align-items:center;padding:27rpx 30rpx;border-bottom:1rpx solid #edf0f6}.side{font-size:22rpx;display:block;margin-top:9rpx}.position button{font-size:23rpx;color:#3659d6;background:#edf1ff;border:0;border-radius:10rpx;padding:8rpx 18rpx}.empty{color:#9aa5b5;text-align:center;font-size:25rpx;padding:75rpx 0}
+</style>

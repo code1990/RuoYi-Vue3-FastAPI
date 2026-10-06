@@ -1,5 +1,5 @@
 {
-    "name" : "RuoYi-FastAPI移动端",
+    "name" : "期货模拟交易",
     "appid" : "__UNI__221F1FB",
     "description" : "",
     "versionName" : "1.9.0",
@@ -98,7 +98,7 @@
             "port" : 9090,
             "https" : false
         },
-        "title" : "RuoYi-FastAPI-APP",
+        "title" : "期货模拟交易",
         "router" : {
             "mode" : "hash",
             "base" : "./"

@@ -15,20 +15,20 @@
     {
       "path": "pages/index",
       "style": {
-        "navigationBarTitleText": "RuoYi-FastAPI移动端",
+        "navigationBarTitleText": "期货模拟交易",
         "navigationStyle": "custom"
       }
     },
     {
       "path": "pages/work/index",
       "style": {
-        "navigationBarTitleText": "工作台"
+        "navigationBarTitleText": "模拟下单"
       }
     },
     {
       "path": "pages/mine/index",
       "style": {
-        "navigationBarTitleText": "我的"
+        "navigationBarTitleText": "模拟账户"
       }
     },
     {
@@ -108,25 +108,25 @@
         "pagePath": "pages/index",
         "iconPath": "static/images/tabbar/home.png",
         "selectedIconPath": "static/images/tabbar/home_.png",
-        "text": "首页"
+        "text": "行情"
       },
       {
         "pagePath": "pages/work/index",
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
-        "text": "工作台"
+        "text": "交易"
       },
       {
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mine.png",
         "selectedIconPath": "static/images/tabbar/mine_.png",
-        "text": "我的"
+        "text": "资产"
       }
     ]
   },
   "globalStyle": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "RuoYi",
+    "navigationBarTitleText": "期货模拟交易",
     "navigationBarBackgroundColor": "#FFFFFF"
   }
 }

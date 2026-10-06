@@ -1,208 +1,36 @@
 <template>
-  <view class="flex h-full flex-col bg-gray-50">
-    <!-- Header Area -->
-    <view class="bg-white pb-6 rounded-b-3xl shadow-sm z-50">
-      <!-- Title -->
-      <view class="pt-12 pb-4 px-4 flex justify-center items-center">
-        <text class="text-lg font-bold text-gray-800">RuoYi-FastAPI移动端</text>
-      </view>
-
-      <!-- Search & Notification -->
-      <view class="px-4 pb-2">
-        <view class="flex items-center space-x-3">
-          <!-- Search Input -->
-          <view class="flex-1 relative">
-            <view
-              class="absolute left-3 top-0 bottom-0 flex items-center text-gray-400"
-            >
-              <view class="i-mdi-magnify text-lg"></view>
-            </view>
-            <input
-              type="text"
-              placeholder="搜索..."
-              placeholder-class="text-gray-400"
-              class="w-full h-10 rounded-full bg-gray-100 pl-10 pr-4 text-sm text-gray-800"
-            />
-          </view>
-          <!-- Notification -->
-          <view
-            class="relative flex h-10 w-10 items-center justify-center rounded-full bg-gray-50 text-gray-600 active:scale-95 transition-transform border border-gray-100"
-          >
-            <view class="i-mdi-bell-outline text-xl"></view>
-            <view
-              class="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 border border-white"
-            ></view>
-          </view>
-        </view>
+  <view class="page">
+    <view class="header">
+      <view><text class="eyebrow">PAPER FUTURES</text><view class="title">模拟期货</view></view>
+      <view class="refresh" @click="refresh"><text class="i-mdi-refresh"></text></view>
+    </view>
+    <view class="notice">线上模拟盘 · 行情由服务器提供 · 不连接真实交易服务</view>
+    <view class="summary">
+      <text>账户权益</text>
+      <view class="money">¥ {{ format(trading.equity) }}</view>
+      <view class="row"><text>可用 {{ format(trading.cash) }}</text><text :class="trading.unrealizedPnl >= 0 ? 'up' : 'down'">持仓盈亏 {{ signed(trading.unrealizedPnl) }}</text></view>
+    </view>
+    <view class="section-title"><text>热门合约</text><text class="sub">点击选择后下单</text></view>
+    <view class="list">
+      <view v-for="quote in trading.quotes" :key="quote.code" class="quote" @click="trade(quote.code)">
+        <view><view class="contract">{{ quote.name }} <text>{{ quote.code }}</text></view><text class="muted">期货主力合约</text></view>
+        <view class="quote-right"><view class="price" :class="quote.change >= 0 ? 'up' : 'down'">{{ quote.price }}</view><text :class="quote.change >= 0 ? 'up' : 'down'">{{ signed(quote.change) }}%</text></view>
       </view>
     </view>
-
-    <scroll-view
-      scroll-y
-      class="flex-1 overflow-hidden"
-      :show-scrollbar="false"
-    >
-      <view class="p-4 space-y-5 pb-24">
-        <!-- Hero Card -->
-        <view
-          class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white shadow-xl shadow-indigo-200"
-        >
-          <view
-            class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/20 blur-2xl"
-          ></view>
-          <view
-            class="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-white/20 blur-2xl"
-          ></view>
-
-          <view class="relative z-10">
-            <view class="mb-4 flex items-center justify-between">
-              <view
-                class="rounded-lg bg-white/20 px-3 py-1 text-xs font-medium backdrop-blur-sm"
-                >系统运行正常</view
-              >
-              <view class="text-xs opacity-80">刚刚更新</view>
-            </view>
-            <view class="flex items-end justify-between">
-              <view>
-                <view class="text-3xl font-bold">85%</view>
-                <view class="text-sm opacity-90">工作效率</view>
-              </view>
-              <view
-                class="h-10 w-24 overflow-hidden rounded-lg bg-white/10 p-1"
-              >
-                <view class="h-full w-full flex items-end justify-between px-1">
-                  <view class="w-1 bg-white/50 h-2 rounded-full"></view>
-                  <view class="w-1 bg-white/70 h-4 rounded-full"></view>
-                  <view class="w-1 bg-white/40 h-3 rounded-full"></view>
-                  <view class="w-1 bg-white/90 h-6 rounded-full"></view>
-                  <view class="w-1 bg-white/60 h-4 rounded-full"></view>
-                </view>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- Stats Grid -->
-        <view class="grid grid-cols-2 gap-4">
-          <view
-            class="rounded-2xl bg-white p-4 shadow-sm border border-gray-100 flex items-center justify-between"
-          >
-            <view>
-              <view class="text-xs text-gray-500 mb-1">新通知</view>
-              <view class="text-2xl font-bold text-gray-800">12</view>
-            </view>
-            <view
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-500"
-            >
-              <view class="i-mdi-bell text-xl"></view>
-            </view>
-          </view>
-          <view
-            class="rounded-2xl bg-white p-4 shadow-sm border border-gray-100 flex items-center justify-between"
-          >
-            <view>
-              <view class="text-xs text-gray-500 mb-1">待办任务</view>
-              <view class="text-2xl font-bold text-gray-800">5</view>
-            </view>
-            <view
-              class="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-purple-500"
-            >
-              <view class="i-mdi-calendar text-xl"></view>
-            </view>
-          </view>
-        </view>
-
-        <!-- Quick Functions -->
-        <view>
-          <view class="mb-4 flex items-center justify-between">
-            <view class="text-base font-bold text-gray-800">快捷入口</view>
-          </view>
-          <view
-            class="grid grid-cols-4 gap-2 rounded-2xl bg-white p-4 shadow-sm"
-          >
-            <view class="flex flex-col items-center space-y-2">
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-50 text-orange-500"
-              >
-                <view class="i-mdi-file-document-edit text-xl"></view>
-              </view>
-              <view class="text-xs font-medium text-gray-600">申请</view>
-            </view>
-            <view class="flex flex-col items-center space-y-2">
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50 text-green-500"
-              >
-                <view class="i-mdi-newspaper text-xl"></view>
-              </view>
-              <view class="text-xs font-medium text-gray-600">新闻</view>
-            </view>
-            <view class="flex flex-col items-center space-y-2">
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-500"
-              >
-                <view class="i-mdi-chart-bar text-xl"></view>
-              </view>
-              <view class="text-xs font-medium text-gray-600">统计</view>
-            </view>
-            <view class="flex flex-col items-center space-y-2">
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 text-gray-400"
-              >
-                <view class="i-mdi-calendar text-xl"></view>
-              </view>
-              <view class="text-xs font-medium text-gray-600">计划</view>
-            </view>
-          </view>
-        </view>
-
-        <!-- Recent Apps -->
-        <view>
-          <view class="mb-4 flex items-center justify-between">
-            <view class="text-base font-bold text-gray-800">最近更新</view>
-            <view class="text-xs text-blue-500">查看全部</view>
-          </view>
-          <view class="space-y-3">
-            <view
-              class="flex items-center rounded-2xl bg-white p-4 shadow-sm border border-gray-50"
-            >
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-500"
-              >
-                <view class="i-mdi-clipboard-text-outline text-xl"></view>
-              </view>
-              <view class="ml-4 flex-1">
-                <view class="font-bold text-gray-800">请假申请</view>
-                <view class="text-xs text-gray-500">等待经理审批</view>
-              </view>
-              <view
-                class="rounded-full bg-yellow-50 px-3 py-1 text-xs font-medium text-yellow-600"
-                >待处理</view
-              >
-            </view>
-            <view
-              class="flex items-center rounded-2xl bg-white p-4 shadow-sm border border-gray-50"
-            >
-              <view
-                class="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50 text-green-500"
-              >
-                <view class="i-mdi-newspaper text-xl"></view>
-              </view>
-              <view class="ml-4 flex-1">
-                <view class="font-bold text-gray-800">周报</view>
-                <view class="text-xs text-gray-500">提交成功</view>
-              </view>
-              <view
-                class="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-600"
-                >已完成</view
-              >
-            </view>
-          </view>
-        </view>
-      </view>
-    </scroll-view>
+    <view class="tip"><text class="i-mdi-information-outline"></text> 下单采用 10 倍模拟杠杆，盈亏按合约乘数计算。</view>
   </view>
 </template>
 
 <script setup>
-const globalConfig = getApp().globalData.config;
+import { useTradingStore } from "@/store";
+const trading = useTradingStore();
+const format = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
+async function refresh() { await trading.refreshQuotes(); uni.showToast({ title: "账户已刷新", icon: "none" }); }
+function trade(code) { trading.selectContract(code); uni.switchTab({ url: "/pages/work/index" }); }
+trading.sync();
 </script>
+
+<style scoped>
+.page{min-height:100vh;background:#f5f7fb;padding:58rpx 30rpx}.header,.row,.section-title,.quote{display:flex;justify-content:space-between;align-items:center}.eyebrow{font-size:20rpx;letter-spacing:3rpx;color:#7c8aa5}.title{font-size:48rpx;font-weight:700;color:#14213d;margin-top:8rpx}.refresh{width:68rpx;height:68rpx;border-radius:34rpx;background:#fff;display:flex;align-items:center;justify-content:center;color:#3454d1;font-size:36rpx}.notice{font-size:22rpx;color:#8b6731;background:#fff3d8;padding:16rpx 20rpx;border-radius:12rpx;margin:28rpx 0}.summary{color:#fff;background:linear-gradient(135deg,#182b68,#4267df);padding:36rpx;border-radius:28rpx;box-shadow:0 14rpx 30rpx #c9d3f4}.money{font-size:52rpx;font-weight:700;margin:16rpx 0 28rpx}.row{font-size:24rpx;color:#dce4ff}.section-title{font-size:32rpx;font-weight:700;color:#17233d;margin:42rpx 0 20rpx}.sub,.muted{font-size:22rpx;color:#8a96aa;font-weight:400}.list{background:#fff;border-radius:24rpx;overflow:hidden}.quote{padding:30rpx;border-bottom:1rpx solid #edf0f6}.quote:last-child{border:0}.contract{font-size:30rpx;font-weight:600;color:#1e293b}.contract text{font-size:22rpx;color:#9aa5b5;font-weight:400;margin-left:8rpx}.quote-right{text-align:right}.price{font-size:34rpx;font-weight:700;margin-bottom:8rpx}.up{color:#e44848}.down{color:#18a56c}.tip{margin-top:28rpx;color:#7d899d;font-size:23rpx;line-height:1.7}.tip text{margin-right:8rpx}
+</style>

@@ -10,7 +10,7 @@ export default {
   // 应用信息
   appInfo: {
     // 应用名称
-    name: "RuoYi-FastAPI-APP",
+    name: "期货模拟交易",
     // 应用版本
     version: "1.9.0",
     // 应用logo

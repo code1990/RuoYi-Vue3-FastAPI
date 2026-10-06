@@ -48,6 +48,8 @@ git pull origin master
 corepack pnpm@10.28.1 install
 ```
 
+> 不要执行 `npm install`。`.npmrc` 中的 `shamefully-hoist`、`ignore-engines` 是 pnpm 配置，npm 会提示警告，且可能在依赖安装时长时间无输出；按 `Ctrl+C` 中断后，改用上面的 pnpm 命令。
+
 出现 `ERR_PNPM`、`node 不是内部或外部命令` 或安装失败时，不要进入 HBuilderX；先将完整错误复制出来处理。
 
 ### 2. 先在命令行验证编译

@@ -1,209 +1,27 @@
 <template>
-  <view class="flex h-full flex-col bg-gray-50 overflow-hidden">
-    <!-- Header Section -->
-    <view
-      class="relative overflow-hidden bg-gradient-to-r from-blue-500 to-indigo-600 pb-20 pt-16 text-white shadow-lg"
-    >
-      <view
-        class="absolute -right-10 -top-10 size-64 rounded-full bg-white/10 blur-3xl"
-      ></view>
-      <view
-        class="absolute -bottom-10 -left-10 size-40 rounded-full bg-white/10 blur-2xl"
-      ></view>
-
-      <view class="relative z-10 flex items-center justify-between px-6">
-        <view class="flex items-center space-x-4">
-          <!-- Avatar -->
-          <view
-            class="relative overflow-hidden rounded-full border-4 border-white/30 bg-white/20 shadow-xl transition-transform active:scale-95"
-          >
-            <image
-              v-if="avatar"
-              @click="handleToAvatar"
-              :src="avatar"
-              class="size-20 object-cover"
-            />
-            <view
-              v-else
-              class="flex size-20 items-center justify-center bg-white text-gray-400"
-            >
-              <view class="i-mdi-account text-5xl"></view>
-            </view>
-          </view>
-
-          <!-- User Info -->
-          <view class="flex flex-col">
-            <template v-if="name">
-              <view
-                class="text-xl font-bold tracking-wide"
-                @click="handleToInfo"
-              >
-                {{ name }}
-              </view>
-              <view
-                class="mt-1 flex items-center text-sm text-blue-100"
-                @click="handleToInfo"
-              >
-                <text>查看个人信息</text>
-                <view class="i-mdi-chevron-right ml-1 text-xs"></view>
-              </view>
-            </template>
-            <view v-else class="text-xl font-bold" @click="handleToLogin">
-              点击登录
-            </view>
-          </view>
-        </view>
-      </view>
-    </view>
-
-    <!-- Content Section -->
-    <view class="relative z-20 -mt-12 flex-1 px-4 overflow-y-auto">
-      <!-- Quick Actions -->
-      <view
-        class="mb-4 flex items-center justify-between rounded-2xl bg-white p-4 shadow-lg shadow-gray-200/50"
-      >
-        <view
-          class="flex flex-1 flex-col items-center justify-center space-y-2 active:opacity-70"
-          @click="handleJiaoLiuQun"
-        >
-          <view
-            class="flex size-12 items-center justify-center rounded-full bg-pink-50 text-pink-500"
-          >
-            <view class="i-mdi-account-group text-2xl"></view>
-          </view>
-          <text class="text-xs font-medium text-gray-600">交流群</text>
-        </view>
-        <view
-          class="flex flex-1 flex-col items-center justify-center space-y-2 active:opacity-70"
-          @click="handleBuilding"
-        >
-          <view
-            class="flex size-12 items-center justify-center rounded-full bg-blue-50 text-blue-500"
-          >
-            <view class="i-mdi-face-agent text-2xl"></view>
-          </view>
-          <text class="text-xs font-medium text-gray-600">在线客服</text>
-        </view>
-        <view
-          class="flex flex-1 flex-col items-center justify-center space-y-2 active:opacity-70"
-          @click="handleBuilding"
-        >
-          <view
-            class="flex size-12 items-center justify-center rounded-full bg-purple-50 text-purple-500"
-          >
-            <view class="i-mdi-forum text-2xl"></view>
-          </view>
-          <text class="text-xs font-medium text-gray-600">反馈社区</text>
-        </view>
-        <view
-          class="flex flex-1 flex-col items-center justify-center space-y-2 active:opacity-70"
-          @click="handleBuilding"
-        >
-          <view
-            class="flex size-12 items-center justify-center rounded-full bg-green-50 text-green-500"
-          >
-            <view class="i-mdi-thumb-up text-2xl"></view>
-          </view>
-          <text class="text-xs font-medium text-gray-600">点赞我们</text>
-        </view>
-      </view>
-
-      <!-- Menu List -->
-      <view
-        class="overflow-hidden rounded-2xl bg-white shadow-lg shadow-gray-200/50"
-      >
-        <view
-          class="group flex items-center justify-between border-b border-gray-100 p-4 transition-colors active:bg-gray-50"
-          @click="handleToEditInfo"
-        >
-          <view class="flex items-center space-x-3">
-            <view class="i-mdi-account-edit text-xl text-blue-500"></view>
-            <text class="text-base text-gray-700">编辑资料</text>
-          </view>
-          <view class="i-mdi-chevron-right text-gray-400"></view>
-        </view>
-
-        <view
-          class="group flex items-center justify-between border-b border-gray-100 p-4 transition-colors active:bg-gray-50"
-          @click="handleHelp"
-        >
-          <view class="flex items-center space-x-3">
-            <view class="i-mdi-help-circle text-xl text-orange-500"></view>
-            <text class="text-base text-gray-700">常见问题</text>
-          </view>
-          <view class="i-mdi-chevron-right text-gray-400"></view>
-        </view>
-
-        <view
-          class="group flex items-center justify-between border-b border-gray-100 p-4 transition-colors active:bg-gray-50"
-          @click="handleAbout"
-        >
-          <view class="flex items-center space-x-3">
-            <view class="i-mdi-heart-outline text-xl text-red-500"></view>
-            <text class="text-base text-gray-700">关于我们</text>
-          </view>
-          <view class="i-mdi-chevron-right text-gray-400"></view>
-        </view>
-
-        <view
-          class="group flex items-center justify-between p-4 transition-colors active:bg-gray-50"
-          @click="handleToSetting"
-        >
-          <view class="flex items-center space-x-3">
-            <view class="i-mdi-cog-outline text-xl text-gray-500"></view>
-            <text class="text-base text-gray-700">应用设置</text>
-          </view>
-          <view class="i-mdi-chevron-right text-gray-400"></view>
-        </view>
-      </view>
-    </view>
+  <view class="page">
+    <view class="hero"><text class="eyebrow">PAPER ACCOUNT</text><view class="label">模拟账户权益</view><view class="equity">¥ {{ format(trading.equity) }}</view><view class="funds"><view><text>可用资金</text><b>¥ {{ format(trading.cash) }}</b></view><view><text>浮动盈亏</text><b :class="trading.unrealizedPnl >= 0 ? 'up' : 'down'">{{ signed(trading.unrealizedPnl) }}</b></view></view></view>
+    <view class="warning"><text class="i-mdi-shield-check-outline"></text> 仅供交易学习和策略演练，所有资产均为虚拟数据。</view>
+    <view class="section">持仓明细</view>
+    <view v-if="trading.positions.length" class="card"><view v-for="item in trading.positions" :key="item.id" class="position"><view><view class="contract">{{ item.name }} <text>{{ item.code }}</text></view><text :class="item.side === '多' ? 'up' : 'down'">{{ item.side }} {{ item.quantity }} 手　均价 {{ item.avgPrice.toFixed(2) }}</text></view><button @click="close(item.id)">平仓</button></view></view>
+    <view v-else class="empty">暂无持仓</view>
+    <view class="section">最近成交</view>
+    <view v-if="trading.orders.length" class="card history"><view v-for="item in trading.orders.slice(0, 6)" :key="item.id" class="order"><view><text class="contract">{{ item.type }} {{ item.name }}</text><text class="time">{{ item.time }}</text></view><view class="right"><text>{{ item.quantity }} 手 · {{ item.price }}</text><text v-if="item.pnl !== undefined" :class="item.pnl >= 0 ? 'up' : 'down'">{{ signed(item.pnl) }}</text></view></view></view>
+    <view v-else class="empty">暂无成交记录</view>
+    <button class="reset" @click="confirmReset">重置模拟账户</button>
   </view>
 </template>
 
 <script setup>
-import { useUserStore } from "@/store";
-import { computed, getCurrentInstance } from "vue";
-
-const { proxy } = getCurrentInstance();
-const userStore = useUserStore();
-
-const name = computed(() => userStore.name);
-const avatar = computed(() => userStore.avatar);
-const windowHeight = computed(() => uni.getSystemInfoSync().windowHeight - 50);
-
-function handleToInfo() {
-  proxy.$tab.navigateTo("/pages/mine/info/index");
-}
-
-function handleToEditInfo() {
-  proxy.$tab.navigateTo("/pages/mine/info/edit");
-}
-
-function handleToSetting() {
-  proxy.$tab.navigateTo("/pages/mine/setting/index");
-}
-
-function handleToLogin() {
-  proxy.$tab.reLaunch("/pages/login");
-}
-
-function handleToAvatar() {
-  proxy.$tab.navigateTo("/pages/mine/avatar/index");
-}
-
-function handleHelp() {
-  proxy.$tab.navigateTo("/pages/mine/help/index");
-}
-
-function handleAbout() {
-  proxy.$tab.navigateTo("/pages/mine/about/index");
-}
-
-function handleJiaoLiuQun() {
-  proxy.$modal.showToast("模块建设中~");
-}
-
-function handleBuilding() {
-  proxy.$modal.showToast("模块建设中~");
-}
+import { useTradingStore } from "@/store";
+const trading = useTradingStore();
+const format = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
+async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
+function confirmReset() { uni.showToast({ title: "线上账户不支持客户端重置", icon: "none" }); }
+trading.sync();
 </script>
+
+<style scoped>
+.page{min-height:100vh;background:#f5f7fb;padding:30rpx}.hero{background:linear-gradient(135deg,#17275e,#4b70e6);color:#fff;padding:38rpx 34rpx;border-radius:28rpx}.eyebrow{font-size:20rpx;letter-spacing:3rpx;color:#bfcdfc}.label{font-size:26rpx;margin-top:15rpx;color:#dce5ff}.equity{font-size:56rpx;font-weight:700;margin:12rpx 0 35rpx}.funds{display:flex;border-top:1rpx solid #8197e6;padding-top:24rpx}.funds view{width:50%;display:flex;flex-direction:column;font-size:22rpx;color:#cbd7ff}.funds b{margin-top:10rpx;color:#fff;font-size:27rpx}.funds .up{color:#ffb4b4}.funds .down{color:#9cf0cd}.warning{font-size:22rpx;line-height:1.5;color:#63708a;background:#fff;padding:20rpx;border-radius:16rpx;margin-top:22rpx}.section{font-size:30rpx;font-weight:700;color:#17233d;margin:38rpx 0 18rpx}.card{background:#fff;border-radius:22rpx;overflow:hidden}.position,.order{display:flex;justify-content:space-between;align-items:center;padding:26rpx;border-bottom:1rpx solid #edf0f6}.position:last-child,.order:last-child{border:0}.contract{font-size:27rpx;font-weight:600;color:#25324a}.contract text,.time{font-size:21rpx;font-weight:400;color:#94a0b2}.position view>text{display:block;font-size:22rpx;margin-top:10rpx}.up{color:#e44848!important}.down{color:#18a56c!important}.position button{font-size:23rpx;color:#3659d6;background:#edf1ff;border:0;border-radius:10rpx;padding:8rpx 18rpx}.empty{text-align:center;color:#9aa5b5;font-size:25rpx;background:#fff;border-radius:20rpx;padding:52rpx}.order{font-size:22rpx;color:#68778d}.time{display:block;margin-top:9rpx}.right{display:flex;flex-direction:column;text-align:right;gap:9rpx}.reset{margin:42rpx 0 25rpx;background:#fff;color:#d35c5c;border:1rpx solid #f1cccc;border-radius:14rpx;font-size:26rpx}
+</style>
