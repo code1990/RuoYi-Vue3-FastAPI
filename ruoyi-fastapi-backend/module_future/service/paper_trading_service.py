@@ -41,9 +41,11 @@ class PaperTradingService:
             pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
             unrealized += pnl
             result.append(PaperPositionModel(position_id=position.position_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, quantity=position.quantity, average_price=position.average_price, last_price=quote['price'], margin=position.margin, unrealized_pnl=pnl))
-        equity = account.cash + sum(item.margin for item in positions) + unrealized
+        cash = account.cash
+        equity = cash + sum(item.margin for item in positions) + unrealized
+        response = PaperAccountModel(cash=cash, equity=equity, unrealized_pnl=unrealized, positions=result)
         await db.commit()
-        return PaperAccountModel(cash=account.cash, equity=equity, unrealized_pnl=unrealized, positions=result)
+        return response
 
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
