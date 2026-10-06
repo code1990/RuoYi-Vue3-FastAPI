@@ -24,10 +24,12 @@ const trading = useTradingStore(); const quote = computed(() => trading.quotes.f
 const periods = [{ label: "1分", value: "1m" }, { label: "5分", value: "5m" }, { label: "15分", value: "15m" }, { label: "30分", value: "30m" }, { label: "60分", value: "60m" }, { label: "日", value: "1d" }, { label: "周", value: "1w" }, { label: "月", value: "1mo" }];
 const indicators = ["MA", "BOLL", "MACD", "KDJ", "RSI"];
 const hqPeriod = { "1m": 4, "5m": 5, "15m": 6, "30m": 7, "60m": 8, "1d": 0, "1w": 1, "1mo": 2 };
+const apiPeriod = { 0: "1d", 1: "1w", 2: "1mo", 4: "1m", 5: "5m", 6: "15m", 7: "30m", 8: "60m" };
 function hqRows(rows) { let previous; return rows.map(item => { const text = String(item.time); const row = [Number(text.slice(0, 8)), previous ?? item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; if (text.length > 8) row.push(Number(text.slice(8))); previous = item.close; return row; }); }
 async function network(data, callback) {
   data.PreventDefault = true;
-  try { const response = await getFutureKline({ contractCode: code.value, period: period.value, count: 300 }); callback({ name: name.value || code.value, symbol: code.value, data: hqRows(response.data.rows || []) }); }
+  const requestedPeriod = apiPeriod[data?.Request?.Data?.period] || period.value;
+  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 300 }); const result = { name: name.value || code.value, symbol: code.value, data: hqRows(response.data.rows || []) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; callback(result); }
   catch { error.value = "行情暂不可用，请稍后重试"; callback({ name: code.value, symbol: code.value, data: [] }); }
 }
 function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: indicator.value === "MA" || indicator.value === "BOLL" ? "VOL" : indicator.value }]; }
