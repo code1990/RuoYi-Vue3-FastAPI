@@ -57,7 +57,7 @@ class FutureQuoteDao:
         with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
             connection.row_factory = sqlite3.Row
             result = connection.execute(
-                f'''SELECT q.contract_code, q.product_code, q.market_date, q.last_px, q.px_change_rate, q.px_change, q.open_px,
+                f'''SELECT q.contract_code, q.product_code, q.market_code, q.market_date, q.last_px, q.px_change_rate, q.px_change, q.open_px,
                            q.high_px, q.low_px, q.prev_settlement, q.payload_json, p.market_name, p.product_name
                     FROM t_future_quote q LEFT JOIN t_future_product p ON p.market_code=q.market_code AND p.product_code=q.product_code
                     WHERE {condition}''',

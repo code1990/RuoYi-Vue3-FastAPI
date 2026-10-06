@@ -7,6 +7,7 @@ class FutureQuoteModel(BaseModel):
 
     contract_code: str
     contract_name: str = ''
+    market_code: str = ''
     market_date: str
     last_px: float | None = None
     px_change_rate: float | None = None
