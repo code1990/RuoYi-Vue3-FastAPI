@@ -26,15 +26,23 @@ class FutureKlineService:
         if any(field not in fields for field in required):
             return []
         result = []
+        previous_date = None
+        previous_volume = previous_turnover = 0
         for row in rows:
             if not isinstance(row, list):
                 continue
             price = row[fields['last_px']]
+            date = str(row[fields['min_time']])[:8]
+            volume = row[fields['business_amount']] if 'business_amount' in fields else 0
+            turnover = row[fields['business_balance']] if 'business_balance' in fields else 0
+            if date != previous_date:
+                previous_volume = previous_turnover = 0
+                previous_date = date
             result.append({
                 'time': row[fields['min_time']], 'open': price, 'high': price, 'low': price, 'close': price,
-                'volume': row[fields['business_amount']] if 'business_amount' in fields else None,
-                'turnover': row[fields['business_balance']] if 'business_balance' in fields else None,
+                'volume': max(volume - previous_volume, 0), 'turnover': max(turnover - previous_turnover, 0),
             })
+            previous_volume, previous_turnover = volume, turnover
         return result
 
     @classmethod
