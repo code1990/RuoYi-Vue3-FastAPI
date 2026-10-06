@@ -2,6 +2,8 @@ from typing import Any
 
 import requests
 
+from module_future.dao.future_quote_dao import FutureQuoteDao
+
 
 class FutureKlineService:
     PERIODS = {'1m': 1, '5m': 2, '15m': 3, '30m': 4, '60m': 5, '1d': 6, '1w': 7, '1mo': 8, '1y': 9, 'minute': 10, '5d': 11}
@@ -39,11 +41,12 @@ class FutureKlineService:
 
     @classmethod
     def get(cls, contract_code: str, period: str, count: int) -> dict[str, Any]:
-        rows = cls._get_rows(contract_code, cls.PERIODS[period], count)
+        source_code = FutureQuoteDao.to_legacy_main_code(contract_code)
+        rows = cls._get_rows(source_code, cls.PERIODS[period], count)
         # 新华财经的 period=10 只提供当日分时，闭市日会返回空数组；回退到五日
         # 数据中的最后一个交易日，仍然展示新华财经的真实分时数据。
         if period == 'minute' and not rows:
-            history = cls._get_rows(contract_code, cls.PERIODS['5d'], count)
+            history = cls._get_rows(source_code, cls.PERIODS['5d'], count)
             if history:
                 last_date = max(str(item['time'])[:8] for item in history)
                 rows = [item for item in history if str(item['time'])[:8] == last_date]

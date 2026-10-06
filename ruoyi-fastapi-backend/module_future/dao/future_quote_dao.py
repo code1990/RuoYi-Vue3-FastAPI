@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -23,6 +24,14 @@ class FutureQuoteDao:
         except (TypeError, ValueError):
             return 0
 
+    @staticmethod
+    def to_cnfin_main_code(contract_code: str) -> str:
+        return re.sub(r'888(?=\.[^.]+$)', '0I00', contract_code, flags=re.IGNORECASE)
+
+    @staticmethod
+    def to_legacy_main_code(contract_code: str) -> str:
+        return re.sub(r'0I00(?=\.[^.]+$)', '888', contract_code, flags=re.IGNORECASE)
+
     @classmethod
     def get_contract(cls, database_path: str, contract_code: str) -> dict | None:
         path = Path(database_path)
@@ -33,13 +42,13 @@ class FutureQuoteDao:
                 '''SELECT q.contract_code, q.last_px, q.payload_json, p.product_name
                    FROM t_future_quote q LEFT JOIN t_future_product p ON p.market_code=q.market_code AND p.product_code=q.product_code
                    WHERE q.contract_code=? LIMIT 1''',
-                (contract_code,),
+                (cls.to_legacy_main_code(contract_code),),
             ).fetchone()
         if not row or cls.number(row[1]) <= 0:
             return None
         payload = json.loads(row[2])
         return {
-            'contract_code': row[0],
+            'contract_code': contract_code,
             'contract_name': payload.get('prod_name') or payload.get('prod_name_ext') or row[3] or row[0],
             'price': cls.number(row[1]),
             'multiplier': cls.number(payload.get('contract_unit')) or 1,
@@ -78,6 +87,8 @@ class FutureQuoteDao:
             if key not in selected or (priority, turnover) > selected[key][:2]:
                 selected[key] = (priority, turnover, item)
         rows = [entry[2] for entry in selected.values()]
+        for row in rows:
+            row['contract_code'] = cls.to_cnfin_main_code(row['contract_code'])
         if keyword:
             text = keyword.lower()
             rows = [row for row in rows if text in row['contract_code'].lower() or text in row['contract_name'].lower() or text in row['product_name'].lower()]
@@ -119,7 +130,7 @@ class FutureQuoteDao:
             net_profit = spread * multiplier - fee
             price_change_rate = (last_px - open_px) / open_px * 100
             rows.append({
-                'contract_code': quote['contract_code'], 'contract_name': quote['contract_name'], 'market_date': quote['market_date'],
+                'contract_code': cls.to_cnfin_main_code(quote['contract_code']), 'contract_name': quote['contract_name'], 'market_date': quote['market_date'],
                 'open_px': open_px, 'last_px': last_px, 'direction': '做多' if last_px >= open_px else '做空',
                 'price_spread': spread, 'net_profit': net_profit, 'margin': margin, 'fee': fee, 'capital': capital,
                 'profit_rate': net_profit / capital * 100,
