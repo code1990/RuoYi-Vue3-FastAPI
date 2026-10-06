@@ -66,5 +66,14 @@ export default defineConfig(async () => {
         },
       },
     },
+    server: {
+      proxy: {
+        "/prod-api": {
+          target: "http://101.34.90.245",
+          changeOrigin: true,
+        },
+      },
+    },
+    optimizeDeps: { include: ["hqchart"] },
   };
 });

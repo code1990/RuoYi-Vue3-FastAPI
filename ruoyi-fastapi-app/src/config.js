@@ -1,5 +1,8 @@
-// H5、App 和生产构建统一连接线上 FastAPI；不要指向运行 H5 的本机 localhost。
-const baseUrl = "http://101.34.90.245/prod-api";
+// App 和生产 H5 连接线上 FastAPI；开发 H5 经 Vite 代理，避免浏览器跨域。
+let baseUrl = "http://101.34.90.245/prod-api";
+// #ifdef H5
+if (import.meta.env.DEV) baseUrl = "/prod-api";
+// #endif
 
 // 应用全局配置
 export default {
