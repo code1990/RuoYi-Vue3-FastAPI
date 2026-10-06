@@ -37,8 +37,8 @@ function fillMinuteRows(rows) {
     const daytime = items.filter(item => toMinute(item.time) >= 540 && toMinute(item.time) <= 900);
     if (!daytime.length) return items;
     const points = new Map(daytime.map(item => [toMinute(item.time), item])); const date = String(daytime[0].time).slice(0, 8); let previous = daytime[0]; const filled = [];
-    // 白盘固定显示完整交易时段；无成交分钟沿用上一价，X 轴不会在 11:30 截断。
-    [[540, 615], [630, 690], [810, 900]].forEach(([start, end]) => { for (let minute = start; minute <= end; minute += 1) { const current = points.get(minute); if (current) previous = current; else { const hour = String(Math.floor(minute / 60)).padStart(2, "0"); const second = String(minute % 60).padStart(2, "0"); previous = { ...previous, time: Number(`${date}${hour}${second}`), open: previous.close, high: previous.close, low: previous.close, volume: 0, turnover: 0 }; } filled.push(previous); } });
+    // 与新华财经及 HQChart 线材时间表一致：09:00–10:15、10:31–11:30、13:31–15:00。
+    [[540, 615], [631, 690], [811, 900]].forEach(([start, end]) => { for (let minute = start; minute <= end; minute += 1) { const current = points.get(minute); if (current) previous = current; else { const hour = String(Math.floor(minute / 60)).padStart(2, "0"); const second = String(minute % 60).padStart(2, "0"); previous = { ...previous, time: Number(`${date}${hour}${second}`), open: previous.close, high: previous.close, low: previous.close, volume: 0, turnover: 0 }; } filled.push(previous); } });
     return [...items.filter(item => toMinute(item.time) < 540 || toMinute(item.time) > 900), ...filled].sort((left, right) => Number(left.time) - Number(right.time));
   });
 }
