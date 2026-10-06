@@ -34,7 +34,7 @@ function windows() { return [{ Index: indicator.value === "MA" || indicator.valu
 function createChart() {
   // #ifdef H5
   const target = document.getElementById("future-hqchart"); if (!target || chart) return;
-  chart = HQChart.JSChart.Init(target); chart.SetOption({ Type: "历史K线图", Symbol: code.value, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
+  chart = HQChart.JSChart.Init(target); chart.SetOption({ Type: "历史K线图", Symbol: code.value, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
   // #endif
 }
 function changePeriod(value) { period.value = value; chart?.ChangePeriod?.(hqPeriod[value]); }
