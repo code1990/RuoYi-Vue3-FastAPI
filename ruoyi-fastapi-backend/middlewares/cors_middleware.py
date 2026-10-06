@@ -10,7 +10,7 @@ def add_cors_middleware(app: FastAPI) -> None:
     :return:
     """
     # 前端页面url
-    origins = ['*']
+    origins = ['http://101.34.90.245', 'https://101.34.90.245', 'http://localhost:9090']
     expose_headers = [
         'x-body-encrypted',
         'x-key-id',
@@ -21,6 +21,7 @@ def add_cors_middleware(app: FastAPI) -> None:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
+        allow_origin_regex=r'^https?://(localhost|127\.0\.0\.1)(:\d+)?$',
         allow_credentials=True,
         allow_methods=['*'],
         allow_headers=['*'],
