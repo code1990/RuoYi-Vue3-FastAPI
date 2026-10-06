@@ -74,6 +74,5 @@ export default defineConfig(async () => {
         },
       },
     },
-    optimizeDeps: { include: ["hqchart"] },
   };
 });
