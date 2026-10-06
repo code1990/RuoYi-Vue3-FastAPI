@@ -28,6 +28,21 @@ const apiPeriod = { 0: "1d", 1: "1w", 2: "1mo", 3: "1y", 4: "1m", 5: "5m", 6: "1
 const hqSymbol = value => String(value || "").replace(/\.XSGE$/i, ".SHFE").replace(/\.XDCE$/i, ".DCE").replace(/\.XZCE$/i, ".CZCE").replace(/\.XGFE$/i, ".GZFE").replace(/\.XCFE$/i, ".CFFEX").replace(/\.SHGE$/i, ".SHFE");
 const isMinuteView = computed(() => period.value === "minute" || period.value === "5d");
 function hqRows(rows) { let previous; return rows.map(item => { const text = String(item.time); const row = [Number(text.slice(0, 8)), previous ?? item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; if (text.length > 8) row.push(Number(text.slice(8))); previous = item.close; return row; }); }
+function fillMinuteRows(rows) {
+  const byDate = new Map();
+  rows.forEach(item => { const value = String(item.time); const date = value.slice(0, 8); if (!byDate.has(date)) byDate.set(date, []); byDate.get(date).push(item); });
+  return [...byDate.values()].flatMap(items => {
+    items.sort((left, right) => Number(left.time) - Number(right.time));
+    const toMinute = value => { const time = Number(String(value).slice(8)); return Math.floor(time / 100) * 60 + time % 100; };
+    const daytime = items.filter(item => toMinute(item.time) >= 540 && toMinute(item.time) <= 900);
+    if (!daytime.length) return items;
+    const gaps = daytime.slice(1).map((item, index) => toMinute(item.time) - toMinute(daytime[index].time)).filter(gap => gap > 0 && gap <= 5);
+    const step = gaps.includes(1) ? 1 : 3;
+    const points = new Map(daytime.map(item => [toMinute(item.time), item])); const date = String(daytime[0].time).slice(0, 8); let previous = daytime[0]; const filled = [];
+    for (let minute = 540; minute <= 900; minute += step) { const current = points.get(minute); if (current) previous = current; else { const hour = String(Math.floor(minute / 60)).padStart(2, "0"); const second = String(minute % 60).padStart(2, "0"); previous = { ...previous, time: Number(`${date}${hour}${second}`), open: previous.close, high: previous.close, low: previous.close, volume: 0, turnover: 0 }; } filled.push(previous); }
+    return [...items.filter(item => toMinute(item.time) < 540 || toMinute(item.time) > 900), ...filled].sort((left, right) => Number(left.time) - Number(right.time));
+  });
+}
 function minuteData(rows) { const last = rows[rows.length - 1] || {}; const text = String(last.time || ""); return { code: 0, stock: [{ name: name.value || code.value, symbol: hqSymbol(code.value), date: Number(text.slice(0, 8)) || 0, time: Number(text.slice(8)) || 0, price: last.close || 0, open: last.open || 0, high: last.high || 0, low: last.low || 0, vol: last.volume || 0, amount: last.turnover || 0, yclose: rows[0]?.open || 0, yclearing: rows[0]?.open || 0, minute: rows.map(item => { const value = String(item.time); return { date: Number(value.slice(0, 8)), time: Number(value.slice(8)), price: item.close, open: item.open, high: item.high, low: item.low, vol: item.volume || 0, amount: item.turnover || 0, avprice: item.close }; }) }] }; }
 function emptyMinute() { return minuteData([]); }
 function emptyHistoryMinute() { return { code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: [{ date: 0, close: 0, yclose: 0, yclearing: 0, minute: [] }] }; }
@@ -35,8 +50,8 @@ async function network(data, callback) {
   data.PreventDefault = true;
   const requestedPeriod = isMinuteView.value ? period.value : (apiPeriod[data?.Request?.Data?.period] || period.value);
   try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 500 }); const rows = response.data.rows || []; if (!rows.length && data.Name === "MinuteChartContainer::RequestMinuteData") { callback(emptyMinute()); return; } if (!rows.length && data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { callback(emptyHistoryMinute()); return; }
-    if (data.Name === "MinuteChartContainer::RequestMinuteData") { callback(minuteData(rows)); return; }
-    if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); rows.forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); callback({ code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: [...groups].map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], yclearing: minute[0][1], minute })).reverse() }); return; }
+    if (data.Name === "MinuteChartContainer::RequestMinuteData") { callback(minuteData(fillMinuteRows(rows))); return; }
+    if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); fillMinuteRows(rows).forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); callback({ code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: [...groups].map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], yclearing: minute[0][1], minute })).reverse() }); return; }
     const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; callback(result); }
   catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") callback(emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") callback(emptyHistoryMinute()); else callback({ name: code.value, symbol: hqSymbol(code.value), data: [] }); }
 }
