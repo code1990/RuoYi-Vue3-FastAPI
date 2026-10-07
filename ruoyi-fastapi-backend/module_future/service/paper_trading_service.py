@@ -11,6 +11,7 @@ from module_future.dao.future_quote_dao import FutureQuoteDao
 from module_future.dao.future_history_dao import FutureHistoryDao
 from module_future.entity.do.paper_trading_do import FuturePaperAccount, FuturePaperDailyMark, FuturePaperOrder, FuturePaperPosition
 from module_future.entity.vo.paper_trading_vo import PaperAccountModel, PaperPositionModel, PaperTradeOpenModel
+from module_future.service.future_kline_service import FutureKlineService
 from config.env import AppConfig
 
 
@@ -56,6 +57,17 @@ class PaperTradingService:
         status = cls.trading_status(quote)
         if not status['tradable']:
             raise ServiceWarning(message=status['reason'])
+
+    @classmethod
+    async def _execution_quote(cls, contract_code: str) -> dict:
+        """Use a fresh upstream quote for an order; page and SQLite prices never set fills."""
+        quote = await cls._quote(contract_code)
+        await cls._ensure_tradable(quote)
+        try:
+            quote = {**quote, 'price': await asyncio.to_thread(FutureKlineService.get_latest_price, quote['contract_code'])}
+        except Exception as error:
+            raise ServiceWarning(message='最新行情获取失败，未提交模拟交易') from error
+        return quote
 
     @classmethod
     def fee_breakdown(cls, quote: dict, quantity: int, close_today: bool = False) -> tuple[float, float]:
@@ -151,8 +163,7 @@ class PaperTradingService:
 
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
-        quote = await cls._quote(data.contract_code)
-        await cls._ensure_tradable(quote)
+        quote = await cls._execution_quote(data.contract_code)
         account = await cls._account(db, user_id)
         margin = quote['price'] * quote['multiplier'] * data.quantity * cls.MARGIN_RATE
         exchange_fee, broker_fee = cls.fee_breakdown(quote, data.quantity)
@@ -176,8 +187,7 @@ class PaperTradingService:
         position = await db.scalar(select(FuturePaperPosition).where(FuturePaperPosition.position_id == position_id, FuturePaperPosition.user_id == user_id).with_for_update())
         if position is None:
             raise ServiceWarning(message='持仓不存在')
-        quote = await cls._quote(position.contract_code)
-        await cls._ensure_tradable(quote)
+        quote = await cls._execution_quote(position.contract_code)
         account = await cls._account(db, user_id)
         pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
         exchange_fee, broker_fee = cls.fee_breakdown(quote, position.quantity, position.create_time.date() == datetime.now().date())

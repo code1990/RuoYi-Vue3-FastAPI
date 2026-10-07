@@ -87,3 +87,16 @@ class FutureKlineService:
             dates = sorted({str(item['time'])[:8] for item in rows})[-5:]
             rows = [item for item in rows if str(item['time'])[:8] in dates]
         return {'contractCode': contract_code, 'period': period, 'rows': rows}
+
+    @classmethod
+    def get_latest_price(cls, contract_code: str) -> float:
+        """Return the latest price reported by the upstream real-time trend feed."""
+        rows = cls._get_trend_rows(contract_code, 'real_trend')
+        for row in reversed(rows):
+            try:
+                price = float(row['close'])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if price > 0:
+                return price
+        raise ValueError('新华财经未返回最新成交价')

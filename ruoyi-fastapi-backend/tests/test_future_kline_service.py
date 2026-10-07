@@ -25,3 +25,11 @@ def test_trend_rows_convert_cumulative_volume_to_minute_volume(monkeypatch) -> N
     rows = FutureKlineService._get_trend_rows('WR888.XSGE', 'real_trend')
 
     assert [(row['volume'], row['turnover']) for row in rows] == [(2, 20), (3, 33), (0, 0)]
+
+
+def test_latest_price_uses_the_last_valid_real_time_point(monkeypatch) -> None:
+    monkeypatch.setattr(FutureKlineService, '_get_trend_rows', classmethod(lambda cls, *args: [
+        {'close': 3200}, {'close': 0}, {'close': 3212.5},
+    ]))
+
+    assert FutureKlineService.get_latest_price('RB888.XSGE') == 3212.5
