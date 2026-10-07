@@ -11,7 +11,7 @@ from config.env import AppConfig
 
 
 class PaperTradingService:
-    INITIAL_CASH = 100000.0
+    INITIAL_CASH = 2000000.0
     MARGIN_RATE = 1.0
     DOMESTIC_MARKETS = {'XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'}
 

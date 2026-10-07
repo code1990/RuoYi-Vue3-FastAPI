@@ -9,8 +9,8 @@ class FuturePaperAccount(Base):
     __tablename__ = 'future_paper_account'
 
     user_id = Column(BigInteger, primary_key=True, nullable=False)
-    cash = Column(Float, nullable=False, default=100000.0)
-    initial_cash = Column(Float, nullable=False, default=100000.0)
+    cash = Column(Float, nullable=False, default=2000000.0)
+    initial_cash = Column(Float, nullable=False, default=2000000.0)
     update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
 
