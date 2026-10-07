@@ -53,7 +53,7 @@ class TrainingService:
         current = await db.scalar(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == now.date(), FutureTrainingDecision.contract_code == quote['contract_code']))
         if current:
             raise ServiceWarning(message='该合约今日已完成训练决策')
-        item = FutureTrainingDecision(user_id=user_id, trade_date=now.date(), contract_code=quote['contract_code'], contract_name=quote['contract_name'], decision=data.decision, entry_price=quote['price'])
+        item = FutureTrainingDecision(user_id=user_id, trade_date=now.date(), contract_code=quote['contract_code'], contract_name=quote['contract_name'], decision=data.decision, reason=data.reason.strip(), entry_price=quote['price'])
         db.add(item)
         await db.commit()
         await db.refresh(item)

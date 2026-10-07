@@ -73,6 +73,7 @@ class FutureTrainingDecision(Base):
     contract_code = Column(String(40), nullable=False)
     contract_name = Column(String(100), nullable=False, default='')
     decision = Column(String(8), nullable=False)  # 多、空、放弃
+    reason = Column(String(500), nullable=False, default='')
     entry_price = Column(Float, nullable=False)
     settle_date = Column(Date, nullable=True)
     settle_price = Column(Float, nullable=True)

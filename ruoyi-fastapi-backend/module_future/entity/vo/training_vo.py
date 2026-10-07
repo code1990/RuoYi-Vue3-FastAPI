@@ -10,6 +10,7 @@ class TrainingDecisionCreateModel(BaseModel):
 
     contract_code: str = Field(min_length=1, max_length=40)
     decision: Literal['多', '空', '放弃']
+    reason: str = Field(min_length=2, max_length=500)
 
 
 class TrainingDecisionModel(BaseModel):
@@ -20,6 +21,7 @@ class TrainingDecisionModel(BaseModel):
     contract_code: str
     contract_name: str
     decision: str
+    reason: str
     entry_price: float
     settle_date: date | None
     settle_price: float | None
