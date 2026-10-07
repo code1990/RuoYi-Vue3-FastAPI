@@ -142,8 +142,8 @@
       },
       {
         "pagePath": "pages/training/index",
-        "iconPath": "static/images/tabbar/work.png",
-        "selectedIconPath": "static/images/tabbar/work_.png",
+        "iconPath": "static/images/tabbar/Gear.png",
+        "selectedIconPath": "static/images/tabbar/Gear_.png",
         "text": "训练"
       },
       {
