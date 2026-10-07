@@ -20,6 +20,8 @@ class FutureQuoteModel(BaseModel):
     market_name: str = ''
     product_name: str = ''
     contract_unit: float = 1
+    up_px: float | None = None
+    down_px: float | None = None
 
 
 class FutureQuotePageModel(BaseModel):

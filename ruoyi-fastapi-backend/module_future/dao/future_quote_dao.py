@@ -73,6 +73,8 @@ class FutureQuoteDao:
             payload = json.loads(item.pop('payload_json'))
             item['contract_name'] = payload.get('prod_name') or payload.get('prod_name_ext') or item['product_name'] or ''
             item['contract_unit'] = cls.number(payload.get('contract_unit')) or 1
+            item['up_px'] = cls.number(payload.get('up_px')) or None
+            item['down_px'] = cls.number(payload.get('down_px')) or None
             item['min5_chgpct'] = payload.get('min5_chgpct')
             name = item['contract_name']
             priority = 2 if '主力' in name or '888' in item['contract_code'] else 1 if '主连' in name or '连续' in name else 0
