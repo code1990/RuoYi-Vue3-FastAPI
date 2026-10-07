@@ -79,7 +79,7 @@ const number = value => value === null || value === undefined ? "--" : Number(va
 const signed = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 const priceClass = computed(() => Number(quote.value.change) >= 0 ? "up" : "down");
 function switchContract(direction) { const contracts = trading.quotes; if (!contracts.length) return; const index = Math.max(0, contracts.findIndex(item => item.code === code.value)); const next = contracts[(index + direction + contracts.length) % contracts.length]; code.value = next.code; name.value = next.name; uni.setNavigationBarTitle({ title: next.name || next.code }); chart?.ChangeSymbol?.(hqSymbol(next.code)); }
-function trade() { uni.switchTab({ url: "/pages/work/index" }); }
+function trade() { trading.selectContract(code.value); uni.switchTab({ url: "/pages/work/index" }); }
 onLoad(async query => { code.value = query.code || ""; name.value = query.name || ""; uni.setNavigationBarTitle({ title: name.value || code.value }); try { await trading.refreshQuotes(); } catch {} await nextTick(); createChart(); });
 onBeforeUnmount(clearChart);
 </script>
