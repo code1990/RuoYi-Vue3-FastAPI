@@ -16,5 +16,5 @@ def test_get_contract_uses_server_quote(tmp_path: Path) -> None:
         connection.execute('INSERT INTO t_future_quote VALUES (?, ?, ?, ?, ?)', ('RB2601', 3210, json.dumps({'prod_name': '螺纹钢主力', 'contract_unit': 10}), 'XSGE', 'RB'))
 
     assert FutureQuoteDao.get_contract(str(database), 'RB2601') == {
-        'contract_code': 'RB2601', 'contract_name': '螺纹钢主力', 'price': 3210.0, 'multiplier': 10.0,
+        'contract_code': 'RB2601', 'market_code': 'XSGE', 'contract_name': '螺纹钢主力', 'price': 3210.0, 'multiplier': 10.0,
     }

@@ -30,18 +30,19 @@ class FutureQuoteDao:
             raise FileNotFoundError(f'Future statistics database does not exist: {path}')
         with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
             row = connection.execute(
-                '''SELECT q.contract_code, q.last_px, q.payload_json, p.product_name
+                '''SELECT q.contract_code, q.market_code, q.last_px, q.payload_json, p.product_name
                    FROM t_future_quote q LEFT JOIN t_future_product p ON p.market_code=q.market_code AND p.product_code=q.product_code
                    WHERE q.contract_code=? LIMIT 1''',
                 (contract_code,),
             ).fetchone()
-        if not row or cls.number(row[1]) <= 0:
+        if not row or cls.number(row[2]) <= 0:
             return None
-        payload = json.loads(row[2])
+        payload = json.loads(row[3])
         return {
             'contract_code': row[0],
-            'contract_name': payload.get('prod_name') or payload.get('prod_name_ext') or row[3] or row[0],
-            'price': cls.number(row[1]),
+            'market_code': row[1],
+            'contract_name': payload.get('prod_name') or payload.get('prod_name_ext') or row[4] or row[0],
+            'price': cls.number(row[2]),
             'multiplier': cls.number(payload.get('contract_unit')) or 1,
         }
 

@@ -13,6 +13,7 @@ from config.env import AppConfig
 class PaperTradingService:
     INITIAL_CASH = 100000.0
     MARGIN_RATE = 1.0
+    DOMESTIC_MARKETS = {'XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'}
 
     @classmethod
     async def _quote(cls, contract_code: str) -> dict:
@@ -50,6 +51,8 @@ class PaperTradingService:
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
         quote = await cls._quote(data.contract_code)
+        if quote['market_code'] not in cls.DOMESTIC_MARKETS:
+            raise ServiceWarning(message='国际期货仅供查看行情，暂不支持模拟交易')
         account = await cls._account(db, user_id)
         margin = quote['price'] * quote['multiplier'] * data.quantity * cls.MARGIN_RATE
         if margin > account.cash:
@@ -72,6 +75,8 @@ class PaperTradingService:
         if position is None:
             raise ServiceWarning(message='持仓不存在')
         quote = await cls._quote(position.contract_code)
+        if quote['market_code'] not in cls.DOMESTIC_MARKETS:
+            raise ServiceWarning(message='国际期货仅供查看行情，暂不支持模拟交易')
         account = await cls._account(db, user_id)
         pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
         account.cash += position.margin + pnl
