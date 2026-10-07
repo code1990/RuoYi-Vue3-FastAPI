@@ -1,5 +1,6 @@
 import pytest
 from datetime import datetime
+from types import SimpleNamespace
 
 from exceptions.exception import ServiceWarning
 from module_future.entity.vo.paper_trading_vo import PaperPositionModel, PaperTradeOpenModel
@@ -34,3 +35,18 @@ def test_trading_status_requires_today_and_day_session() -> None:
 def test_position_model_accepts_service_field_names() -> None:
     position = PaperPositionModel(position_id=1, contract_code='BU888.XSGE', contract_name='沥青主力', side='空', quantity=3, average_price=5013, last_price=5013, margin=150390, unrealized_pnl=0)
     assert position.model_dump(by_alias=True)['positionId'] == 1
+
+
+@pytest.mark.asyncio
+async def test_close_rejects_when_market_is_closed(monkeypatch) -> None:
+    async def closed_quote(_: str) -> dict:
+        return {'market_code': 'XSGE', 'market_date': '20260930'}
+
+    class Database:
+        async def scalar(self, _):
+            return SimpleNamespace(contract_code='BU888.XSGE')
+
+    monkeypatch.setattr(PaperTradingService, '_quote', closed_quote)
+    with pytest.raises(ServiceWarning) as exc_info:
+        await PaperTradingService.close(Database(), 1, 1)
+    assert exc_info.value.message == '今日休市，暂不支持模拟交易'
