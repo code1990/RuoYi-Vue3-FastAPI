@@ -1,4 +1,6 @@
 import asyncio
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +23,27 @@ class PaperTradingService:
         if not quote:
             raise ServiceWarning(message='未找到可交易的期货行情')
         return quote
+
+    @classmethod
+    def trading_status(cls, quote: dict, now: datetime | None = None) -> dict:
+        if quote['market_code'] not in cls.DOMESTIC_MARKETS:
+            return {'tradable': False, 'reason': '国际期货仅供查看行情，不参与模拟交易'}
+        now = now or datetime.now(ZoneInfo('Asia/Shanghai'))
+        if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
+            return {'tradable': False, 'reason': '今日休市，暂不支持模拟交易'}
+        if now.weekday() >= 5 or not (time(9, 0) <= now.time() <= time(10, 15) or time(10, 30) <= now.time() <= time(11, 30) or time(13, 30) <= now.time() <= time(15, 0)):
+            return {'tradable': False, 'reason': '当前不在日盘交易时段'}
+        return {'tradable': True, 'reason': ''}
+
+    @classmethod
+    async def status(cls, contract_code: str) -> dict:
+        return cls.trading_status(await cls._quote(contract_code))
+
+    @classmethod
+    async def _ensure_tradable(cls, quote: dict) -> None:
+        status = cls.trading_status(quote)
+        if not status['tradable']:
+            raise ServiceWarning(message=status['reason'])
 
     @classmethod
     async def _account(cls, db: AsyncSession, user_id: int) -> FuturePaperAccount:
@@ -51,8 +74,7 @@ class PaperTradingService:
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
         quote = await cls._quote(data.contract_code)
-        if quote['market_code'] not in cls.DOMESTIC_MARKETS:
-            raise ServiceWarning(message='国际期货仅供查看行情，暂不支持模拟交易')
+        await cls._ensure_tradable(quote)
         account = await cls._account(db, user_id)
         margin = quote['price'] * quote['multiplier'] * data.quantity * cls.MARGIN_RATE
         if margin > account.cash:

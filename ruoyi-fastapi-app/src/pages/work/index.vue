@@ -4,13 +4,13 @@
       <view class="contract">{{ quote.name }} <text>{{ quote.code }}</text></view>
       <view class="price" :class="quote.change >= 0 ? 'up' : 'down'">{{ quote.price }}</view>
       <text :class="quote.change >= 0 ? 'up' : 'down'">{{ signed(quote.change) }}%</text>
-      <view class="picker"><text v-for="item in trading.quotes" :key="item.code" :class="item.code === quote.code ? 'active' : ''" @click="trading.selectContract(item.code)">{{ item.code }}</text></view>
+      <view class="picker"><text v-for="item in trading.quotes" :key="item.code" :class="item.code === quote.code ? 'active' : ''" @click="selectContract(item.code)">{{ item.code }}</text></view>
     </view>
     <view class="card order">
       <view class="label">下单手数</view>
       <view class="quantity"><text @click="change(-1)">−</text><input v-model="quantity" type="number" /><text @click="change(1)">＋</text></view>
       <view class="estimate">预计占用资金 ¥ {{ format(margin) }}　·　无杠杆训练</view>
-      <text v-if="!canTrade" class="trade-disabled">国际期货仅供查看行情，不参与模拟交易</text><view class="actions"><button class="short" :disabled="!canTrade" @click="submit('空')">卖出开空</button><button class="long" :disabled="!canTrade" @click="submit('多')">买入开多</button></view>
+      <text v-if="!canTrade" class="trade-disabled">{{ tradeStatus.reason }}</text><view class="actions"><button class="short" :disabled="!canTrade" @click="submit('空')">卖出开空</button><button class="long" :disabled="!canTrade" @click="submit('多')">买入开多</button></view>
     </view>
     <view class="section"><text>当前持仓</text><text class="sub">可用 ¥ {{ format(trading.cash) }}</text></view>
     <view v-if="trading.positions.length" class="card positions"><view v-for="item in trading.positions" :key="item.id" class="position"><view><view class="contract">{{ item.name }} <text>{{ item.code }}</text></view><text class="side" :class="item.side === '多' ? 'up' : 'down'">{{ item.side }} {{ item.quantity }} 手</text></view><button @click="close(item.id)">平仓</button></view></view>
@@ -21,17 +21,21 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useTradingStore } from "@/store";
+import { getPaperTradingStatus } from "@/api/future/paper-trading";
 const trading = useTradingStore();
 const quantity = ref(1);
 const quote = computed(() => trading.selectedQuote);
-const canTrade = computed(() => ["XSGE", "XDCE", "XZCE", "XGFE", "SHGE"].includes(quote.value?.market));
+const tradeStatus = ref({ tradable: false, reason: "正在读取交易状态" });
+const canTrade = computed(() => tradeStatus.value.tradable);
 const margin = computed(() => quote.value.price * quote.value.multiplier * Number(quantity.value || 0));
 const format = (value) => Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 function change(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }
+async function refreshStatus() { if (!quote.value?.code) return; try { tradeStatus.value = (await getPaperTradingStatus(quote.value.code)).data; } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
+function selectContract(code) { trading.selectContract(code); refreshStatus(); }
 async function submit(side) { if (!canTrade.value) return; await trading.openPosition(side, quantity.value); uni.showToast({ title: `已模拟开${side}`, icon: "none" }); }
 async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
-trading.sync();
+trading.sync().then(refreshStatus);
 </script>
 
 <style scoped>

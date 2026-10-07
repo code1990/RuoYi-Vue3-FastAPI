@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Path, Response
+from fastapi import Path, Query, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +16,11 @@ from utils.response_util import ResponseUtil
 
 
 paper_trading_controller = APIRouterPro(prefix='/future/paper-trading', order_num=38, tags=['期货-模拟交易'], dependencies=[PreAuthDependency()])
+
+
+@paper_trading_controller.get('/status', response_model=DataResponseModel[dict])
+async def get_trading_status(contract_code: str = Query(alias='contractCode', min_length=1, max_length=40)) -> Response:
+    return ResponseUtil.success(data=await PaperTradingService.status(contract_code))
 
 
 @paper_trading_controller.get('/account', response_model=DataResponseModel[PaperAccountModel])
