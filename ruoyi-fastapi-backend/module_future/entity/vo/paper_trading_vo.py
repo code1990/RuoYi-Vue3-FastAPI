@@ -13,7 +13,7 @@ class PaperTradeOpenModel(BaseModel):
 
 
 class PaperPositionModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True, populate_by_name=True)
     position_id: int
     contract_code: str
     contract_name: str
@@ -26,7 +26,7 @@ class PaperPositionModel(BaseModel):
 
 
 class PaperOrderModel(BaseModel):
-    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True, populate_by_name=True)
     order_id: int
     contract_code: str
     contract_name: str
