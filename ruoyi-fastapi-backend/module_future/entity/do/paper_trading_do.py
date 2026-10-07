@@ -61,3 +61,22 @@ class FuturePaperDailyMark(Base):
     mark_price = Column(Float, nullable=False)
     floating_pnl = Column(Float, nullable=False)
     create_time = Column(DateTime, nullable=False, default=datetime.now)
+
+
+class FutureTrainingDecision(Base):
+    __tablename__ = 'future_training_decision'
+    __table_args__ = (UniqueConstraint('user_id', 'trade_date', 'contract_code', name='uk_future_training_decision'),)
+
+    decision_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False, index=True)
+    trade_date = Column(Date, nullable=False, index=True)
+    contract_code = Column(String(40), nullable=False)
+    contract_name = Column(String(100), nullable=False, default='')
+    decision = Column(String(8), nullable=False)  # 多、空、放弃
+    entry_price = Column(Float, nullable=False)
+    settle_date = Column(Date, nullable=True)
+    settle_price = Column(Float, nullable=True)
+    pnl_rate = Column(Float, nullable=True)
+    status = Column(String(12), nullable=False, default='pending')
+    create_time = Column(DateTime, nullable=False, default=datetime.now)
+    update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
