@@ -27,5 +27,8 @@ class EnglishContentService:
                 if media and media.status == 'ready':
                     audio[pronunciation.accent] = f'/english/media/{media.media_id}'
             animation = await db.scalar(select(EnglishWordAnimation).where(EnglishWordAnimation.word_id == word.word_id, EnglishWordAnimation.status == 'published'))
-            result.append({'word_id': word.word_id, 'word': word.word, 'phonetic_uk': word.phonetic_uk, 'phonetic_us': word.phonetic_us, 'meaning_zh': word.meaning_zh, 'part_of_speech': word.part_of_speech, 'example_en': word.example_en, 'example_zh': word.example_zh, 'audio': audio, 'animation': animation.animation_config if animation else None})
+            animation_data = None
+            if animation and animation.media_id:
+                animation_data = {'type': animation.animation_type, 'url': f'/english/media/{animation.media_id}'}
+            result.append({'word_id': word.word_id, 'word': word.word, 'phonetic_uk': word.phonetic_uk, 'phonetic_us': word.phonetic_us, 'meaning_zh': word.meaning_zh, 'part_of_speech': word.part_of_speech, 'example_en': word.example_en, 'example_zh': word.example_zh, 'audio': audio, 'animation': animation_data})
         return result
