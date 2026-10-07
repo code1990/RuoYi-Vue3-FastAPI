@@ -21,7 +21,7 @@ export const useTradingStore = defineStore("trading", () => {
       const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
       cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl;
       positions.value = account.data.positions.map((item) => ({ id: item.positionId, code: item.contractCode, name: item.contractName, side: item.side, quantity: item.quantity, avgPrice: item.averagePrice, lastPrice: item.lastPrice, margin: item.margin, unrealizedPnl: item.unrealizedPnl }));
-      orders.value = orderRows.data.map((item) => ({ id: item.orderId, type: item.action === "开仓" ? `开${item.side}` : item.action, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
+      orders.value = orderRows.data.map((item) => ({ id: item.orderId, action: item.action, side: item.side, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
     } catch {
       // 未登录时首页仍可查看公开行情，账户数据保持为空。
     }
