@@ -68,3 +68,19 @@ async def test_close_rejects_when_market_is_closed(monkeypatch) -> None:
     with pytest.raises(ServiceWarning) as exc_info:
         await PaperTradingService.close(Database(), 1, 1)
     assert exc_info.value.message.endswith('暂不支持模拟交易')
+
+
+@pytest.mark.asyncio
+async def test_profit_summary_groups_closed_contract_result() -> None:
+    class Database:
+        async def scalars(self, _):
+            return SimpleNamespace(all=lambda: [
+                SimpleNamespace(contract_code='RB888.XSGE', contract_name='螺纹钢主力', action='开仓', fee=3, realized_pnl=None),
+                SimpleNamespace(contract_code='RB888.XSGE', contract_name='螺纹钢主力', action='平仓', fee=4, realized_pnl=100),
+                SimpleNamespace(contract_code='BU888.XSGE', contract_name='沥青主力', action='开仓', fee=2, realized_pnl=None),
+            ])
+
+    assert await PaperTradingService.profit_summary(Database(), 1) == [{
+        'contract_code': 'RB888.XSGE', 'contract_name': '螺纹钢主力',
+        'realized_pnl': 100.0, 'fee': 7.0, 'trade_count': 1, 'net_pnl': 93.0,
+    }]

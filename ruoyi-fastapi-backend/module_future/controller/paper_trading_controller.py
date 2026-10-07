@@ -31,6 +31,11 @@ async def get_floating_calendar(db: Annotated[AsyncSession, DBSessionDependency(
         raise HTTPException(status_code=400, detail='Invalid month') from error
 
 
+@paper_trading_controller.get('/profit-summary', response_model=DataResponseModel[list[dict]])
+async def get_profit_summary(db: Annotated[AsyncSession, DBSessionDependency()], current_user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    return ResponseUtil.success(data=await PaperTradingService.profit_summary(db, current_user.user.user_id))
+
+
 @paper_trading_controller.get('/account', response_model=DataResponseModel[PaperAccountModel])
 async def get_account(db: Annotated[AsyncSession, DBSessionDependency()], current_user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
     return ResponseUtil.success(data=await PaperTradingService.account(db, current_user.user.user_id))

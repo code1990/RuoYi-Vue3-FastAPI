@@ -166,6 +166,24 @@ class PaperTradingService:
         return result
 
     @classmethod
+    async def profit_summary(cls, db: AsyncSession, user_id: int) -> list[dict]:
+        """Net realized result by contract; open-position floating P&L is excluded."""
+        orders = (await db.scalars(select(FuturePaperOrder).where(FuturePaperOrder.user_id == user_id))).all()
+        rows: dict[str, dict] = {}
+        for order in orders:
+            item = rows.setdefault(order.contract_code, {'contract_code': order.contract_code, 'contract_name': order.contract_name, 'realized_pnl': 0.0, 'fee': 0.0, 'trade_count': 0})
+            item['fee'] += order.fee or 0.0
+            if order.action == '平仓':
+                item['realized_pnl'] += order.realized_pnl or 0.0
+                item['trade_count'] += 1
+        result = []
+        for item in rows.values():
+            if item['trade_count']:
+                item['net_pnl'] = item['realized_pnl'] - item['fee']
+                result.append(item)
+        return sorted(result, key=lambda item: item['net_pnl'], reverse=True)
+
+    @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
         quote = await cls._execution_quote(data.contract_code)
         account = await cls._account(db, user_id)
