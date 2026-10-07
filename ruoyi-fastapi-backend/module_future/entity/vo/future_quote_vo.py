@@ -19,6 +19,7 @@ class FutureQuoteModel(BaseModel):
     prev_settlement: float | None = None
     market_name: str = ''
     product_name: str = ''
+    contract_unit: float = 1
 
 
 class FutureQuotePageModel(BaseModel):
