@@ -1,0 +1,42 @@
+{
+    "name" : "英语乐园",
+    "appid" : "__UNI__1B52013",
+    "description" : "专为儿童设计的离线英语学习平板应用",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    "app-plus" : {
+        "screenOrientation" : [ "portrait-primary", "landscape-primary", "landscape-secondary" ],
+        "safearea" : {
+            "bottom" : {
+                "offset" : "none"
+            }
+        },
+        "splashscreen" : {
+            "alwaysShowBeforeRender" : true,
+            "autoclose" : true,
+            "delay" : 0
+        },
+        "usingComponents" : true,
+        "distribute" : {
+            "android" : {
+                "permissions" : [ "<uses-permission android:name=\"android.permission.VIBRATE\"/>" ],
+                "abiFilters" : [ "armeabi-v7a", "arm64-v8a" ]
+            },
+            "icons" : {
+                "android" : {
+                    "hdpi" : "unpackage/res/icons/72x72.png",
+                    "xhdpi" : "unpackage/res/icons/96x96.png",
+                    "xxhdpi" : "unpackage/res/icons/144x144.png",
+                    "xxxhdpi" : "unpackage/res/icons/192x192.png"
+                }
+            },
+            "ios" : {
+                "dSYMs" : false
+            }
+        }
+    },
+    "h5" : {
+        "title" : "英语乐园"
+    }
+}
