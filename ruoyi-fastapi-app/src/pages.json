@@ -32,6 +32,12 @@
       }
     },
     {
+      "path": "pages/kline/compare",
+      "style": {
+        "navigationBarTitleText": "合约联动"
+      }
+    },
+    {
       "path": "pages/mine/index",
       "style": {
         "navigationBarTitleText": "模拟账户"
