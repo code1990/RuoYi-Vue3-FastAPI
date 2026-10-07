@@ -17,7 +17,8 @@ class PaperTradingService:
     INITIAL_CASH = 1000000.0
     MARGIN_RATE = 1.0
     COMMISSION_RATE = 0.0001
-    BROKER_COMMISSION_MULTIPLIER = 0.0
+    # 默认自助开户按交易所基准的 3 倍总费率模拟：交易所 1 份、期货公司佣金 2 份。
+    BROKER_COMMISSION_MULTIPLIER = 2.0
     FEE_SPECS = {
         'RB': {'rate': 0.0001}, 'I': {'rate': 0.0005}, 'SA': {'rate': 0.0001}, 'AG': {'rate': 0.00005},
         'FG': {'fixed': 2.0}, 'M': {'fixed': 1.5}, 'C': {'fixed': 1.2}, 'SC': {'fixed': 20.0},
