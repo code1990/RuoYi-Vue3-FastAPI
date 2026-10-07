@@ -36,12 +36,12 @@ class FutureRelationService:
                         data = json.loads(payload)
                         priority = 2 if '主力' in str(data.get('prod_name', '')) or '888' in code or '001' in code else 1
                         if key not in selected or priority > selected[key][0]:
-                            selected[key] = (priority, str(data.get('prod_name') or ''), data.get('px_change_rate'))
+                            selected[key] = (priority, code, str(data.get('prod_name') or ''), data.get('px_change_rate'))
         for row in rows:
-            source = selected.get((row.market_code, row.product_code, row.contract_prefix), (0, '', None))
-            related = selected.get((row.related_market_code, row.related_product_code, row.related_contract_prefix), (0, '', None))
-            row.source_contract, row.source_change_rate = source[1:]
-            row.related_contract, row.related_change_rate = related[1:]
+            source = selected.get((row.market_code, row.product_code, row.contract_prefix), (0, '', '', None))
+            related = selected.get((row.related_market_code, row.related_product_code, row.related_contract_prefix), (0, '', '', None))
+            row.source_contract_code, row.source_contract, row.source_change_rate = source[1:]
+            row.related_contract_code, row.related_contract, row.related_change_rate = related[1:]
             row.signal_type, row.signal_strength = FutureRelationService._signal(row)
         return rows
 

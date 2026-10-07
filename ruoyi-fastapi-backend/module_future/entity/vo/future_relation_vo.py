@@ -19,8 +19,10 @@ class FutureRelationModel(BaseModel):
     review_status: str
     remark: str
     source_contract: str = ''
+    source_contract_code: str = ''
     source_change_rate: float | None = None
     related_contract: str = ''
+    related_contract_code: str = ''
     related_change_rate: float | None = None
     signal_type: str = ''
     signal_strength: float | None = None
