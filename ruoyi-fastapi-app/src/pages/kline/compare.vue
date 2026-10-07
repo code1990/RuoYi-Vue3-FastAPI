@@ -47,7 +47,10 @@ function createChart(item) {
   const control = appCharts.get(item.key); if (!control) return;
   const info = uni.getSystemInfoSync(); control.SetSize(info.windowWidth - uni.upx2px(40), Math.max(160, (info.windowHeight - uni.upx2px(96)) / 2 - uni.upx2px(45)));
   control.Symbol = hqSymbol(item.code);
-  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "VOL" }], KLine: { Period: 0, PageSize: 45, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: [] }); } } };
+  const network = async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: [] }); } };
+  // FutureHQChart 会将控制器的 NetworkFilter 写回 Option；两处必须使用同一个回调。
+  control.NetworkFilter = network;
+  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "VOL" }], KLine: { Period: 0, PageSize: 45, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }

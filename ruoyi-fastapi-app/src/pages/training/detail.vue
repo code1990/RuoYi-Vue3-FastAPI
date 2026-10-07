@@ -1,23 +1,52 @@
 <template>
-  <view class="page"><view class="head"><view><text class="name">{{ name }}</text><text class="code">{{ code }}</text></view><text>尾盘价决策</text></view><!-- #ifdef H5 --><div id="training-chart" class="chart"></div><!-- #endif --><view class="hint">请选择今日判断；提交后不可修改，也不会影响模拟交易账户。</view><view class="actions"><button class="long" @click="ask('多')">看多</button><button class="pass" @click="ask('放弃')">放弃机会</button><button class="short" @click="ask('空')">看空</button></view><view v-if="dialog" class="mask"><view class="reason-box"><text class="reason-title">为什么{{ labels[decision] }}？</text><textarea v-model="reason" maxlength="500" auto-height placeholder="请写下你的判断依据，例如指标信号、趋势或风险考虑" /><view class="reason-actions"><text @click="dialog = false">取消</text><button @click="submit">确认记录</button></view></view></view></view>
+  <view class="page"><view class="head"><view><text class="name">{{ name }}</text><text class="code">{{ code }}</text></view><text>尾盘价决策</text></view><!-- #ifdef H5 --><div id="training-chart" class="chart"></div><!-- #endif --><!-- #ifdef APP-PLUS --><FutureHQChart ref="appChart" :DefaultSymbol="hqSymbol(code)" :DefaultChart="{ Type: 'KLine' }" /><!-- #endif --><view class="hint">请选择今日判断；提交后不可修改，也不会影响模拟交易账户。</view><view class="actions"><button class="long" @click="ask('多')">看多</button><button class="pass" @click="ask('放弃')">放弃机会</button><button class="short" @click="ask('空')">看空</button></view><view v-if="dialog" class="mask"><view class="reason-box"><text class="reason-title">为什么{{ labels[decision] }}？</text><textarea v-model="reason" maxlength="500" auto-height placeholder="请写下你的判断依据，例如指标信号、趋势或风险考虑" /><view class="reason-actions"><text @click="dialog = false">取消</text><button @click="submit">确认记录</button></view></view></view></view>
 </template>
 
 <script setup>
 import { nextTick, onBeforeUnmount, ref } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
+// #ifdef H5
 import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
+// #endif
+// #ifndef H5
+import { JSIndexScript } from "@/vendor/hqchart/uniapp/umychart.index.data.wechat.js";
+// #endif
+import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
 import { submitTrainingDecision } from "@/api/future/training";
-const code = ref(""); const name = ref(""); const dialog = ref(false); const decision = ref(""); const reason = ref(""); const labels = { 多: "看多", 空: "看空", 放弃: "放弃机会" }; let chart;
+const code = ref(""); const name = ref(""); const dialog = ref(false); const decision = ref(""); const reason = ref(""); const appChart = ref(null); const labels = { 多: "看多", 空: "看空", 放弃: "放弃机会" }; let chart;
 const hqSymbol = value => String(value || "").replace(/\.XSGE$/i, ".SHFE").replace(/\.XDCE$/i, ".DCE").replace(/\.XZCE$/i, ".CZCE").replace(/\.XGFE$/i, ".GZFE").replace(/\.XCFE$/i, ".CFFEX").replace(/\.SHGE$/i, ".SHFE");
 const hqRows = rows => rows.map(item => { const text = String(item.time); return [Number(text.slice(0, 8)), item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; });
-function registerIndicators() { HQChart.JSIndexScript.AddIndex([{ ID: "TRAIN_KDJ9", Name: "训练KDJ9", Description: "KDJ 9 日信号", IsMainIndex: false, Script: "RSV9:=(CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100;\nK9:SMA(RSV9,3,1);\nD9:SMA(K9,3,1);\nJ9:3*K9-2*D9;\nK1:=CROSS(RSV9,K9);\nK2:=CROSS(RSV9,D9);\nDRAWICON(K1,10,1);\nDRAWICON(K2,30,1);\nK10:(CROSS(J9,K9) AND CROSS(J9,D9))*100;" }, { ID: "TRAIN_KDJ90", Name: "训练KDJ90", Description: "KDJ 90 日信号", IsMainIndex: false, Script: "RSV90:=(CLOSE-LLV(LOW,90))/(HHV(HIGH,90)-LLV(LOW,90))*100;\nK90:SMA(RSV90,3,1);\nD90:SMA(K90,3,1);\nJ90:3*K90-2*D90;\nK11:=CROSS(RSV90,K90);\nK22:=CROSS(RSV90,D90);\nDRAWICON(K11,50,1);\nDRAWICON(K22,55,1);\nK100:(CROSS(J90,K90) AND CROSS(J90,D90))*100;" }]); }
-function createChart() { // #ifdef H5
-  const target = document.getElementById("training-chart"); if (!target) return; registerIndicators(); HQChart.JSChart.GetResource().FrameLogo.Text = null; chart = HQChart.JSChart.Init(target); chart.SetOption({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: [{ Index: "MA" }, { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" }], KLine: { Period: 0, PageSize: 80, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: code.value, period: "1d", count: 180 }); callback({ name: name.value, symbol: hqSymbol(code.value), data: hqRows(response.data.rows || []) }); } catch { callback({ name: name.value, symbol: hqSymbol(code.value), data: [] }); } } }); // #endif
+const trainingIndicators = [{ ID: "TRAIN_KDJ9", Name: "训练KDJ9", Description: "KDJ 9 日信号", IsMainIndex: false, Script: "RSV9:=(CLOSE-LLV(LOW,9))/(HHV(HIGH,9)-LLV(LOW,9))*100;\nK9:SMA(RSV9,3,1);\nD9:SMA(K9,3,1);\nJ9:3*K9-2*D9;\nK1:=CROSS(RSV9,K9);\nK2:=CROSS(RSV9,D9);\nDRAWICON(K1,10,1);\nDRAWICON(K2,30,1);\nK10:(CROSS(J9,K9) AND CROSS(J9,D9))*100;" }, { ID: "TRAIN_KDJ90", Name: "训练KDJ90", Description: "KDJ 90 日信号", IsMainIndex: false, Script: "RSV90:=(CLOSE-LLV(LOW,90))/(HHV(HIGH,90)-LLV(LOW,90))*100;\nK90:SMA(RSV90,3,1);\nD90:SMA(K90,3,1);\nJ90:3*K90-2*D90;\nK11:=CROSS(RSV90,K90);\nK22:=CROSS(RSV90,D90);\nDRAWICON(K11,50,1);\nDRAWICON(K22,55,1);\nK100:(CROSS(J90,K90) AND CROSS(J90,D90))*100;" }];
+function registerIndicators() {
+  // #ifdef H5
+  HQChart.JSIndexScript.AddIndex(trainingIndicators);
+  // #endif
+  // #ifndef H5
+  JSIndexScript.AddIndex(trainingIndicators);
+  // #endif
+}
+function returnChartData(callback, payload) {
+  // #ifndef H5
+  callback({ data: payload });
+  // #endif
+  // #ifdef H5
+  callback(payload);
+  // #endif
+}
+const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: [{ Index: "MA" }, { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" }], KLine: { Period: 0, PageSize: 80, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
+const network = async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: code.value, period: "1d", count: 180 }); returnChartData(callback, { name: name.value, symbol: hqSymbol(code.value), data: hqRows(response.data.rows || []) }); } catch { returnChartData(callback, { name: name.value, symbol: hqSymbol(code.value), data: [] }); } };
+function createChart() { registerIndicators();
+  // #ifdef H5
+  const target = document.getElementById("training-chart"); if (!target) return; HQChart.JSChart.GetResource().FrameLogo.Text = null; chart = HQChart.JSChart.Init(target); chart.SetOption(chartOption(network));
+  // #endif
+  // #ifdef APP-PLUS
+  const control = appChart.value; if (!control) return; const info = uni.getSystemInfoSync(); control.SetSize(info.windowWidth, uni.upx2px(1050)); control.Symbol = hqSymbol(code.value); control.NetworkFilter = network; control.KLine.Option = chartOption(network); control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
+  // #endif
 }
 function ask(value) { decision.value = value; reason.value = ""; dialog.value = true; }
 async function submit() { if (reason.value.trim().length < 2) return uni.showToast({ title: "请至少填写两个字的判断理由", icon: "none" }); try { await submitTrainingDecision({ contractCode: code.value, decision: decision.value, reason: reason.value.trim() }); dialog.value = false; uni.showToast({ title: "决策已记录", icon: "success" }); setTimeout(() => uni.navigateBack(), 500); } catch {} }
-onLoad(async query => { code.value = query.code || ""; name.value = query.name || code.value; uni.setNavigationBarTitle({ title: name.value }); await nextTick(); createChart(); }); onBeforeUnmount(() => chart?.ChartDestroy?.());
+onLoad(async query => { code.value = query.code || ""; name.value = query.name || code.value; uni.setNavigationBarTitle({ title: name.value }); await nextTick(); createChart(); }); onBeforeUnmount(() => { chart?.ChartDestroy?.(); appChart.value?.ClearChart?.(); });
 </script>
 
 <style scoped>
