@@ -68,14 +68,23 @@ function fillMinuteRows(rows) {
 function minuteData(rows) { const last = rows[rows.length - 1] || {}; const text = String(last.time || ""); return { code: 0, stock: [{ name: name.value || code.value, symbol: hqSymbol(code.value), date: Number(text.slice(0, 8)) || 0, time: Number(text.slice(8)) || 0, price: last.close || 0, open: last.open || 0, high: last.high || 0, low: last.low || 0, vol: last.volume || 0, amount: last.turnover || 0, yclose: rows[0]?.open || 0, yclearing: rows[0]?.open || 0, minute: rows.map(item => { const value = String(item.time); return { date: Number(value.slice(0, 8)), time: Number(value.slice(8)), price: item.close, open: item.open, high: item.high, low: item.low, vol: item.volume || 0, amount: item.turnover || 0, avprice: item.close }; }) }] }; }
 function emptyMinute() { return minuteData([]); }
 function emptyHistoryMinute() { return { code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: [{ date: 0, close: 0, yclose: 0, yclearing: 0, minute: [] }] }; }
+// APP Canvas 版 HQChart 的回调读取 recvData.data；H5 版则直接读取行情对象。
+function returnChartData(callback, payload) {
+  // #ifndef H5
+  callback({ data: payload });
+  // #endif
+  // #ifdef H5
+  callback(payload);
+  // #endif
+}
 async function network(data, callback) {
   data.PreventDefault = true;
   const requestedPeriod = isMinuteView.value ? period.value : (apiPeriod[data?.Request?.Data?.period] || period.value);
-  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 500 }); const rows = response.data.rows || []; if (!rows.length && data.Name === "MinuteChartContainer::RequestMinuteData") { callback(emptyMinute()); return; } if (!rows.length && data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { callback(emptyHistoryMinute()); return; }
-    if (data.Name === "MinuteChartContainer::RequestMinuteData") { callback(minuteData(fillMinuteRows(rows))); return; }
-    if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); fillMinuteRows(rows).forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); const days = [...groups].sort(([left], [right]) => left - right).slice(-5); callback({ code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: days.map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], yclearing: minute[0][1], minute })).reverse() }); return; }
-    const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; callback(result); }
-  catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") callback(emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") callback(emptyHistoryMinute()); else callback({ name: code.value, symbol: hqSymbol(code.value), data: [] }); }
+  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 500 }); const rows = response.data.rows || []; if (!rows.length && data.Name === "MinuteChartContainer::RequestMinuteData") { returnChartData(callback, emptyMinute()); return; } if (!rows.length && data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { returnChartData(callback, emptyHistoryMinute()); return; }
+    if (data.Name === "MinuteChartContainer::RequestMinuteData") { returnChartData(callback, minuteData(fillMinuteRows(rows))); return; }
+    if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); fillMinuteRows(rows).forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); const days = [...groups].sort(([left], [right]) => left - right).slice(-5); returnChartData(callback, { code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: days.map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], yclearing: minute[0][1], minute })).reverse() }); return; }
+    const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; returnChartData(callback, result); }
+  catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") returnChartData(callback, emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") returnChartData(callback, emptyHistoryMinute()); else returnChartData(callback, { name: code.value, symbol: hqSymbol(code.value), data: [] }); }
 }
 function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: indicator.value === "MA" || indicator.value === "BOLL" ? "VOL" : indicator.value }]; }
 function clearChart() { chart?.ChartDestroy?.(); chart = null;

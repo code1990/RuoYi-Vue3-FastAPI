@@ -21,6 +21,14 @@ import { useTradingStore } from "@/store";
 
 const contracts = ref([]); const charts = []; const appCharts = new Map();
 function setAppChart(key, element) { if (element) appCharts.set(key, element); else appCharts.delete(key); }
+function returnChartData(callback, payload) {
+  // #ifndef H5
+  callback({ data: payload });
+  // #endif
+  // #ifdef H5
+  callback(payload);
+  // #endif
+}
 const hqSymbol = value => String(value || "").replace(/\.XSGE$/i, ".SHFE").replace(/\.XDCE$/i, ".DCE").replace(/\.XZCE$/i, ".CZCE").replace(/\.XGFE$/i, ".GZFE").replace(/\.XCFE$/i, ".CFFEX").replace(/\.SHGE$/i, ".SHFE");
 const rowsForChart = rows => rows.map(item => { const value = String(item.time); return [Number(value.slice(0, 8)), item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; });
 function clearCharts() { charts.forEach(chart => chart?.ChartDestroy?.()); charts.length = 0; appCharts.forEach(control => control?.ClearChart?.()); appCharts.clear(); }
@@ -39,7 +47,7 @@ function createChart(item) {
   const control = appCharts.get(item.key); if (!control) return;
   const info = uni.getSystemInfoSync(); control.SetSize(info.windowWidth - uni.upx2px(40), Math.max(160, (info.windowHeight - uni.upx2px(96)) / 2 - uni.upx2px(45)));
   control.Symbol = hqSymbol(item.code);
-  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "VOL" }], KLine: { Period: 0, PageSize: 45, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); callback({ name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; callback({ name: item.name, symbol: hqSymbol(item.code), data: [] }); } } };
+  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "VOL" }], KLine: { Period: 0, PageSize: 45, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: [] }); } } };
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }
