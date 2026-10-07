@@ -9,11 +9,9 @@ const seedQuotes = [
 ];
 
 export const useTradingStore = defineStore("trading", () => {
-  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic"); const lightningOpen = ref(false);
+  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic");
   const selectedQuote = computed(() => quotes.value.find((item) => item.code === selectedCode.value) || quotes.value[0]);
   const selectContract = (code) => { selectedCode.value = code; };
-  const openLightning = () => { lightningOpen.value = true; };
-  const closeLightning = () => { lightningOpen.value = false; };
   async function refreshQuotes() { await sync(); }
   async function sync() {
     const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
@@ -32,5 +30,5 @@ export const useTradingStore = defineStore("trading", () => {
   async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); await sync(); }
   async function closePosition(id) { await closePaperPosition(id); await sync(); }
   async function setScope(value) { if (scope.value !== value) { scope.value = value; await sync(); } }
-  return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, lightningOpen, openLightning, closeLightning, refreshQuotes, selectContract, setScope, sync, openPosition, closePosition };
+  return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, refreshQuotes, selectContract, setScope, sync, openPosition, closePosition };
 });
