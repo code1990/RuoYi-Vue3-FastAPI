@@ -143,7 +143,7 @@ class PaperTradingService:
         result = []
         current = start
         while current < end:
-            if current.weekday() < 5:
+            if current.weekday() < 5 and current <= today:
                 trading_day = not cls.is_domestic_holiday(current) and (not has_calendar or current.strftime('%Y%m%d') in calendar_days)
                 result.append({'trade_date': current.isoformat(), 'floating_pnl': rows.get(current, 0.0) if trading_day else None, 'estimated': current == today and not sealed_today and trading_day, 'closed': not trading_day})
             current = date.fromordinal(current.toordinal() + 1)
