@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Path, Query, Response
+from fastapi import HTTPException, Path, Query, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,14 @@ paper_trading_controller = APIRouterPro(prefix='/future/paper-trading', order_nu
 @paper_trading_controller.get('/status', response_model=DataResponseModel[dict])
 async def get_trading_status(contract_code: str = Query(alias='contractCode', min_length=1, max_length=40)) -> Response:
     return ResponseUtil.success(data=await PaperTradingService.status(contract_code))
+
+
+@paper_trading_controller.get('/floating-calendar', response_model=DataResponseModel[list[dict]])
+async def get_floating_calendar(db: Annotated[AsyncSession, DBSessionDependency()], current_user: Annotated[CurrentUserModel, CurrentUserDependency()], month: str = Query(pattern=r'^\d{4}-\d{2}$')) -> Response:
+    try:
+        return ResponseUtil.success(data=await PaperTradingService.floating_calendar(db, current_user.user.user_id, month))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail='Invalid month') from error
 
 
 @paper_trading_controller.get('/account', response_model=DataResponseModel[PaperAccountModel])

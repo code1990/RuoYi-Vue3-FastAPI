@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, Float, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, Column, Date, DateTime, Float, Integer, String, UniqueConstraint
 
 from config.database import Base
 
@@ -46,4 +46,18 @@ class FuturePaperOrder(Base):
     exchange_fee = Column(Float, nullable=False, default=0.0)
     broker_fee = Column(Float, nullable=False, default=0.0)
     realized_pnl = Column(Float, nullable=True)
+    create_time = Column(DateTime, nullable=False, default=datetime.now)
+
+
+class FuturePaperDailyMark(Base):
+    __tablename__ = 'future_paper_daily_mark'
+    __table_args__ = (UniqueConstraint('user_id', 'position_id', 'trade_date', name='uk_future_paper_daily_mark'),)
+
+    mark_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, nullable=False, index=True)
+    position_id = Column(BigInteger, nullable=False)
+    contract_code = Column(String(40), nullable=False)
+    trade_date = Column(Date, nullable=False)
+    mark_price = Column(Float, nullable=False)
+    floating_pnl = Column(Float, nullable=False)
     create_time = Column(DateTime, nullable=False, default=datetime.now)

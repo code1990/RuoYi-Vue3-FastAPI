@@ -48,6 +48,11 @@ def test_fee_supports_fixed_and_close_today_rates() -> None:
     assert PaperTradingService.fee({'contract_code': 'IF888.XCFE', 'price': 4000, 'multiplier': 300}, 1, True) == pytest.approx(3312)
 
 
+def test_floating_pnl_uses_previous_mark_price() -> None:
+    assert PaperTradingService.floating_pnl(5050, 5013, 10, 3, '多') == 1110
+    assert PaperTradingService.floating_pnl(5050, 5013, 10, 3, '空') == -1110
+
+
 @pytest.mark.asyncio
 async def test_close_rejects_when_market_is_closed(monkeypatch) -> None:
     async def closed_quote(_: str) -> dict:

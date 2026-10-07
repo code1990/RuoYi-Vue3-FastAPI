@@ -1,6 +1,6 @@
 import asyncio
 import re
-from datetime import datetime, time
+from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions.exception import ServiceWarning
 from module_future.dao.future_quote_dao import FutureQuoteDao
-from module_future.entity.do.paper_trading_do import FuturePaperAccount, FuturePaperOrder, FuturePaperPosition
+from module_future.entity.do.paper_trading_do import FuturePaperAccount, FuturePaperDailyMark, FuturePaperOrder, FuturePaperPosition
 from module_future.entity.vo.paper_trading_vo import PaperAccountModel, PaperPositionModel, PaperTradeOpenModel
 from config.env import AppConfig
 
@@ -80,22 +80,58 @@ class PaperTradingService:
             await db.flush()
         return account
 
+    @staticmethod
+    def floating_pnl(mark_price: float, base_price: float, multiplier: float, quantity: int, side: str) -> float:
+        return (mark_price - base_price) * multiplier * quantity * (1 if side == '多' else -1)
+
     @classmethod
     async def account(cls, db: AsyncSession, user_id: int) -> PaperAccountModel:
         account = await cls._account(db, user_id)
         positions = (await db.scalars(select(FuturePaperPosition).where(FuturePaperPosition.user_id == user_id))).all()
         result = []
         unrealized = 0.0
+        now = datetime.now(ZoneInfo('Asia/Shanghai'))
+        today = now.date()
         for position in positions:
             quote = await cls._quote(position.contract_code)
-            pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
+            pnl = cls.floating_pnl(quote['price'], position.average_price, position.multiplier, position.quantity, position.side)
             unrealized += pnl
+            if now.time() >= time(15, 5) and str(quote.get('market_date', '')).replace('-', '') == today.strftime('%Y%m%d'):
+                mark = await db.scalar(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.position_id == position.position_id, FuturePaperDailyMark.trade_date == today))
+                previous = await db.scalar(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.position_id == position.position_id, FuturePaperDailyMark.trade_date < today).order_by(FuturePaperDailyMark.trade_date.desc()).limit(1))
+                daily_pnl = cls.floating_pnl(quote['price'], previous.mark_price if previous else position.average_price, position.multiplier, position.quantity, position.side)
+                if mark:
+                    mark.mark_price, mark.floating_pnl = quote['price'], daily_pnl
+                else:
+                    db.add(FuturePaperDailyMark(user_id=user_id, position_id=position.position_id, contract_code=position.contract_code, trade_date=today, mark_price=quote['price'], floating_pnl=daily_pnl))
             result.append(PaperPositionModel(position_id=position.position_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, quantity=position.quantity, average_price=position.average_price, last_price=quote['price'], margin=position.margin, unrealized_pnl=pnl))
         cash = account.cash
         equity = cash + sum(item.margin for item in positions) + unrealized
         response = PaperAccountModel(cash=cash, equity=equity, unrealized_pnl=unrealized, positions=result)
         await db.commit()
         return response
+
+    @classmethod
+    async def floating_calendar(cls, db: AsyncSession, user_id: int, month: str) -> list[dict]:
+        start = datetime.strptime(f'{month}-01', '%Y-%m-%d').date()
+        end = date(start.year + (start.month == 12), start.month % 12 + 1, 1)
+        marks = (await db.scalars(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.trade_date >= start, FuturePaperDailyMark.trade_date < end))).all()
+        rows: dict[date, float] = {}
+        for mark in marks:
+            rows[mark.trade_date] = rows.get(mark.trade_date, 0) + mark.floating_pnl
+        positions = (await db.scalars(select(FuturePaperPosition).where(FuturePaperPosition.user_id == user_id))).all()
+        today = datetime.now(ZoneInfo('Asia/Shanghai')).date()
+        sealed_today = any(mark.trade_date == today for mark in marks)
+        if start <= today < end and not sealed_today:
+            floating = 0.0
+            for position in positions:
+                quote = await cls._quote(position.contract_code)
+                previous = await db.scalar(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.position_id == position.position_id, FuturePaperDailyMark.trade_date < today).order_by(FuturePaperDailyMark.trade_date.desc()).limit(1))
+                base_price = previous.mark_price if previous else position.average_price
+                floating += cls.floating_pnl(quote['price'], base_price, position.multiplier, position.quantity, position.side)
+            if floating or positions:
+                rows[today] = floating
+        return [{'trade_date': value.isoformat(), 'floating_pnl': amount, 'estimated': value == today and not sealed_today} for value, amount in sorted(rows.items())]
 
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:
