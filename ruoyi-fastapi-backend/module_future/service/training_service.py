@@ -40,7 +40,7 @@ class TrainingService:
         done = {item.contract_code: item for item in decisions}
         rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100)
         await db.commit()
-        return [{**item, 'submitted': item['contract_code'] in done} for item in rows]
+        return [item for item in rows if item['contract_code'] not in done]
 
     @classmethod
     async def submit(cls, db: AsyncSession, user_id: int, data: TrainingDecisionCreateModel) -> FutureTrainingDecision:
