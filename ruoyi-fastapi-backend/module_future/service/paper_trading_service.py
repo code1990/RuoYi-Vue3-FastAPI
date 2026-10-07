@@ -85,6 +85,11 @@ class PaperTradingService:
     def floating_pnl(mark_price: float, base_price: float, multiplier: float, quantity: int, side: str) -> float:
         return (mark_price - base_price) * multiplier * quantity * (1 if side == '多' else -1)
 
+    @staticmethod
+    def is_domestic_holiday(day: date) -> bool:
+        # 国庆长假为国内期货统一休市；其它调休日优先以入库交易日历为准。
+        return day.month == 10 and day.day <= 7
+
     @classmethod
     async def account(cls, db: AsyncSession, user_id: int) -> PaperAccountModel:
         account = await cls._account(db, user_id)
@@ -139,7 +144,7 @@ class PaperTradingService:
         current = start
         while current < end:
             if current.weekday() < 5:
-                trading_day = not has_calendar or current.strftime('%Y%m%d') in calendar_days
+                trading_day = not cls.is_domestic_holiday(current) and (not has_calendar or current.strftime('%Y%m%d') in calendar_days)
                 result.append({'trade_date': current.isoformat(), 'floating_pnl': rows.get(current, 0.0) if trading_day else None, 'estimated': current == today and not sealed_today and trading_day, 'closed': not trading_day})
             current = date.fromordinal(current.toordinal() + 1)
         return result
