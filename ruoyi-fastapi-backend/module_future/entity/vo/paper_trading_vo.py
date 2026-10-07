@@ -34,6 +34,7 @@ class PaperOrderModel(BaseModel):
     action: str
     quantity: int
     price: float
+    fee: float
     realized_pnl: float | None
     create_time: datetime
 

@@ -15,6 +15,7 @@ from config.env import AppConfig
 class PaperTradingService:
     INITIAL_CASH = 1000000.0
     MARGIN_RATE = 1.0
+    COMMISSION_RATE = 0.0001
     DOMESTIC_MARKETS = {'XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'}
 
     @classmethod
@@ -44,6 +45,10 @@ class PaperTradingService:
         status = cls.trading_status(quote)
         if not status['tradable']:
             raise ServiceWarning(message=status['reason'])
+
+    @classmethod
+    def fee(cls, quote: dict, quantity: int) -> float:
+        return quote['price'] * quote['multiplier'] * quantity * cls.COMMISSION_RATE
 
     @classmethod
     async def _account(cls, db: AsyncSession, user_id: int) -> FuturePaperAccount:
@@ -77,7 +82,8 @@ class PaperTradingService:
         await cls._ensure_tradable(quote)
         account = await cls._account(db, user_id)
         margin = quote['price'] * quote['multiplier'] * data.quantity * cls.MARGIN_RATE
-        if margin > account.cash:
+        fee = cls.fee(quote, data.quantity)
+        if margin + fee > account.cash:
             raise ServiceWarning(message='可用模拟资金不足')
         position = await db.scalar(select(FuturePaperPosition).where(FuturePaperPosition.user_id == user_id, FuturePaperPosition.contract_code == quote['contract_code'], FuturePaperPosition.side == data.side).with_for_update())
         if position:
@@ -87,8 +93,8 @@ class PaperTradingService:
             position.margin += margin
         else:
             db.add(FuturePaperPosition(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, quantity=data.quantity, average_price=quote['price'], multiplier=quote['multiplier'], margin=margin))
-        account.cash -= margin
-        db.add(FuturePaperOrder(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, action='开仓', quantity=data.quantity, price=quote['price']))
+        account.cash -= margin + fee
+        db.add(FuturePaperOrder(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, action='开仓', quantity=data.quantity, price=quote['price'], fee=fee))
         await db.commit()
 
     @classmethod
@@ -100,7 +106,8 @@ class PaperTradingService:
         await cls._ensure_tradable(quote)
         account = await cls._account(db, user_id)
         pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
-        account.cash += position.margin + pnl
-        db.add(FuturePaperOrder(user_id=user_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, action='平仓', quantity=position.quantity, price=quote['price'], realized_pnl=pnl))
+        fee = cls.fee(quote, position.quantity)
+        account.cash += position.margin + pnl - fee
+        db.add(FuturePaperOrder(user_id=user_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, action='平仓', quantity=position.quantity, price=quote['price'], fee=fee, realized_pnl=pnl))
         await db.delete(position)
         await db.commit()

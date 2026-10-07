@@ -37,6 +37,10 @@ def test_position_model_accepts_service_field_names() -> None:
     assert position.model_dump(by_alias=True)['positionId'] == 1
 
 
+def test_fee_is_one_bps_of_notional() -> None:
+    assert PaperTradingService.fee({'price': 5013, 'multiplier': 10}, 3) == pytest.approx(15.039)
+
+
 @pytest.mark.asyncio
 async def test_close_rejects_when_market_is_closed(monkeypatch) -> None:
     async def closed_quote(_: str) -> dict:

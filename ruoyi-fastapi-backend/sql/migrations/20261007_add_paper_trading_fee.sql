@@ -1,0 +1,1 @@
+ALTER TABLE future_paper_order ADD COLUMN fee DOUBLE NOT NULL DEFAULT 0 AFTER price;
