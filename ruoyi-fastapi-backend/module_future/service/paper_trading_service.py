@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions.exception import ServiceWarning
 from module_future.dao.future_quote_dao import FutureQuoteDao
+from module_future.dao.future_history_dao import FutureHistoryDao
 from module_future.entity.do.paper_trading_do import FuturePaperAccount, FuturePaperDailyMark, FuturePaperOrder, FuturePaperPosition
 from module_future.entity.vo.paper_trading_vo import PaperAccountModel, PaperPositionModel, PaperTradeOpenModel
 from config.env import AppConfig
@@ -131,7 +132,17 @@ class PaperTradingService:
                 floating += cls.floating_pnl(quote['price'], base_price, position.multiplier, position.quantity, position.side)
             if floating or positions:
                 rows[today] = floating
-        return [{'trade_date': value.isoformat(), 'floating_pnl': amount, 'estimated': value == today and not sealed_today} for value, amount in sorted(rows.items())]
+        calendar_days = await asyncio.to_thread(FutureHistoryDao.get_trading_dates, AppConfig.future_stat_db_path, start.strftime('%Y%m%d'), end.strftime('%Y%m%d'))
+        # 没有入库交易日历时不猜测节假日，工作日仍按可交易日展示，避免误标休市。
+        has_calendar = bool(calendar_days)
+        result = []
+        current = start
+        while current < end:
+            if current.weekday() < 5:
+                trading_day = not has_calendar or current.strftime('%Y%m%d') in calendar_days
+                result.append({'trade_date': current.isoformat(), 'floating_pnl': rows.get(current, 0.0) if trading_day else None, 'estimated': current == today and not sealed_today and trading_day, 'closed': not trading_day})
+            current = date.fromordinal(current.toordinal() + 1)
+        return result
 
     @classmethod
     async def open(cls, db: AsyncSession, user_id: int, data: PaperTradeOpenModel) -> None:

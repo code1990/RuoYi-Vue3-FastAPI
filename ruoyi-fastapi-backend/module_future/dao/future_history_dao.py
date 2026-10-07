@@ -4,6 +4,15 @@ from pathlib import Path
 
 class FutureHistoryDao:
     @classmethod
+    def get_trading_dates(cls, database_path: str, start: str, end: str) -> set[str]:
+        with cls._connect(database_path) as connection:
+            try:
+                rows = connection.execute("SELECT DISTINCT trade_date FROM t_future_trading_calendar WHERE REPLACE(trade_date, '-', '')>=? AND REPLACE(trade_date, '-', '')<?", (start, end)).fetchall()
+            except sqlite3.OperationalError:
+                return set()
+        return {str(row[0]).replace('-', '') for row in rows}
+
+    @classmethod
     def get_calendar(cls, database_path: str) -> list[dict]:
         with cls._connect(database_path) as c:
             try: rows=c.execute('SELECT exchange_code,representative_contract,trade_date,session_times,timezone FROM t_future_trading_calendar ORDER BY trade_date DESC,exchange_code').fetchall()
