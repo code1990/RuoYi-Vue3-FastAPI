@@ -33,7 +33,8 @@ const signed = (value) => `${value >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 function change(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }
 async function refreshStatus() { if (!quote.value?.code) return; try { tradeStatus.value = (await getPaperTradingStatus(quote.value.code)).data; } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
 function selectContract(code) { trading.selectContract(code); refreshStatus(); }
-async function submit(side) { if (!canTrade.value) return; await trading.openPosition(side, quantity.value); uni.showToast({ title: `已模拟开${side}`, icon: "none" }); }
+function confirmOpen(side) { const action = side === "多" ? "买入开多" : "卖出开空"; return new Promise((resolve) => uni.showModal({ title: "确认模拟开仓", content: `${quote.value.name} ${quote.value.code}\n${action} ${quantity.value} 手\n占用 ¥ ${format(margin.value)}`, confirmText: "确认开仓", success: ({ confirm }) => resolve(confirm), fail: () => resolve(false) })); }
+async function submit(side) { if (!canTrade.value || !await confirmOpen(side)) return; await trading.openPosition(side, quantity.value); await refreshStatus(); uni.showToast({ title: `已模拟开${side}`, icon: "success" }); }
 async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
 trading.sync().then(refreshStatus);
 </script>
