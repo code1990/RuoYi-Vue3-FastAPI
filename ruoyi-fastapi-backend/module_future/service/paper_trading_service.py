@@ -1,4 +1,5 @@
 import asyncio
+import re
 from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
@@ -16,6 +17,14 @@ class PaperTradingService:
     INITIAL_CASH = 1000000.0
     MARGIN_RATE = 1.0
     COMMISSION_RATE = 0.0001
+    BROKER_COMMISSION_MULTIPLIER = 0.0
+    FEE_SPECS = {
+        'RB': {'rate': 0.0001}, 'I': {'rate': 0.0005}, 'SA': {'rate': 0.0001}, 'AG': {'rate': 0.00005},
+        'FG': {'fixed': 2.0}, 'M': {'fixed': 1.5}, 'C': {'fixed': 1.2}, 'SC': {'fixed': 20.0},
+        'IF': {'rate': 0.000092, 'close_today_rate': 0.00092},
+        'IC': {'rate': 0.000092, 'close_today_rate': 0.00092},
+        'IM': {'rate': 0.000092, 'close_today_rate': 0.00092},
+    }
     DOMESTIC_MARKETS = {'XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'}
 
     @classmethod
@@ -47,8 +56,19 @@ class PaperTradingService:
             raise ServiceWarning(message=status['reason'])
 
     @classmethod
-    def fee(cls, quote: dict, quantity: int) -> float:
-        return quote['price'] * quote['multiplier'] * quantity * cls.COMMISSION_RATE
+    def fee_breakdown(cls, quote: dict, quantity: int, close_today: bool = False) -> tuple[float, float]:
+        prefix = re.match(r'[A-Za-z]+', str(quote['contract_code']).split('.', 1)[0])
+        rule = cls.FEE_SPECS.get((prefix.group(0) if prefix else '').upper(), {'rate': cls.COMMISSION_RATE})
+        if 'fixed' in rule:
+            exchange_fee = rule['fixed'] * quantity
+        else:
+            rate = rule.get('close_today_rate') if close_today else None
+            exchange_fee = quote['price'] * quote['multiplier'] * quantity * (rate if rate is not None else rule['rate'])
+        return exchange_fee, exchange_fee * cls.BROKER_COMMISSION_MULTIPLIER
+
+    @classmethod
+    def fee(cls, quote: dict, quantity: int, close_today: bool = False) -> float:
+        return sum(cls.fee_breakdown(quote, quantity, close_today))
 
     @classmethod
     async def _account(cls, db: AsyncSession, user_id: int) -> FuturePaperAccount:
@@ -82,7 +102,8 @@ class PaperTradingService:
         await cls._ensure_tradable(quote)
         account = await cls._account(db, user_id)
         margin = quote['price'] * quote['multiplier'] * data.quantity * cls.MARGIN_RATE
-        fee = cls.fee(quote, data.quantity)
+        exchange_fee, broker_fee = cls.fee_breakdown(quote, data.quantity)
+        fee = exchange_fee + broker_fee
         if margin + fee > account.cash:
             raise ServiceWarning(message='可用模拟资金不足')
         position = await db.scalar(select(FuturePaperPosition).where(FuturePaperPosition.user_id == user_id, FuturePaperPosition.contract_code == quote['contract_code'], FuturePaperPosition.side == data.side).with_for_update())
@@ -94,7 +115,7 @@ class PaperTradingService:
         else:
             db.add(FuturePaperPosition(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, quantity=data.quantity, average_price=quote['price'], multiplier=quote['multiplier'], margin=margin))
         account.cash -= margin + fee
-        db.add(FuturePaperOrder(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, action='开仓', quantity=data.quantity, price=quote['price'], fee=fee))
+        db.add(FuturePaperOrder(user_id=user_id, contract_code=quote['contract_code'], contract_name=quote['contract_name'], side=data.side, action='开仓', quantity=data.quantity, price=quote['price'], fee=fee, exchange_fee=exchange_fee, broker_fee=broker_fee))
         await db.commit()
 
     @classmethod
@@ -106,8 +127,9 @@ class PaperTradingService:
         await cls._ensure_tradable(quote)
         account = await cls._account(db, user_id)
         pnl = (quote['price'] - position.average_price) * position.multiplier * position.quantity * (1 if position.side == '多' else -1)
-        fee = cls.fee(quote, position.quantity)
+        exchange_fee, broker_fee = cls.fee_breakdown(quote, position.quantity, position.create_time.date() == datetime.now().date())
+        fee = exchange_fee + broker_fee
         account.cash += position.margin + pnl - fee
-        db.add(FuturePaperOrder(user_id=user_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, action='平仓', quantity=position.quantity, price=quote['price'], fee=fee, realized_pnl=pnl))
+        db.add(FuturePaperOrder(user_id=user_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, action='平仓', quantity=position.quantity, price=quote['price'], fee=fee, exchange_fee=exchange_fee, broker_fee=broker_fee, realized_pnl=pnl))
         await db.delete(position)
         await db.commit()

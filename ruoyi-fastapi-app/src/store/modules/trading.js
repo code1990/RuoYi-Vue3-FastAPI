@@ -22,7 +22,7 @@ export const useTradingStore = defineStore("trading", () => {
       cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl;
       const statuses = await Promise.all(account.data.positions.map(async (item) => { try { return (await getPaperTradingStatus(item.contractCode)).data; } catch { return { tradable: false, reason: "交易状态暂不可用" }; } }));
       positions.value = account.data.positions.map((item, index) => ({ id: item.positionId, code: item.contractCode, name: item.contractName, side: item.side, quantity: item.quantity, avgPrice: item.averagePrice, lastPrice: item.lastPrice, margin: item.margin, unrealizedPnl: item.unrealizedPnl, ...statuses[index] }));
-      orders.value = orderRows.data.map((item) => ({ id: item.orderId, action: item.action, side: item.side, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, fee: item.fee, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
+      orders.value = orderRows.data.map((item) => ({ id: item.orderId, action: item.action, side: item.side, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, fee: item.fee, exchangeFee: item.exchangeFee, brokerFee: item.brokerFee, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
     } catch {
       // 未登录时首页仍可查看公开行情，账户数据保持为空。
     }

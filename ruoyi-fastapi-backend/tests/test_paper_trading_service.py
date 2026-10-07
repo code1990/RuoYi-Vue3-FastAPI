@@ -38,7 +38,12 @@ def test_position_model_accepts_service_field_names() -> None:
 
 
 def test_fee_is_one_bps_of_notional() -> None:
-    assert PaperTradingService.fee({'price': 5013, 'multiplier': 10}, 3) == pytest.approx(15.039)
+    assert PaperTradingService.fee({'contract_code': 'BU888.XSGE', 'price': 5013, 'multiplier': 10}, 3) == pytest.approx(15.039)
+
+
+def test_fee_supports_fixed_and_close_today_rates() -> None:
+    assert PaperTradingService.fee({'contract_code': 'FG888.XZCE', 'price': 1000, 'multiplier': 20}, 3) == 6
+    assert PaperTradingService.fee({'contract_code': 'IF888.XCFE', 'price': 4000, 'multiplier': 300}, 1, True) == pytest.approx(1104)
 
 
 @pytest.mark.asyncio

@@ -43,5 +43,7 @@ class FuturePaperOrder(Base):
     quantity = Column(Integer, nullable=False)
     price = Column(Float, nullable=False)
     fee = Column(Float, nullable=False, default=0.0)
+    exchange_fee = Column(Float, nullable=False, default=0.0)
+    broker_fee = Column(Float, nullable=False, default=0.0)
     realized_pnl = Column(Float, nullable=True)
     create_time = Column(DateTime, nullable=False, default=datetime.now)

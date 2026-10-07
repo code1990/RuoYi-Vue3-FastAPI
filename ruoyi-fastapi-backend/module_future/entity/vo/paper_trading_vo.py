@@ -35,6 +35,8 @@ class PaperOrderModel(BaseModel):
     quantity: int
     price: float
     fee: float
+    exchange_fee: float
+    broker_fee: float
     realized_pnl: float | None
     create_time: datetime
 
