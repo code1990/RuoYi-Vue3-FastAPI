@@ -1,6 +1,6 @@
 import { computed, ref } from "vue";
 import { defineStore } from "pinia";
-import { closePaperPosition, getFutureQuotes, getPaperAccount, getPaperOrders, openPaperPosition } from "@/api/future/paper-trading";
+import { closePaperPosition, getFutureQuotes, getPaperAccount, getPaperOrders, getPaperTradingStatus, openPaperPosition } from "@/api/future/paper-trading";
 
 const seedQuotes = [
   { code: "IF2606", name: "沪深300", price: 3842.6, change: 0.68, multiplier: 300 },
@@ -20,7 +20,8 @@ export const useTradingStore = defineStore("trading", () => {
     try {
       const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
       cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl;
-      positions.value = account.data.positions.map((item) => ({ id: item.positionId, code: item.contractCode, name: item.contractName, side: item.side, quantity: item.quantity, avgPrice: item.averagePrice, lastPrice: item.lastPrice, margin: item.margin, unrealizedPnl: item.unrealizedPnl }));
+      const statuses = await Promise.all(account.data.positions.map(async (item) => { try { return (await getPaperTradingStatus(item.contractCode)).data; } catch { return { tradable: false, reason: "交易状态暂不可用" }; } }));
+      positions.value = account.data.positions.map((item, index) => ({ id: item.positionId, code: item.contractCode, name: item.contractName, side: item.side, quantity: item.quantity, avgPrice: item.averagePrice, lastPrice: item.lastPrice, margin: item.margin, unrealizedPnl: item.unrealizedPnl, ...statuses[index] }));
       orders.value = orderRows.data.map((item) => ({ id: item.orderId, action: item.action, side: item.side, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
     } catch {
       // 未登录时首页仍可查看公开行情，账户数据保持为空。
