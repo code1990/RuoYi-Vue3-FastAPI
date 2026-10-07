@@ -42,9 +42,13 @@ class PaperTradingService:
         if quote['market_code'] not in cls.DOMESTIC_MARKETS:
             return {'tradable': False, 'reason': '国际期货仅供查看行情，不参与模拟交易'}
         now = now or datetime.now(ZoneInfo('Asia/Shanghai'))
+        if now.weekday() >= 5:
+            return {'tradable': False, 'reason': '周末休市，暂不支持模拟交易'}
+        if cls.is_domestic_holiday(now.date()):
+            return {'tradable': False, 'reason': '法定节假日休市，暂不支持模拟交易'}
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
-            return {'tradable': False, 'reason': '今日休市，暂不支持模拟交易'}
-        if now.weekday() >= 5 or not (time(9, 0) <= now.time() <= time(10, 15) or time(10, 30) <= now.time() <= time(11, 30) or time(13, 30) <= now.time() <= time(15, 0)):
+            return {'tradable': False, 'reason': '非交易日，暂不支持模拟交易'}
+        if not (time(9, 0) <= now.time() <= time(10, 15) or time(10, 30) <= now.time() <= time(11, 30) or time(13, 30) <= now.time() <= time(15, 0)):
             return {'tradable': False, 'reason': '当前不在日盘交易时段'}
         return {'tradable': True, 'reason': ''}
 

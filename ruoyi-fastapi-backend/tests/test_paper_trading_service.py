@@ -26,10 +26,12 @@ async def test_open_rejects_overseas_contract(monkeypatch) -> None:
 
 
 def test_trading_status_requires_today_and_day_session() -> None:
-    quote = {'market_code': 'XSGE', 'market_date': '20261007'}
-    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 7, 9, 30))['tradable'] is True
-    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 7, 12, 0))['tradable'] is False
-    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 8, 9, 30))['reason'] == '今日休市，暂不支持模拟交易'
+    quote = {'market_code': 'XSGE', 'market_date': '20260930'}
+    assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 9, 30))['tradable'] is True
+    assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 12, 0))['tradable'] is False
+    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 1, 9, 30))['reason'] == '法定节假日休市，暂不支持模拟交易'
+    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 3, 9, 30))['reason'] == '周末休市，暂不支持模拟交易'
+    assert PaperTradingService.trading_status(quote, datetime(2026, 10, 8, 9, 30))['reason'] == '非交易日，暂不支持模拟交易'
 
 
 def test_position_model_accepts_service_field_names() -> None:
@@ -65,4 +67,4 @@ async def test_close_rejects_when_market_is_closed(monkeypatch) -> None:
     monkeypatch.setattr(PaperTradingService, '_quote', closed_quote)
     with pytest.raises(ServiceWarning) as exc_info:
         await PaperTradingService.close(Database(), 1, 1)
-    assert exc_info.value.message == '今日休市，暂不支持模拟交易'
+    assert exc_info.value.message.endswith('暂不支持模拟交易')
