@@ -34,7 +34,7 @@ function returnChartData(callback, payload) {
   callback(payload);
   // #endif
 }
-const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: [{ Index: "MA" }, { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" }], KLine: { Period: 0, PageSize: 80, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
+const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: [{ Index: "MA" }, { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" }], KLine: { Period: 0, PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
 const network = async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: code.value, period: "1d", count: 180 }); returnChartData(callback, { name: name.value, symbol: hqSymbol(code.value), data: hqRows(response.data.rows || []) }); } catch { returnChartData(callback, { name: name.value, symbol: hqSymbol(code.value), data: [] }); } };
 function createChart() { registerIndicators();
   // #ifdef H5
