@@ -2,6 +2,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+import requests
+
 
 class FutureQuoteDao:
     STOCK_DAILY_LIMIT_RATE = 10.0
@@ -15,6 +17,7 @@ class FutureQuoteDao:
         'RM': (10, 0.10, 3.0), 'CS': (10, 0.10, 3.0), 'RB': (10, 0.10, 2.0), 'MA': (10, 0.10, 2.0),
         'SR': (10, 0.10, 6.0), 'C': (10, 0.10, 2.4), 'M': (10, 0.10, 3.0), 'V': (5, 0.10, 2.0),
     }
+    REAL_FIELDS = 'last_px,open_px,high_px,low_px,prev_settlement,px_change,px_change_rate,prod_name,prod_name_ext,market_date,contract_unit,up_px,down_px,min5_chgpct,current_amount,business_amount'
 
     @staticmethod
     def number(value: object) -> float:
@@ -24,7 +27,42 @@ class FutureQuoteDao:
             return 0
 
     @classmethod
-    def get_contract(cls, database_path: str, contract_code: str) -> dict | None:
+    def _live_rows(cls, contract_codes: list[str]) -> dict[str, dict]:
+        """Return the latest snapshots; the database remains the fallback catalog."""
+        if not contract_codes:
+            return {}
+        try:
+            response = requests.get(
+                'https://quotedata.cnfin.com/quote/v1/real',
+                params={'en_prod_code': ','.join(contract_codes), 'fields': cls.REAL_FIELDS},
+                headers={'User-Agent': 'Mozilla/5.0', 'Origin': 'https://www.cnfin.com', 'Referer': 'https://www.cnfin.com/'},
+                timeout=(3, 8),
+            )
+            response.raise_for_status()
+            snapshot = ((response.json().get('data') or {}).get('snapshot') or {})
+            fields = snapshot.get('fields') or []
+            return {code: dict(zip(fields, values)) for code, values in snapshot.items() if isinstance(values, list)}
+        except requests.RequestException:
+            return {}
+
+    @classmethod
+    def _refresh(cls, rows: list[dict]) -> list[dict]:
+        snapshots = cls._live_rows([row['contract_code'] for row in rows])
+        for row in rows:
+            data = snapshots.get(row['contract_code'])
+            if not data or cls.number(data.get('last_px')) <= 0:
+                continue
+            row.update({key: data[key] for key in ('market_date', 'last_px', 'open_px', 'high_px', 'low_px', 'prev_settlement', 'px_change', 'px_change_rate', 'up_px', 'down_px', 'min5_chgpct') if key in data})
+            row['contract_name'] = data.get('prod_name') or data.get('prod_name_ext') or row['contract_name']
+            if 'price' in row:
+                row['price'] = cls.number(data['last_px'])
+                row['multiplier'] = cls.number(data.get('contract_unit')) or row['multiplier']
+            else:
+                row['contract_unit'] = cls.number(data.get('contract_unit')) or row['contract_unit']
+        return rows
+
+    @classmethod
+    def get_contract(cls, database_path: str, contract_code: str, live: bool = False) -> dict | None:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Future statistics database does not exist: {path}')
@@ -38,7 +76,7 @@ class FutureQuoteDao:
         if not row or cls.number(row[3]) <= 0:
             return None
         payload = json.loads(row[4])
-        return {
+        result = {
             'contract_code': row[0],
             'market_code': row[1],
             'market_date': str(row[2] or ''),
@@ -46,9 +84,10 @@ class FutureQuoteDao:
             'price': cls.number(row[3]),
             'multiplier': cls.number(payload.get('contract_unit')) or 1,
         }
+        return cls._refresh([result])[0] if live else result
 
     @classmethod
-    def get_page(cls, database_path: str, scope: str, keyword: str | None, page_num: int, page_size: int) -> tuple[list[dict], int]:
+    def get_page(cls, database_path: str, scope: str, keyword: str | None, page_num: int, page_size: int, live: bool = False) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Future statistics database does not exist: {path}')
@@ -83,6 +122,8 @@ class FutureQuoteDao:
             if key not in selected or (priority, turnover) > selected[key][:2]:
                 selected[key] = (priority, turnover, item)
         rows = [entry[2] for entry in selected.values()]
+        if live:
+            cls._refresh(rows)
         if keyword:
             text = keyword.lower()
             rows = [row for row in rows if text in row['contract_code'].lower() or text in row['contract_name'].lower() or text in row['product_name'].lower()]

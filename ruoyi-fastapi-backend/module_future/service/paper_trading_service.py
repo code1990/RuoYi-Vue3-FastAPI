@@ -32,7 +32,7 @@ class PaperTradingService:
 
     @classmethod
     async def _quote(cls, contract_code: str) -> dict:
-        quote = await asyncio.to_thread(FutureQuoteDao.get_contract, AppConfig.future_stat_db_path, contract_code)
+        quote = await asyncio.to_thread(FutureQuoteDao.get_contract, AppConfig.future_stat_db_path, contract_code, True)
         if not quote:
             raise ServiceWarning(message='未找到可交易的期货行情')
         return quote

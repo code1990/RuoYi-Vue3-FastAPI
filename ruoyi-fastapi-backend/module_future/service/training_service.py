@@ -16,7 +16,7 @@ class TrainingService:
 
     @classmethod
     async def _quote(cls, code: str) -> dict:
-        quote = FutureQuoteDao.get_contract(AppConfig.future_stat_db_path, code)
+        quote = FutureQuoteDao.get_contract(AppConfig.future_stat_db_path, code, True)
         if not quote or quote['market_code'] not in FutureQuoteDao.MARKETS['domestic']:
             raise ServiceWarning(message='仅支持国内有效期货合约训练')
         return quote
@@ -38,7 +38,7 @@ class TrainingService:
         today = datetime.now(cls.TZ).date()
         decisions = (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == today))).all()
         done = {item.contract_code: item for item in decisions}
-        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100)
+        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100, True)
         await db.commit()
         return [item for item in rows if item['contract_code'] not in done]
 

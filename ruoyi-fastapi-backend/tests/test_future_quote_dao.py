@@ -2,11 +2,28 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from module_future.dao.future_quote_dao import FutureQuoteDao
 
 
 class FutureQuoteDaoTest(unittest.TestCase):
+    def test_live_page_refreshes_stale_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'future.db'
+            with sqlite3.connect(path) as connection:
+                connection.executescript('CREATE TABLE t_future_quote (contract_code TEXT, market_code TEXT, product_code TEXT, market_date TEXT, last_px TEXT, px_change TEXT, px_change_rate TEXT, open_px TEXT, high_px TEXT, low_px TEXT, prev_settlement TEXT, payload_json TEXT); CREATE TABLE t_future_product (market_code TEXT, product_code TEXT, market_name TEXT, product_name TEXT);')
+                connection.execute("INSERT INTO t_future_quote VALUES ('RB888.XSGE','XSGE','RB','20261001','3000','0','0','3000','3000','3000','3000','{\"prod_name\":\"螺纹主力\",\"contract_unit\":10}')")
+                connection.execute("INSERT INTO t_future_product VALUES ('XSGE','RB','上海期货交易所','螺纹钢')")
+
+            class Response:
+                def raise_for_status(self): pass
+                def json(self): return {'data': {'snapshot': {'fields': ['last_px', 'open_px', 'market_date', 'prod_name', 'contract_unit'], 'RB888.XSGE': [3084, 3093, 20261008, '螺纹主力', 10]}}}
+
+            with patch('module_future.dao.future_quote_dao.requests.get', return_value=Response()):
+                rows, _ = FutureQuoteDao.get_page(str(path), 'domestic', None, 1, 50, live=True)
+            self.assertEqual((rows[0]['last_px'], rows[0]['market_date']), (3084, 20261008))
+
     def test_filters_scope_and_reads_quote_fields(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'future.db'
