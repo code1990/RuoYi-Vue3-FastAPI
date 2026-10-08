@@ -19,7 +19,7 @@
         <view class="quick-controls"><view class="price-mode"><text>−</text><b>对手价</b><text>＋</text></view><view class="stepper"><text @click="changeLots(-1)">−</text><b>{{ quantity }} 手</b><text @click="changeLots(1)">＋</text></view></view>
         <view class="limits"><text>跌停 {{ format(quote.limitDown) }}</text><text>价格 {{ format(quote.price) }}</text><text>涨停 {{ format(quote.limitUp) }}</text><text>最多 {{ maxLots }} 手</text></view>
         <text v-if="!canTrade" class="trade-disabled">{{ tradeStatus.reason }}</text>
-        <view class="lightning-actions"><button class="long" :disabled="!canTrade" @click="submit('多')"><text>{{ format(quote.price) }}</text><text>加多</text></button><button class="short" :disabled="!canTrade || !activePositions.length" @click="lock"><text>{{ format(quote.price) }}</text><text>锁单</text></button><button class="close" :disabled="!canTrade || !activePositions.length" @click="closeCurrent"><text>{{ format(quote.price) }}</text><text>平仓</text></button></view>
+        <view class="lightning-actions"><button class="long" :disabled="!canTrade" @click="submit('多')"><text>{{ format(quote.price) }}</text><text>加多</text></button><button class="short" :disabled="!canTrade" @click="submit('空')"><text>{{ format(quote.price) }}</text><text>加空</text></button><button class="close" :disabled="!canTrade || !activePositions.length" @click="closeCurrent"><text>{{ format(quote.price) }}</text><text>平仓</text></button></view>
     </view>
   </view>
 </template>
@@ -131,10 +131,9 @@ function changeLots(delta) { quantity.value = Math.max(1, Number(quantity.value 
 async function refreshStatus() { try { tradeStatus.value = await trading.getTradingStatus(code.value); } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
 function confirmOpen(side) { const action = side === "多" ? "买入开多" : "卖出开空"; return new Promise(resolve => uni.showModal({ title: "确认模拟开仓", content: `${quote.value.name || code.value}\n${action} ${quantity.value} 手\n占用 ¥ ${format(oneMargin.value * quantity.value)}`, confirmText: "确认开仓", success: ({ confirm }) => resolve(confirm), fail: () => resolve(false) })); }
 async function submit(side) { if (!canTrade.value || !await confirmOpen(side)) return; try { await trading.openPosition(side, quantity.value); await refreshStatus(); uni.showToast({ title: `已模拟开${side}`, icon: "success" }); } catch (error) { uni.showToast({ title: error?.msg || "下单失败", icon: "none" }); } }
-async function lock() { const position = activePositions.value[0]; if (position) await submit(position.side === "多" ? "空" : "多"); }
 async function closeCurrent() { for (const position of activePositions.value) { try { await trading.closePosition(position.id); } catch (error) { uni.showToast({ title: error?.msg || "平仓失败", icon: "none" }); return; } } uni.showToast({ title: "已模拟平仓", icon: "none" }); await refreshStatus(); }
 async function trade() { trading.selectContract(code.value); quantity.value = 1; lightning.value = true; await refreshStatus(); }
-onLoad(async query => { code.value = query.code || ""; name.value = query.name || ""; uni.setNavigationBarTitle({ title: name.value || code.value }); try { await trading.refreshQuotes(); } catch {} await nextTick(); createChart(); });
+onLoad(async query => { code.value = query.code || ""; name.value = query.name || ""; uni.setNavigationBarTitle({ title: name.value || code.value }); try { await trading.sync(); } catch {} await nextTick(); createChart(); });
 onBeforeUnmount(clearChart);
 </script>
 
