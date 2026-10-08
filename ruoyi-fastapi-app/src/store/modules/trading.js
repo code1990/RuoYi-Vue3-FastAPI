@@ -12,11 +12,13 @@ export const useTradingStore = defineStore("trading", () => {
   const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic");
   const selectedQuote = computed(() => quotes.value.find((item) => item.code === selectedCode.value) || quotes.value[0]);
   const selectContract = (code) => { selectedCode.value = code; };
-  async function refreshQuotes() { await sync(); }
-  async function sync() {
+  async function refreshQuotes() {
     const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
     quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
+  }
+  async function sync() {
+    await refreshQuotes();
     try {
       const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
       cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl;
