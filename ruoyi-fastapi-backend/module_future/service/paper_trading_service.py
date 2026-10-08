@@ -48,8 +48,6 @@ class PaperTradingService:
             return {'tradable': False, 'reason': '法定节假日休市，暂不支持模拟交易'}
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
             return {'tradable': False, 'reason': '非交易日，暂不支持模拟交易'}
-        if not (time(9, 0) <= now.time() <= time(10, 15) or time(10, 30) <= now.time() <= time(11, 30) or time(13, 30) <= now.time() <= time(15, 0)):
-            return {'tradable': False, 'reason': '当前不在日盘交易时段'}
         return {'tradable': True, 'reason': ''}
 
     @classmethod
