@@ -9,6 +9,7 @@ const seedQuotes = [
 ];
 
 export const useTradingStore = defineStore("trading", () => {
+  const statusCache = new Map();
   const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic");
   const selectedQuote = computed(() => quotes.value.find((item) => item.code === selectedCode.value) || quotes.value[0]);
   const selectContract = (code) => { selectedCode.value = code; };
@@ -17,20 +18,27 @@ export const useTradingStore = defineStore("trading", () => {
     quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1 }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
   }
+  async function getTradingStatus(contractCode, refresh = false) {
+    const cached = statusCache.get(contractCode);
+    if (!refresh && cached && Date.now() - cached.time < 30000) return cached.data;
+    const data = (await getPaperTradingStatus(contractCode)).data;
+    statusCache.set(contractCode, { time: Date.now(), data });
+    return data;
+  }
   async function sync() {
     await refreshQuotes();
     try {
       const [account, orderRows] = await Promise.all([getPaperAccount(), getPaperOrders()]);
       cash.value = account.data.cash; equity.value = account.data.equity; unrealizedPnl.value = account.data.unrealizedPnl;
-      const statuses = await Promise.all(account.data.positions.map(async (item) => { try { return (await getPaperTradingStatus(item.contractCode)).data; } catch { return { tradable: false, reason: "交易状态暂不可用" }; } }));
+      const statuses = await Promise.all(account.data.positions.map(async (item) => { try { return await getTradingStatus(item.contractCode); } catch { return { tradable: false, reason: "交易状态暂不可用" }; } }));
       positions.value = account.data.positions.map((item, index) => ({ id: item.positionId, code: item.contractCode, name: item.contractName, side: item.side, quantity: item.quantity, avgPrice: item.averagePrice, lastPrice: item.lastPrice, margin: item.margin, unrealizedPnl: item.unrealizedPnl, ...statuses[index] }));
       orders.value = orderRows.data.map((item) => ({ id: item.orderId, action: item.action, side: item.side, name: item.contractName, code: item.contractCode, quantity: item.quantity, price: item.price, fee: item.fee, exchangeFee: item.exchangeFee, brokerFee: item.brokerFee, pnl: item.realizedPnl ?? undefined, time: String(item.createTime || "").replace("T", " ").slice(0, 16) }));
     } catch {
       // 未登录时首页仍可查看公开行情，账户数据保持为空。
     }
   }
-  async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); await sync(); }
+  async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); statusCache.delete(selectedCode.value); await sync(); }
   async function closePosition(id) { await closePaperPosition(id); await sync(); }
   async function setScope(value) { if (scope.value !== value) { scope.value = value; await sync(); } }
-  return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, refreshQuotes, selectContract, setScope, sync, openPosition, closePosition };
+  return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, refreshQuotes, getTradingStatus, selectContract, setScope, sync, openPosition, closePosition };
 });

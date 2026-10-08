@@ -32,7 +32,6 @@ import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 // #endif
 import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
-import { getPaperTradingStatus } from "@/api/future/paper-trading";
 import { useTradingStore } from "@/store";
 
 const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("MACD"); const error = ref(""); const appChart = ref(null); let chart;
@@ -129,7 +128,7 @@ const priceClass = computed(() => Number(quote.value.change) >= 0 ? "up" : "down
 function switchContract(direction) { const contracts = trading.quotes; if (!contracts.length) return; const index = Math.max(0, contracts.findIndex(item => item.code === code.value)); const next = contracts[(index + direction + contracts.length) % contracts.length]; code.value = next.code; name.value = next.name; uni.setNavigationBarTitle({ title: next.name || next.code }); (chart || appChart.value?.GetJSChart?.())?.ChangeSymbol?.(hqSymbol(next.code)); }
 const format = value => value === null || value === undefined ? "--" : Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function changeLots(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }
-async function refreshStatus() { try { tradeStatus.value = (await getPaperTradingStatus(code.value)).data; } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
+async function refreshStatus() { try { tradeStatus.value = await trading.getTradingStatus(code.value); } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
 function confirmOpen(side) { const action = side === "多" ? "买入开多" : "卖出开空"; return new Promise(resolve => uni.showModal({ title: "确认模拟开仓", content: `${quote.value.name || code.value}\n${action} ${quantity.value} 手\n占用 ¥ ${format(oneMargin.value * quantity.value)}`, confirmText: "确认开仓", success: ({ confirm }) => resolve(confirm), fail: () => resolve(false) })); }
 async function submit(side) { if (!canTrade.value || !await confirmOpen(side)) return; try { await trading.openPosition(side, quantity.value); await refreshStatus(); uni.showToast({ title: `已模拟开${side}`, icon: "success" }); } catch (error) { uni.showToast({ title: error?.msg || "下单失败", icon: "none" }); } }
 async function lock() { const position = activePositions.value[0]; if (position) await submit(position.side === "多" ? "空" : "多"); }
