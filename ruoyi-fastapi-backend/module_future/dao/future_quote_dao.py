@@ -1,4 +1,5 @@
 import json
+import re
 import sqlite3
 from pathlib import Path
 
@@ -41,16 +42,19 @@ class FutureQuoteDao:
             response.raise_for_status()
             snapshot = ((response.json().get('data') or {}).get('snapshot') or {})
             fields = snapshot.get('fields') or []
-            return {code: dict(zip(fields, values)) for code, values in snapshot.items() if isinstance(values, list)}
+            return {code: dict(zip(fields, values)) for code, values in snapshot.items() if code != 'fields' and isinstance(values, list)}
         except requests.RequestException:
             return {}
 
     @classmethod
-    def _refresh(cls, rows: list[dict]) -> list[dict]:
+    def _refresh(cls, rows: list[dict], discard_missing: bool = False) -> list[dict]:
         snapshots = cls._live_rows([row['contract_code'] for row in rows])
+        refreshed = []
         for row in rows:
             data = snapshots.get(row['contract_code'])
             if not data or cls.number(data.get('last_px')) <= 0:
+                if not discard_missing:
+                    refreshed.append(row)
                 continue
             row.update({key: data[key] for key in ('market_date', 'last_px', 'open_px', 'high_px', 'low_px', 'prev_settlement', 'px_change', 'px_change_rate', 'up_px', 'down_px', 'min5_chgpct') if key in data})
             row['contract_name'] = data.get('prod_name') or data.get('prod_name_ext') or row['contract_name']
@@ -59,7 +63,13 @@ class FutureQuoteDao:
                 row['multiplier'] = cls.number(data.get('contract_unit')) or row['multiplier']
             else:
                 row['contract_unit'] = cls.number(data.get('contract_unit')) or row['contract_unit']
-        return rows
+            refreshed.append(row)
+        return refreshed
+
+    @staticmethod
+    def _main_contract_code(contract_code: str, market_code: str) -> str:
+        prefix = re.match(r'[A-Za-z]+', contract_code.split('.', 1)[0])
+        return f'{prefix.group(0).upper()}888.{market_code}' if prefix else contract_code
 
     @classmethod
     def get_contract(cls, database_path: str, contract_code: str, live: bool = False) -> dict | None:
@@ -73,7 +83,21 @@ class FutureQuoteDao:
                    WHERE q.contract_code=? LIMIT 1''',
                 (contract_code,),
             ).fetchone()
-        if not row or cls.number(row[3]) <= 0:
+        if not row:
+            if not live:
+                return None
+            snapshot = cls._live_rows([contract_code]).get(contract_code)
+            if not snapshot or cls.number(snapshot.get('last_px')) <= 0:
+                return None
+            return {
+                'contract_code': contract_code,
+                'market_code': contract_code.rsplit('.', 1)[-1],
+                'market_date': str(snapshot.get('market_date') or ''),
+                'contract_name': snapshot.get('prod_name') or snapshot.get('prod_name_ext') or contract_code,
+                'price': cls.number(snapshot['last_px']),
+                'multiplier': cls.number(snapshot.get('contract_unit')) or 1,
+            }
+        if cls.number(row[3]) <= 0:
             return None
         payload = json.loads(row[4])
         result = {
@@ -123,7 +147,10 @@ class FutureQuoteDao:
                 selected[key] = (priority, turnover, item)
         rows = [entry[2] for entry in selected.values()]
         if live:
-            cls._refresh(rows)
+            # 本地库只提供品种目录；旧报价绝不进入当前列表。
+            for row in rows:
+                row['contract_code'] = cls._main_contract_code(row['contract_code'], row['market_code'])
+            rows = cls._refresh(rows, discard_missing=True)
         if keyword:
             text = keyword.lower()
             rows = [row for row in rows if text in row['contract_code'].lower() or text in row['contract_name'].lower() or text in row['product_name'].lower()]
