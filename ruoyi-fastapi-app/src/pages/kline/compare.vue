@@ -54,7 +54,7 @@ function createChart(item) {
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }
-onLoad(async query => { const store = useTradingStore(); try { await store.refreshQuotes(); } catch {} const codes = [query.left, query.right].filter((code, index, array) => code && array.indexOf(code) === index); contracts.value = codes.map((code, index) => { const quote = store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
+onLoad(async query => { const store = useTradingStore(); try { await store.refreshQuotes(); } catch {} const codes = [query.left, query.right].filter(Boolean); contracts.value = codes.map((code, index) => { const quote = store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
 onBeforeUnmount(clearCharts);
 </script>
 
