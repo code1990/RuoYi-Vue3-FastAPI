@@ -1,4 +1,5 @@
-from datetime import datetime
+import re
+from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
@@ -13,6 +14,27 @@ from module_future.entity.vo.training_vo import TrainingDecisionCreateModel
 
 class TrainingService:
     TZ = ZoneInfo('Asia/Shanghai')
+    NIGHT_TO_2300 = {'RB', 'HC', 'RU', 'BR', 'BU', 'FU', 'SP', 'M', 'Y', 'P', 'I', 'JM', 'J', 'C', 'CS', 'L', 'PP', 'V', 'EG', 'EB', 'PG', 'BZ', 'MA', 'TA', 'SA', 'FG', 'CF', 'SR', 'RM', 'OI', 'ZC', 'PX', 'PL', 'PR'}
+    NIGHT_TO_0100 = {'CU', 'AL', 'ZN', 'PB', 'NI', 'SN', 'SS', 'AO', 'AD', 'BC'}
+    NIGHT_TO_0230 = {'AU', 'AG', 'SC'}
+
+    @classmethod
+    def is_trading_time(cls, contract_code: str, now: datetime) -> bool:
+        """Domestic session schedule; holidays are rejected by the live quote date check."""
+        if now.weekday() >= 5:
+            return False
+        current = now.time()
+        if time(8, 55) <= current < time(10, 15) or time(10, 30) <= current < time(11, 30) or time(13, 30) <= current < time(15):
+            return True
+        product = re.match(r'[A-Z]+', contract_code.upper())
+        code = product.group() if product else ''
+        if code in cls.NIGHT_TO_2300:
+            return time(21) <= current < time(23)
+        if code in cls.NIGHT_TO_0100:
+            return current >= time(21) or current < time(1)
+        if code in cls.NIGHT_TO_0230:
+            return current >= time(21) or current < time(2, 30)
+        return False
 
     @classmethod
     async def _quote(cls, code: str) -> dict:
@@ -35,12 +57,13 @@ class TrainingService:
     @classmethod
     async def list_today(cls, db: AsyncSession, user_id: int) -> list[dict]:
         await cls.settle(db, user_id)
-        today = datetime.now(cls.TZ).date()
+        now = datetime.now(cls.TZ)
+        today = now.date()
         decisions = (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == today))).all()
         done = {item.contract_code: item for item in decisions}
         rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100, True)
         await db.commit()
-        return [item for item in rows if item['contract_code'] not in done]
+        return [item for item in rows if item['contract_code'] not in done and str(item.get('market_date', '')).replace('-', '') == now.strftime('%Y%m%d') and cls.is_trading_time(item['contract_code'], now)]
 
     @classmethod
     async def submit(cls, db: AsyncSession, user_id: int, data: TrainingDecisionCreateModel) -> FutureTrainingDecision:
@@ -50,6 +73,8 @@ class TrainingService:
         quote = await cls._quote(data.contract_code)
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
             raise ServiceWarning(message='今日没有可用于训练的收盘行情')
+        if not cls.is_trading_time(quote['contract_code'], now):
+            raise ServiceWarning(message='当前不是该合约交易时段')
         current = await db.scalar(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == now.date(), FutureTrainingDecision.contract_code == quote['contract_code']))
         if current:
             raise ServiceWarning(message='该合约今日已完成训练决策')
