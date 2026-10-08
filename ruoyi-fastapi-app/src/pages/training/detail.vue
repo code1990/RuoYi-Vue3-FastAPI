@@ -47,7 +47,7 @@ function createChart() { registerIndicators();
 }
 function ask(value) { decision.value = value; reason.value = ""; dialog.value = true; }
 async function submit() { if (reason.value.trim().length < 2) return uni.showToast({ title: "请至少填写两个字的判断理由", icon: "none" }); try { await submitTrainingDecision({ contractCode: code.value, decision: decision.value, reason: reason.value.trim() }); dialog.value = false; uni.showToast({ title: "决策已记录", icon: "success" }); setTimeout(() => uni.navigateBack(), 500); } catch {} }
-onLoad(async query => { code.value = query.code || ""; name.value = query.name || code.value; uni.setNavigationBarTitle({ title: name.value }); await nextTick(); createChart(); }); onBeforeUnmount(() => { chart?.ChartDestroy?.(); appChart.value?.ClearChart?.(); });
+onLoad(async query => { code.value = query.code || ""; name.value = decodeURIComponent(query.name || code.value); uni.setNavigationBarTitle({ title: name.value }); await nextTick(); createChart(); }); onBeforeUnmount(() => { chart?.ChartDestroy?.(); appChart.value?.ClearChart?.(); });
 </script>
 
 <style scoped>

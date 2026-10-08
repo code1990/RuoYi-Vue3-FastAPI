@@ -144,7 +144,7 @@ async function trade() { trading.selectContract(code.value); quantity.value = 1;
 async function refreshQuote() { if (refreshing) return; refreshing = true; try { await trading.refreshQuotes(); flashing.value = false; await nextTick(); flashing.value = true; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashing.value = false; }, 450); } finally { refreshing = false; } }
 function startPolling() { stopPolling(); refreshQuote(); pollTimer = setInterval(refreshQuote, 5000); }
 function stopPolling() { clearInterval(pollTimer); clearTimeout(flashTimer); flashing.value = false; }
-onLoad(async query => { code.value = query.code || ""; name.value = query.name || "";
+onLoad(async query => { code.value = query.code || ""; name.value = decodeURIComponent(query.name || "");
   // #ifdef H5
   uni.setNavigationBarTitle({ title: name.value || code.value });
   // #endif
