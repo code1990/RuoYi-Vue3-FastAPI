@@ -48,9 +48,10 @@ async def test_status_uses_redis_cache(monkeypatch) -> None:
 
 
 def test_trading_status_requires_today_quote() -> None:
-    quote = {'market_code': 'XSGE', 'market_date': '20260930'}
+    quote = {'contract_code': 'RB888.XSGE', 'market_code': 'XSGE', 'market_date': '20260930'}
     assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 9, 30))['tradable'] is True
-    assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 12, 0))['tradable'] is True
+    assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 12, 0))['reason'] == '非交易时段，暂不支持模拟交易'
+    assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 18, 0))['tradable'] is False
     assert PaperTradingService.trading_status(quote, datetime(2026, 10, 1, 9, 30))['reason'] == '法定节假日休市，暂不支持模拟交易'
     assert PaperTradingService.trading_status(quote, datetime(2026, 10, 3, 9, 30))['reason'] == '周末休市，暂不支持模拟交易'
     assert PaperTradingService.trading_status(quote, datetime(2026, 10, 8, 9, 30))['reason'] == '非交易日，暂不支持模拟交易'

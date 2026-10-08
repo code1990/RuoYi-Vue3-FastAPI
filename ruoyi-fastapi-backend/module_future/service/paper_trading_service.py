@@ -13,6 +13,7 @@ from module_future.dao.future_history_dao import FutureHistoryDao
 from module_future.entity.do.paper_trading_do import FuturePaperAccount, FuturePaperDailyMark, FuturePaperOrder, FuturePaperPosition
 from module_future.entity.vo.paper_trading_vo import PaperAccountModel, PaperPositionModel, PaperTradeOpenModel
 from module_future.service.future_kline_service import FutureKlineService
+from module_future.service.training_service import TrainingService
 from config.env import AppConfig
 
 
@@ -50,6 +51,8 @@ class PaperTradingService:
             return {'tradable': False, 'reason': '法定节假日休市，暂不支持模拟交易'}
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
             return {'tradable': False, 'reason': '非交易日，暂不支持模拟交易'}
+        if not TrainingService.is_trading_time(quote['contract_code'], now):
+            return {'tradable': False, 'reason': '非交易时段，暂不支持模拟交易'}
         return {'tradable': True, 'reason': ''}
 
     @classmethod
