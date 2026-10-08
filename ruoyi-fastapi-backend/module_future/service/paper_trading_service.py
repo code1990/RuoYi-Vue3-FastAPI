@@ -1,4 +1,5 @@
 import asyncio
+import json
 import re
 from datetime import date, datetime, time
 from zoneinfo import ZoneInfo
@@ -29,6 +30,7 @@ class PaperTradingService:
         'IM': {'rate': 0.000092, 'close_today_rate': 0.00092},
     }
     DOMESTIC_MARKETS = {'XSGE', 'XDCE', 'XZCE', 'XGFE', 'SHGE'}
+    STATUS_CACHE_TTL = 60
 
     @classmethod
     async def _quote(cls, contract_code: str) -> dict:
@@ -51,8 +53,22 @@ class PaperTradingService:
         return {'tradable': True, 'reason': ''}
 
     @classmethod
-    async def status(cls, contract_code: str) -> dict:
-        return cls.trading_status(await cls._quote(contract_code))
+    async def status(cls, contract_code: str, redis=None) -> dict:
+        cache_key = f'api_cache:paper_trading_status:{contract_code}'
+        if redis:
+            try:
+                cached = await redis.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+            except Exception:
+                pass
+        status = cls.trading_status(await cls._quote(contract_code))
+        if redis:
+            try:
+                await redis.set(cache_key, json.dumps(status, ensure_ascii=False), ex=cls.STATUS_CACHE_TTL)
+            except Exception:
+                pass
+        return status
 
     @classmethod
     async def _ensure_tradable(cls, quote: dict) -> None:

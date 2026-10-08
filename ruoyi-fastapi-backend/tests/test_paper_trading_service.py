@@ -25,6 +25,28 @@ async def test_open_rejects_overseas_contract(monkeypatch) -> None:
     assert exc_info.value.message == '国际期货仅供查看行情，不参与模拟交易'
 
 
+@pytest.mark.asyncio
+async def test_status_uses_redis_cache(monkeypatch) -> None:
+    class Redis:
+        value = None
+
+        async def get(self, _):
+            return self.value
+
+        async def set(self, _, value, ex):
+            self.value, self.ex = value, ex
+
+    async def quote(_: str) -> dict:
+        return {'market_code': 'XCEC', 'market_date': '20260930'}
+
+    redis = Redis()
+    monkeypatch.setattr(PaperTradingService, '_quote', quote)
+    assert (await PaperTradingService.status('QO0I00.XCEC', redis))['tradable'] is False
+    assert redis.ex == 60
+    monkeypatch.setattr(PaperTradingService, '_quote', lambda _: (_ for _ in ()).throw(AssertionError('cache missed')))
+    assert (await PaperTradingService.status('QO0I00.XCEC', redis))['reason'] == '国际期货仅供查看行情，不参与模拟交易'
+
+
 def test_trading_status_requires_today_quote() -> None:
     quote = {'market_code': 'XSGE', 'market_date': '20260930'}
     assert PaperTradingService.trading_status(quote, datetime(2026, 9, 30, 9, 30))['tradable'] is True
