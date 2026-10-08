@@ -2,7 +2,7 @@
   <view class="page">
     <view class="intro"><text class="title">盘感训练</text><text>每日尾盘选择看多、看空或放弃；不计入模拟账户。</text></view>
     <view class="section">待决策合约 <text>{{ pending.length }} 个</text></view>
-    <view v-if="pending.length" class="list"><view v-for="item in pending" :key="item.contract_code" class="row" @tap.stop="open(item)"><view><text class="name">{{ item.contract_name }}</text><text class="code">{{ item.contract_code }}</text></view><view class="right"><text :class="Number(item.px_change_rate) >= 0 ? 'up' : 'down'">{{ price(item.last_px) }}</text><text>进入训练 ›</text></view></view></view>
+    <view v-if="pending.length" class="list"><view v-for="item in pending" :key="item.contract_code" class="row" @tap.stop="open(item)"><view><text class="name">{{ item.contract_name }}</text><text class="code">{{ item.contract_code }}</text></view><view class="right"><text :class="Number(item.px_change_rate) >= 0 ? 'up' : 'down'">{{ price(item.last_px) }} {{ change(item.px_change_rate) }}</text><text>进入训练 ›</text></view></view></view>
     <view v-else class="empty">今日已无待决策合约</view>
     <view class="section">最近决策</view>
     <view v-if="history.length" class="list"><view v-for="item in history.slice(0, 5)" :key="item.decision_id || item.decisionId" class="row"><view><text class="name">{{ item.contract_name || item.contractName }}</text><text class="code">{{ item.trade_date || item.tradeDate }} · {{ item.decision }}</text></view><view class="right"><text :class="Number(item.pnl_rate ?? item.pnlRate) >= 0 ? 'up' : 'down'">{{ result(item) }}</text><text>{{ item.status === 'settled' ? '已结算' : '待结算' }}</text></view></view></view>
@@ -15,7 +15,7 @@ import { computed, ref } from "vue";
 import { onShow } from "@dcloudio/uni-app";
 import { getTrainingHistory, getTrainingList } from "@/api/future/training";
 const rows = ref([]); const history = ref([]); const pending = computed(() => rows.value.filter(item => !item.submitted));
-const price = value => Number(value || 0).toFixed(2); const result = item => { const value = item.pnl_rate ?? item.pnlRate; return value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`; };
+const price = value => Number(value || 0).toFixed(2); const change = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`; const result = item => { const value = item.pnl_rate ?? item.pnlRate; return change(value); };
 function open(item) { const code = item.contract_code || item.contractCode; const name = item.contract_name || item.contractName || code; if (!code) return uni.showToast({ title: "合约代码缺失", icon: "none" }); uni.navigateTo({ url: `/pages/training/detail?code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}` }); }
 async function load() { try { rows.value = (await getTrainingList()).data || []; history.value = (await getTrainingHistory()).data || []; } catch { rows.value = []; } }
 onShow(load);
