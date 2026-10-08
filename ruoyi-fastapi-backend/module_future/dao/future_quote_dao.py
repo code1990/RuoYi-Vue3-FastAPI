@@ -56,7 +56,7 @@ class FutureQuoteDao:
                 if not discard_missing:
                     refreshed.append(row)
                 continue
-            row.update({key: data[key] for key in ('market_date', 'last_px', 'open_px', 'high_px', 'low_px', 'prev_settlement', 'px_change', 'px_change_rate', 'up_px', 'down_px', 'min5_chgpct') if key in data})
+            row.update({key: str(data[key]) if key == 'market_date' else data[key] for key in ('market_date', 'last_px', 'open_px', 'high_px', 'low_px', 'prev_settlement', 'px_change', 'px_change_rate', 'up_px', 'down_px', 'min5_chgpct') if key in data})
             row['contract_name'] = data.get('prod_name') or data.get('prod_name_ext') or row['contract_name']
             if 'price' in row:
                 row['price'] = cls.number(data['last_px'])

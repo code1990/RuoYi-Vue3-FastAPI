@@ -22,7 +22,7 @@ class FutureQuoteDaoTest(unittest.TestCase):
 
             with patch('module_future.dao.future_quote_dao.requests.get', return_value=Response()):
                 rows, _ = FutureQuoteDao.get_page(str(path), 'domestic', None, 1, 50, live=True)
-            self.assertEqual((rows[0]['last_px'], rows[0]['market_date']), (3084, 20261008))
+            self.assertEqual((rows[0]['last_px'], rows[0]['market_date']), (3084, '20261008'))
 
     def test_live_page_uses_continuous_main_contract(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
