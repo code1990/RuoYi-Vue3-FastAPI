@@ -63,7 +63,7 @@ class TrainingService:
         done = {item.contract_code: item for item in decisions}
         rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100, True)
         await db.commit()
-        return [item for item in rows if item['contract_code'] not in done and str(item.get('market_date', '')).replace('-', '') == now.strftime('%Y%m%d') and cls.is_trading_time(item['contract_code'], now)]
+        return [item for item in rows if item['contract_code'] not in done and str(item.get('market_date', '')).replace('-', '') == now.strftime('%Y%m%d')]
 
     @classmethod
     async def submit(cls, db: AsyncSession, user_id: int, data: TrainingDecisionCreateModel) -> FutureTrainingDecision:
@@ -73,8 +73,6 @@ class TrainingService:
         quote = await cls._quote(data.contract_code)
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
             raise ServiceWarning(message='今日没有可用于训练的收盘行情')
-        if not cls.is_trading_time(quote['contract_code'], now):
-            raise ServiceWarning(message='当前不是该合约交易时段')
         current = await db.scalar(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == now.date(), FutureTrainingDecision.contract_code == quote['contract_code']))
         if current:
             raise ServiceWarning(message='该合约今日已完成训练决策')
