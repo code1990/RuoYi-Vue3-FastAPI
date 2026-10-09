@@ -6,7 +6,7 @@
     </view>
     <view class="contract-switch"><text @click="switchContract(-1)">‹ 上一合约</text><text>{{ code }}</text><text @click="switchContract(1)">下一合约 ›</text></view>
     <scroll-view scroll-x class="tabs" :show-scrollbar="false"><text v-for="item in periods" :key="item.value" :class="period === item.value ? 'active' : ''" @click="changePeriod(item.value)">{{ item.label }}</text></scroll-view>
-    <view class="chart">
+    <view class="chart" @touchstart="swipeStart = { x: $event.touches[0].clientX, y: $event.touches[0].clientY }" @touchend="switchBySwipe">
       <!-- #ifdef H5 --><div id="future-hqchart"></div><!-- #endif -->
       <!-- #ifdef APP-PLUS --><FutureHQChart ref="appChart" :DefaultSymbol="hqSymbol(code)" :DefaultChart="{ Type: 'KLine' }" /><!-- #endif -->
       <text v-if="error" class="error">{{ error }}</text>
@@ -34,7 +34,7 @@ import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
 
-const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("MACD"); const error = ref(""); const appChart = ref(null); let chart;
+const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("MACD"); const error = ref(""); const appChart = ref(null); const swipeStart = ref({ x: 0, y: 0 }); let chart;
 const flashing = ref(false); let pollTimer; let flashTimer; let refreshing = false;
 const trading = useTradingStore(); const quote = computed(() => trading.quotes.find(item => item.code === code.value) || { name: name.value, code: code.value });
 const lightning = ref(false); const quantity = ref(1); const tradeStatus = ref({ tradable: false, reason: "正在读取交易状态" });
@@ -134,6 +134,7 @@ function switchContract(direction) { const contracts = trading.quotes; if (!cont
   uni.setNavigationBarTitle({ title: next.code });
   // #endif
   (chart || appChart.value?.GetJSChart?.())?.ChangeSymbol?.(hqSymbol(next.code)); }
+function switchBySwipe(event) { const touch = event.changedTouches[0]; const distance = touch.clientX - swipeStart.value.x; if (Math.abs(distance) > 60 && Math.abs(distance) > Math.abs(touch.clientY - swipeStart.value.y)) switchContract(distance < 0 ? 1 : -1); }
 const format = value => value === null || value === undefined ? "--" : Number(value).toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 function changeLots(delta) { quantity.value = Math.max(1, Number(quantity.value || 1) + delta); }
 async function refreshStatus() { try { tradeStatus.value = await trading.getTradingStatus(code.value); } catch { tradeStatus.value = { tradable: false, reason: "交易状态暂不可用" }; } }
