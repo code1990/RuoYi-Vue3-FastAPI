@@ -26,6 +26,19 @@ class EnglishUnit(Base):
     sort_no = Column(Integer, nullable=False, default=0)
 
 
+class EnglishScene(Base):
+    __tablename__ = 'english_scene'
+    scene_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    title = Column(String(100), nullable=False)
+    description = Column(String(500), nullable=False, default='')
+    cover_url = Column(String(500), nullable=False, default='')
+    animation_media_id = Column(BigInteger, nullable=True)
+    status = Column(String(16), nullable=False, default='draft')
+    sort_no = Column(Integer, nullable=False, default=0)
+    create_time = Column(DateTime, nullable=False, default=datetime.now)
+    update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+
 class EnglishWord(Base):
     __tablename__ = 'english_word'
     word_id = Column(BigInteger, primary_key=True, autoincrement=True)
@@ -45,6 +58,15 @@ class EnglishBookWord(Base):
     relation_id = Column(BigInteger, primary_key=True, autoincrement=True)
     book_id = Column(BigInteger, nullable=False, index=True)
     unit_id = Column(BigInteger, nullable=False, index=True)
+    word_id = Column(BigInteger, nullable=False, index=True)
+    sort_no = Column(Integer, nullable=False, default=0)
+
+
+class EnglishSceneWord(Base):
+    __tablename__ = 'english_scene_word'
+    __table_args__ = (UniqueConstraint('scene_id', 'word_id', name='uk_english_scene_word'),)
+    relation_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    scene_id = Column(BigInteger, nullable=False, index=True)
     word_id = Column(BigInteger, nullable=False, index=True)
     sort_no = Column(Integer, nullable=False, default=0)
 

@@ -27,9 +27,19 @@ async def get_units(book_id: Annotated[int, Query(alias='bookId', ge=1)], db: An
     return ResponseUtil.success(data=await EnglishContentService.units(db, book_id))
 
 
+@english_content_controller.get('/scenes', response_model=DataResponseModel[list[dict]])
+async def get_scenes(db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    return ResponseUtil.success(data=await EnglishContentService.scenes(db))
+
+
 @english_content_controller.get('/words', response_model=DataResponseModel[list[dict]])
 async def get_words(unit_id: Annotated[int, Query(alias='unitId', ge=1)], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
     return ResponseUtil.success(data=await EnglishContentService.words(db, unit_id))
+
+
+@english_content_controller.get('/scene-words', response_model=DataResponseModel[list[dict]])
+async def get_scene_words(scene_id: Annotated[int, Query(alias='sceneId', ge=1)], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    return ResponseUtil.success(data=await EnglishContentService.scene_words(db, scene_id))
 
 
 @english_content_controller.get('/media/{media_id}')
