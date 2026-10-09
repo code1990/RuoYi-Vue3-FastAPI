@@ -32,6 +32,7 @@ class EnglishScene(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(500), nullable=False, default='')
     cover_url = Column(String(500), nullable=False, default='')
+    source_url = Column(String(500), nullable=False, default='')
     animation_media_id = Column(BigInteger, nullable=True)
     status = Column(String(16), nullable=False, default='draft')
     sort_no = Column(Integer, nullable=False, default=0)
