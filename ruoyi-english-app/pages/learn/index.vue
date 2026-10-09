@@ -16,9 +16,9 @@
 
       <text class="section-title">今天玩什么？</text>
       <view class="activity-grid">
-        <view class="activity purple" @click="go('/pages/learn/scenes')">
+        <navigator class="activity purple" url="/pages/learn/scenes">
           <text class="activity-icon">🗺️</text><text class="activity-title">场景探险</text><text class="activity-desc">去海洋馆和花园玩</text>
-        </view>
+        </navigator>
         <view class="activity orange" @click="go('/pages/learn/words')">
           <text class="activity-icon">🔤</text><text class="activity-title">单词小课堂</text><text class="activity-desc">听一听，说一说</text>
         </view>
