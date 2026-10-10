@@ -229,6 +229,7 @@ class UploadSettings:
         'mp4',
         'avi',
         'rmvb',
+        'mp3',
         # pdf
         'pdf',
     ]
