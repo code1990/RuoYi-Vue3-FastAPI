@@ -4,6 +4,7 @@
     { "path": "pages/learn/index", "style": { "navigationBarTitleText": "英语乐园", "navigationStyle": "custom" } },
     { "path": "pages/learn/words", "style": { "navigationBarTitleText": "单词小课堂", "navigationBarBackgroundColor": "#FFF9ED" } },
     { "path": "pages/learn/quiz", "style": { "navigationBarTitleText": "闯关小游戏", "navigationBarBackgroundColor": "#F2F8FF" } },
+    { "path": "pages/learn/math", "style": { "navigationBarTitleText": "数学练习", "navigationBarBackgroundColor": "#F4FBFF" } },
     { "path": "pages/learn/progress", "style": { "navigationBarTitleText": "我的成长", "navigationBarBackgroundColor": "#FFF9ED" } },
     { "path": "pages/learn/scenes", "style": { "navigationBarTitleText": "场景探险", "navigationBarBackgroundColor": "#F5FBFF" } }
     ,{ "path": "pages/learn/scene", "style": { "navigationBarTitleText": "单词动画" } }
