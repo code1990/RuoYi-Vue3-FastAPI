@@ -1,7 +1,7 @@
 <template>
   <view class="page"><view class="content">
     <view class="progress"><text>{{ title }} · 第 {{ index + 1 }} / {{ words.length }} 个单词</text><view class="bar"><view :style="{ width: ((index + 1) / words.length * 100) + '%' }"></view></view></view>
-    <view v-if="current" class="word-card"><iframe v-if="sceneAnimation" class="scene" :src="sceneAnimation"></iframe><swiper class="word-swiper" :current="index" @change="index = $event.detail.current"><swiper-item v-for="word in words" :key="word.word"><view class="word-info" @click="speak(word)"><text class="word">{{ word.word }}</text><text class="sound">🔊 点我听英音</text><text class="meaning">{{ word.meaning_zh }}</text></view></swiper-item></swiper></view>
+    <view v-if="current" class="word-card"><iframe v-if="sceneAnimation" :key="sceneAnimation" class="scene" :src="sceneAnimation"></iframe><swiper class="word-swiper" :current="index" @change="index = $event.detail.current"><swiper-item v-for="word in words" :key="word.word"><view class="word-info" @click="speak(word)"><text class="word">{{ word.word }}</text><text class="sound">🔊 点我听英音</text><text class="meaning">{{ word.meaning_zh }}</text></view></swiper-item></swiper></view>
     <view v-if="current" class="example"><text class="example-title">跟着读</text><text>{{ current.example_en }}</text><text>{{ current.example_zh }}</text></view>
     <view class="actions"><button class="known" @click="next">我会啦 ✓</button><button class="next" @click="next">下一个 →</button></view>
   </view></view>
