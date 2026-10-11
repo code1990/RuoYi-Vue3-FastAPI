@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bean Dance v3</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: #d9f5fb; font-family: system-ui, sans-serif; }
+    svg { width: min(960px, 100vw); height: auto; }
+    .bean { transform-box: fill-box; transform-origin: center bottom; animation: dance .75s ease-in-out infinite alternate; }
+    .bean.two { animation-delay: -.25s; animation-duration: .64s; }
+    .bean.three { animation-delay: -.48s; animation-duration: .84s; }
+    .note { transform-box: fill-box; transform-origin: center; animation: float 1.2s ease-in-out infinite alternate; }
+    .note.n2 { animation-delay: -.5s; }
+    @keyframes dance { to { translate: 0 -31px; rotate: 7deg; } }
+    @keyframes float { to { translate: 0 -18px; rotate: 12deg; } }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 960 540" role="img" aria-label="A group of cute dancing beans teaching the word bean">
+    <rect width="960" height="540" fill="#d9f5fb"/>
+    <path d="M0 408Q148 370 285 410T571 397T960 410V540H0Z" fill="#91d47c"/>
+    <circle cx="106" cy="88" r="43" fill="#fff3a8"/><path d="M106 29v-15m0 148v-15m59-59h15M47 88H32m118-42 10-10M62 142l-10 10m0-128L42 14m108 138-10-10" stroke="#efbd43" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#fff" opacity=".75"><ellipse cx="744" cy="104" rx="76" ry="24"/><ellipse cx="793" cy="93" rx="42" ry="31"/><ellipse cx="841" cy="106" rx="61" ry="20"/></g>
+    <g class="note" fill="#665bc8"><path d="M205 226v-50l42-10v51"/><circle cx="194" cy="230" r="14"/><circle cx="236" cy="218" r="14"/></g>
+    <g class="note n2" fill="#ef7294"><path d="M744 223v-49l39-10v50"/><circle cx="734" cy="228" r="13"/><circle cx="773" cy="216" r="13"/></g>
+    <g class="bean" stroke="#3e593f" stroke-width="8" stroke-linejoin="round">
+      <path d="M240 281q51-57 97-6 39 58-19 112-64 25-111-26-24-45 33-80Z" fill="#9ac96a"/>
+      <path d="M231 300q48 2 75 53" fill="none" stroke="#dff09d" stroke-width="13" stroke-linecap="round"/>
+      <circle cx="258" cy="323" r="7" fill="#344c35" stroke="none"/><circle cx="290" cy="323" r="7" fill="#344c35" stroke="none"/><path d="M261 347q14 13 28 0" fill="none" stroke-width="5"/>
+      <path d="M226 351l-31-28m110 34 30-26M251 391l-18 34m55-35 19 34" fill="none" stroke="#3e593f" stroke-width="11"/>
+    </g>
+    <g class="bean two" stroke="#3e593f" stroke-width="8" stroke-linejoin="round">
+      <path d="M413 238q63-72 118-4 46 74-28 143-80 29-134-37-28-57 44-102Z" fill="#79b85c"/>
+      <path d="M401 264q62 4 96 69" fill="none" stroke="#dcf09a" stroke-width="15" stroke-linecap="round"/>
+      <circle cx="439" cy="290" r="8" fill="#344c35" stroke="none"/><circle cx="477" cy="290" r="8" fill="#344c35" stroke="none"/><path d="M440 319q17 15 34 0" fill="none" stroke-width="6"/>
+      <path d="M392 329l-38-35m117 38 42-36M430 382l-20 37m64-38 20 37" fill="none" stroke="#3e593f" stroke-width="12"/>
+    </g>
+    <g class="bean three" stroke="#3e593f" stroke-width="8" stroke-linejoin="round">
+      <path d="M627 285q54-59 102-4 40 59-22 116-69 24-116-31-25-47 36-81Z" fill="#b2d675"/>
+      <path d="M617 305q51 4 81 56" fill="none" stroke="#ecf5ac" stroke-width="13" stroke-linecap="round"/>
+      <circle cx="647" cy="327" r="7" fill="#344c35" stroke="none"/><circle cx="681" cy="327" r="7" fill="#344c35" stroke="none"/><path d="M649 350q15 14 29 0" fill="none" stroke-width="5"/>
+      <path d="M615 354l-34-25m111 30 34-31M641 402l-19 30m56-30 20 30" fill="none" stroke="#3e593f" stroke-width="11"/>
+    </g>
+    <rect x="344" y="442" width="272" height="76" rx="28" fill="#fffdf3" stroke="#4a7660" stroke-width="7"/>
+    <text x="480" y="492" text-anchor="middle" fill="#42754b" font-size="42" font-weight="800">BEAN</text>
+    <text x="480" y="75" text-anchor="middle" fill="#315f6b" font-size="43" font-weight="800">BEAN DANCE!</text>
+    <text x="480" y="107" text-anchor="middle" fill="#5d8790" font-size="20" font-weight="700">bean = 豆子</text>
+  </svg>
+</body>
+</html>

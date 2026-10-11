@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bean with Crocodile</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #d8f4ff; font-family: system-ui, sans-serif; overflow: hidden; }
+    svg { width: min(960px, 100vw); height: auto; }
+    .bean { transform-box: fill-box; transform-origin: center; animation: bounce 1s ease-in-out infinite alternate; }
+    .arm { transform-box: fill-box; transform-origin: 10% 15%; animation: wave .7s ease-in-out infinite alternate; }
+    .sparkle { animation: twinkle 1s ease-in-out infinite alternate; }
+    @keyframes bounce { to { translate: 0 -15px; rotate: 4deg; } }
+    @keyframes wave { to { rotate: 13deg; } }
+    @keyframes twinkle { to { opacity: .2; scale: .65; } }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 960 540" role="img" aria-label="A cute crocodile teaching the English word bean">
+    <rect width="960" height="540" fill="#d8f4ff"/>
+    <circle cx="105" cy="92" r="43" fill="#fff0a0"/><path d="M105 30v-15m0 154v-15m62-62h15M43 92H28m122-44 11-11M61 146l-11 11m0-130L39 16m111 141-11-11" stroke="#efba40" stroke-width="8" stroke-linecap="round"/>
+    <path d="M0 408Q115 360 234 406T480 396T720 410T960 383V540H0Z" fill="#89cf77"/>
+    <g class="bean" stroke="#3f593f" stroke-linejoin="round"><path d="M677 183q76-68 125 0 44 71-34 145-88 28-139-42-27-57 48-103Z" fill="#8ac55c" stroke-width="8"/><path d="M671 207q63 9 99 66" fill="none" stroke="#dff39b" stroke-width="14" stroke-linecap="round"/><circle cx="711" cy="235" r="8" fill="#3f593f" stroke="none"/><circle cx="752" cy="235" r="8" fill="#3f593f" stroke="none"/><path d="M719 269q20 16 39 0" fill="none" stroke-width="6"/></g>
+    <g class="sparkle" fill="#fff"><path d="m610 164 7 17 17 7-17 7-7 17-7-17-17-7 17-7Z"/><path d="m842 293 5 12 12 5-12 5-5 12-5-12-12-5 12-5Z"/></g>
+    <g stroke="#293b3c" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M317 300Q247 275 205 310q52 26 119 8Z" fill="#5dae54" stroke-width="8"/>
+      <ellipse cx="375" cy="294" rx="88" ry="80" fill="#73c85f" stroke-width="8"/><ellipse cx="386" cy="309" rx="49" ry="54" fill="#e5f292" stroke="none"/>
+      <path d="M307 212Q361 148 459 181q44 19 35 103-73 42-154 2-34-36-33-74Z" fill="#73c85f" stroke-width="8"/>
+      <path d="M324 250q61 27 145 0" fill="none" stroke="#e5f292" stroke-width="18"/>
+      <path d="M331 194l14-31 13 28 16-30 12 35" fill="#73c85f" stroke-width="7"/>
+      <path d="M357 169q31-30 74-8l18 20h-101Z" fill="#ffd560" stroke-width="7"/>
+      <circle cx="393" cy="205" r="20" fill="#fff" stroke-width="7"/><circle cx="398" cy="205" r="7" fill="#293b3c" stroke="none"/>
+      <circle cx="441" cy="208" r="19" fill="#fff" stroke-width="7"/><circle cx="446" cy="208" r="7" fill="#293b3c" stroke="none"/>
+      <ellipse cx="380" cy="239" rx="13" ry="7" fill="#f59bb0" stroke="none"/><ellipse cx="456" cy="241" rx="13" ry="7" fill="#f59bb0" stroke="none"/><path d="M407 247q19 16 38 0" fill="none" stroke-width="6"/>
+      <path d="M332 296q-32 47-4 88m91-82q-3 54 30 83" fill="none" stroke="#5cae52" stroke-width="27"/><path d="M310 381h40m118 3h38" stroke-width="13"/>
+      <g class="arm"><path d="M440 287q65 3 151-37" fill="none" stroke="#73c85f" stroke-width="26"/><path d="M579 251h25" stroke-width="12"/></g>
+    </g>
+    <rect x="570" y="365" width="258" height="106" rx="26" fill="#fffdf5" stroke="#4a766e" stroke-width="7"/>
+    <text x="699" y="416" text-anchor="middle" fill="#39744e" font-size="45" font-weight="800">BEAN</text>
+    <text x="699" y="449" text-anchor="middle" fill="#639172" font-size="21" font-weight="700">豆 子</text>
+    <text x="480" y="79" text-anchor="middle" fill="#265e70" font-size="43" font-weight="800">BEAN</text>
+    <text x="480" y="112" text-anchor="middle" fill="#4d858c" font-size="21" font-weight="700">Let's learn English!</text>
+  </svg>
+</body>
+</html>

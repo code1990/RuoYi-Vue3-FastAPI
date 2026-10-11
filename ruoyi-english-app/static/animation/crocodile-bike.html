@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>鳄鱼骑自行车</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: #9de3f2; font-family: system-ui, sans-serif; }
+    svg { width: min(960px, 100vw); height: auto; }
+    .spokes { transform-box: fill-box; transform-origin: center; animation: spin .7s linear infinite; }
+    .tail { transform-origin: 320px 255px; animation: wag .55s ease-in-out infinite alternate; }
+    .head { transform-origin: 490px 190px; animation: bob .6s ease-in-out infinite alternate; }
+    .cloud { animation: drift 16s linear infinite; }
+    .cloud.slow { animation-duration: 24s; animation-delay: -12s; }
+    .road { animation: road 1s linear infinite; }
+    @keyframes spin { to { rotate: 360deg; } }
+    @keyframes wag { to { rotate: 7deg; } }
+    @keyframes bob { to { translate: 0 -5px; rotate: -2deg; } }
+    @keyframes drift { from { translate: -180px 0; } to { translate: 1100px 0; } }
+    @keyframes road { to { translate: -120px 0; } }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 960 540" role="img" aria-label="一只鳄鱼骑着自行车前进的动画">
+    <rect width="960" height="540" fill="#9de3f2" />
+    <g fill="#fff" opacity=".85" class="cloud"><ellipse cx="130" cy="90" rx="48" ry="22"/><ellipse cx="175" cy="82" rx="38" ry="28"/><ellipse cx="215" cy="94" rx="53" ry="19"/></g>
+    <g fill="#fff" opacity=".65" class="cloud slow"><ellipse cx="-20" cy="145" rx="42" ry="18"/><ellipse cx="20" cy="136" rx="34" ry="24"/><ellipse cx="55" cy="146" rx="46" ry="17"/></g>
+    <path d="M0 340 Q130 275 260 330 T520 315 T760 335 T960 295 V420 H0Z" fill="#76c879" />
+    <rect y="402" width="960" height="138" fill="#4d5960" />
+    <g class="road" stroke="#f9da62" stroke-width="10"><path d="M-120 475h70m50 0h70m50 0h70m50 0h70m50 0h70m50 0h70m50 0h70m50 0h70m50 0h70m50 0h70" /></g>
+    <g stroke="#263238" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <g class="wheel"><circle cx="400" cy="390" r="70" fill="#e9f3f5"/><g class="spokes"><path d="M400 320v140m-70-70h140m-50-50-40 100m-30-100 100 100" stroke-width="4" /></g><circle cx="400" cy="390" r="9" fill="#263238"/></g>
+      <g class="wheel"><circle cx="620" cy="390" r="70" fill="#e9f3f5"/><g class="spokes"><path d="M620 320v140m-70-70h140m-50-50-40 100m-30-100 100 100" stroke-width="4" /></g><circle cx="620" cy="390" r="9" fill="#263238"/></g>
+      <path d="M400 390 480 270 550 390 400 390 510 390 570 285 620 390M480 270h68M570 285l-8-46h42" stroke="#e84f5b" stroke-width="13" />
+      <path d="M604 239q22-15 41 3M470 271l-20-30" stroke-width="11" />
+      <g class="pedal"><circle cx="480" cy="355" r="14" fill="#ffd052"/><path d="M480 355 525 379m-45-24-45-24M520 377h18m-98-51h18" stroke-width="8" /></g>
+    </g>
+    <g class="tail"><path d="M370 250 Q265 222 216 275 Q287 289 346 278Z" fill="#5aa94d" stroke="#263238" stroke-width="8" stroke-linejoin="round"/><path d="m255 264 20-25m15 37 18-27m18 35 15-26" stroke="#d0e77b" stroke-width="8" /></g>
+    <g class="leg back"><path d="M426 260 Q430 310 480 355 L439 331" fill="none" stroke="#4f9e45" stroke-width="26" stroke-linecap="round"/><path d="M429 331h25" stroke="#263238" stroke-width="12" /></g>
+    <path d="M370 205 Q420 145 518 184 Q556 202 540 271 Q488 299 391 271 Q359 248 370 205Z" fill="#5aa94d" stroke="#263238" stroke-width="8" />
+    <path d="M387 235q54 32 142 7" fill="none" stroke="#d0e77b" stroke-width="17" stroke-linecap="round" />
+    <g class="head"><path d="M490 198 Q527 124 634 151 Q694 170 681 225 Q653 254 548 241 L490 226Z" fill="#74c95d" stroke="#263238" stroke-width="8" /><path d="M545 145q31-35 72-14l22 25h-104Z" fill="#ffd75e" stroke="#263238" stroke-width="7"/><path d="M538 202q68 26 130-2" fill="none" stroke="#e8f58a" stroke-width="16" stroke-linecap="round" /><circle cx="592" cy="169" r="19" fill="#fff" stroke="#263238" stroke-width="7"/><circle cx="598" cy="169" r="7" fill="#263238"/><circle cx="641" cy="177" r="18" fill="#fff" stroke="#263238"/><circle cx="646" cy="177" r="7" fill="#263238"/><ellipse cx="584" cy="207" rx="13" ry="7" fill="#f79bb3" stroke="none"/><ellipse cx="662" cy="211" rx="13" ry="7" fill="#f79bb3" stroke="none"/><path d="M616 214q23 18 44-1" fill="none" stroke="#263238" stroke-width="6"/></g>
+    <path d="M482 222q38 13 54 40l35-29" fill="none" stroke="#4f9e45" stroke-width="25" stroke-linecap="round" />
+    <path d="M563 235l30 4" stroke="#263238" stroke-width="12" stroke-linecap="round" />
+    <g class="leg"><path d="M460 266 Q491 326 480 355 L525 379" fill="none" stroke="#5aa94d" stroke-width="27" stroke-linecap="round"/><path d="M524 379h24" stroke="#263238" stroke-width="12" stroke-linecap="round" /></g>
+    <path d="M383 188l12-31 14 28 16-30 12 35" fill="#5aa94d" stroke="#263238" stroke-width="7" stroke-linejoin="round" />
+    <text x="480" y="70" text-anchor="middle" fill="#226257" font-size="32" font-weight="800">鳄鱼的快乐单车行 ♡</text>
+  </svg>
+</body>
+</html>

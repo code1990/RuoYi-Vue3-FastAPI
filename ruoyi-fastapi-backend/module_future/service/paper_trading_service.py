@@ -91,6 +91,14 @@ class PaperTradingService:
         return quote
 
     @classmethod
+    async def _mark_price(cls, contract_code: str, fallback: float) -> float:
+        """Use the live feed for valuation, without making account reads unavailable."""
+        try:
+            return await asyncio.to_thread(FutureKlineService.get_latest_price, contract_code)
+        except Exception:
+            return fallback
+
+    @classmethod
     def fee_breakdown(cls, quote: dict, quantity: int, close_today: bool = False) -> tuple[float, float]:
         prefix = re.match(r'[A-Za-z]+', str(quote['contract_code']).split('.', 1)[0])
         rule = cls.FEE_SPECS.get((prefix.group(0) if prefix else '').upper(), {'rate': cls.COMMISSION_RATE})
@@ -133,17 +141,18 @@ class PaperTradingService:
         today = now.date()
         for position in positions:
             quote = await cls._quote(position.contract_code)
-            pnl = cls.floating_pnl(quote['price'], position.average_price, position.multiplier, position.quantity, position.side)
+            price = await cls._mark_price(position.contract_code, quote['price'])
+            pnl = cls.floating_pnl(price, position.average_price, position.multiplier, position.quantity, position.side)
             unrealized += pnl
             if now.time() >= time(15, 5) and str(quote.get('market_date', '')).replace('-', '') == today.strftime('%Y%m%d'):
                 mark = await db.scalar(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.position_id == position.position_id, FuturePaperDailyMark.trade_date == today))
                 previous = await db.scalar(select(FuturePaperDailyMark).where(FuturePaperDailyMark.user_id == user_id, FuturePaperDailyMark.position_id == position.position_id, FuturePaperDailyMark.trade_date < today).order_by(FuturePaperDailyMark.trade_date.desc()).limit(1))
-                daily_pnl = cls.floating_pnl(quote['price'], previous.mark_price if previous else position.average_price, position.multiplier, position.quantity, position.side)
+                daily_pnl = cls.floating_pnl(price, previous.mark_price if previous else position.average_price, position.multiplier, position.quantity, position.side)
                 if mark:
-                    mark.mark_price, mark.floating_pnl = quote['price'], daily_pnl
+                    mark.mark_price, mark.floating_pnl = price, daily_pnl
                 else:
-                    db.add(FuturePaperDailyMark(user_id=user_id, position_id=position.position_id, contract_code=position.contract_code, trade_date=today, mark_price=quote['price'], floating_pnl=daily_pnl))
-            result.append(PaperPositionModel(position_id=position.position_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, quantity=position.quantity, average_price=position.average_price, last_price=quote['price'], margin=position.margin, unrealized_pnl=pnl))
+                    db.add(FuturePaperDailyMark(user_id=user_id, position_id=position.position_id, contract_code=position.contract_code, trade_date=today, mark_price=price, floating_pnl=daily_pnl))
+            result.append(PaperPositionModel(position_id=position.position_id, contract_code=position.contract_code, contract_name=position.contract_name, side=position.side, quantity=position.quantity, average_price=position.average_price, last_price=price, margin=position.margin, unrealized_pnl=pnl))
         cash = account.cash
         equity = cash + sum(item.margin for item in positions) + unrealized
         response = PaperAccountModel(cash=cash, equity=equity, unrealized_pnl=unrealized, positions=result)

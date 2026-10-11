@@ -27,4 +27,5 @@ async def create_training_decision(data: TrainingDecisionCreateModel, db: Annota
 
 @training_controller.get('/history', response_model=DataResponseModel[list[TrainingDecisionModel]])
 async def get_training_history(db: Annotated[AsyncSession, DBSessionDependency()], current_user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
-    return ResponseUtil.success(data=await TrainingService.history(db, current_user.user.user_id))
+    rows = await TrainingService.history(db, current_user.user.user_id)
+    return ResponseUtil.success(data=[TrainingDecisionModel.model_validate(item).model_dump(by_alias=True) for item in rows])

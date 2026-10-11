@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Write with Crocodile</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: #bdeefa; font-family: system-ui, sans-serif; }
+    svg { width: min(960px, 100vw); height: auto; }
+    .hand { transform-box: fill-box; transform-origin: 20% 20%; animation: write .8s ease-in-out infinite alternate; }
+    .pencil { transform-box: fill-box; transform-origin: 0 0; animation: write .8s ease-in-out infinite alternate; }
+    .word { stroke-dasharray: 360; stroke-dashoffset: 360; animation: draw 2.4s ease-in-out infinite; }
+    .blink { transform-origin: center; animation: blink 3s step-end infinite; }
+    .sparkle { animation: twinkle 1s ease-in-out infinite alternate; }
+    @keyframes write { to { translate: 7px 8px; rotate: 4deg; } }
+    @keyframes draw { 45%, 100% { stroke-dashoffset: 0; } }
+    @keyframes blink { 96% { scale: 1 .08; } }
+    @keyframes twinkle { to { opacity: .25; scale: .65; } }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 960 540" role="img" aria-label="A cute crocodile writing the English word WRITE">
+    <rect width="960" height="540" fill="#bdeefa"/>
+    <circle cx="110" cy="92" r="44" fill="#fff5a6"/><path d="M110 28v-16m0 160v-16m64-64h16M30 92H14m142-46 11-11M64 149l-11 11m0-126L42 23m114 137-11-11" stroke="#f4bd42" stroke-width="8" stroke-linecap="round"/>
+    <g fill="#fff" opacity=".8"><ellipse cx="730" cy="90" rx="76" ry="26"/><ellipse cx="780" cy="78" rx="44" ry="35"/><ellipse cx="835" cy="94" rx="67" ry="23"/></g>
+    <path d="M0 415Q150 365 310 415T620 400T960 420V540H0Z" fill="#8bd178"/>
+    <rect x="190" y="342" width="595" height="38" rx="18" fill="#d78649" stroke="#503c36" stroke-width="8"/>
+    <path d="M245 377l-32 135m505-135 30 135" stroke="#7d4b35" stroke-width="24" stroke-linecap="round"/>
+    <rect x="472" y="292" width="248" height="94" rx="9" fill="#fffdf5" stroke="#503c36" stroke-width="6" transform="rotate(4 596 339)"/>
+    <text class="word" x="500" y="355" fill="none" stroke="#5b83d6" stroke-width="3" font-size="42" font-weight="800" letter-spacing="4">WRITE</text>
+    <g stroke="#293b3c" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M360 285Q286 263 244 300q59 28 122 9Z" fill="#5dae54" stroke-width="8"/>
+      <ellipse cx="404" cy="265" rx="83" ry="75" fill="#73c85f" stroke-width="8"/>
+      <ellipse cx="416" cy="280" rx="48" ry="52" fill="#e3f18c" stroke="none"/>
+      <path d="M341 188Q397 130 486 165q40 17 32 98-69 40-147 3-31-35-30-78Z" fill="#73c85f" stroke-width="8"/>
+      <path d="M359 226q57 28 137 1" fill="none" stroke="#e3f18c" stroke-width="18"/>
+      <path d="M363 173l14-30 12 27 15-30 13 34" fill="#73c85f" stroke-width="7"/>
+      <path d="M385 153q32-29 72-8l18 19h-99Z" fill="#ffd560" stroke-width="7"/>
+      <circle cx="424" cy="181" r="20" fill="white" stroke-width="7"/><circle class="blink" cx="429" cy="181" r="7" fill="#293b3c" stroke="none"/>
+      <circle cx="470" cy="186" r="19" fill="white" stroke-width="7"/><circle class="blink" cx="475" cy="186" r="7" fill="#293b3c" stroke="none"/>
+      <ellipse cx="412" cy="214" rx="13" ry="7" fill="#f59bb0" stroke="none"/><ellipse cx="485" cy="217" rx="13" ry="7" fill="#f59bb0" stroke="none"/>
+      <path d="M438 222q19 15 37 0" fill="none" stroke-width="6"/>
+      <path d="M350 267q-35 55-7 83m111-80q12 46 64 59" fill="none" stroke="#5cae52" stroke-width="27"/>
+      <path d="M334 348h40m180-19h31" stroke-width="13"/>
+      <g class="hand"><path d="M501 273q46 27 69 52" fill="none" stroke="#73c85f" stroke-width="25"/><path d="M560 321h24" stroke-width="12"/></g>
+    </g>
+    <g class="pencil" stroke="#503c36" stroke-linejoin="round"><path d="m574 322 77-79 17 17-78 78Z" fill="#ffcf4e" stroke-width="5"/><path d="m651 243 15-15 17 17-15 15Z" fill="#f38c73" stroke-width="5"/><path d="m590 338-13 12 7-18Z" fill="#414141" stroke-width="4"/></g>
+    <g class="sparkle" fill="#fff"><path d="m755 260 7 17 17 7-17 7-7 17-7-17-17-7 17-7Z"/><path d="m818 221 5 12 12 5-12 5-5 12-5-12-12-5 12-5Z"/></g>
+    <text x="480" y="78" text-anchor="middle" fill="#275f70" font-size="42" font-weight="800">WRITE</text>
+    <text x="480" y="112" text-anchor="middle" fill="#437c85" font-size="21" font-weight="700">写 字</text>
+  </svg>
+</body>
+</html>

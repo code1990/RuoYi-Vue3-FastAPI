@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bean · Crocodile v2</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: #d5edf2; font-family: system-ui, sans-serif; }
+    svg { width: min(960px, 100vw); height: auto; }
+    .bean { transform-box: fill-box; transform-origin: center; animation: float 1.4s ease-in-out infinite alternate; }
+    .tail { transform-box: fill-box; transform-origin: 100% 50%; animation: sway 1.2s ease-in-out infinite alternate; }
+    .leaf { transform-box: fill-box; transform-origin: bottom; animation: sway .8s ease-in-out infinite alternate; }
+    @keyframes float { to { translate: 0 -13px; } }
+    @keyframes sway { to { rotate: 4deg; } }
+  </style>
+</head>
+<body>
+  <svg viewBox="0 0 960 540" role="img" aria-label="A realistic style friendly crocodile teaching the word bean">
+    <defs><linearGradient id="skin" x1="0" x2="1"><stop stop-color="#466f3f"/><stop offset="1" stop-color="#819f4d"/></linearGradient><linearGradient id="belly" x1="0" x2="0" y2="1"><stop stop-color="#e1db9c"/><stop offset="1" stop-color="#b9b56f"/></linearGradient></defs>
+    <rect width="960" height="540" fill="#d5edf2"/><path d="M0 398Q150 349 295 399T590 391T960 400V540H0Z" fill="#759f62"/>
+    <g class="leaf" fill="#4e8a52"><path d="M79 402q-7-91 30-138 6 91-30 138Z"/><path d="M112 402q32-86 82-111-34 83-82 111Z"/><path d="M853 404q-16-91 16-139 16 89-16 139Z"/></g>
+    <g class="bean" stroke="#394c37" stroke-linejoin="round"><path d="M697 150q71-61 121 5 40 72-42 142-84 26-132-39-25-55 53-108Z" fill="#92bf63" stroke-width="8"/><path d="M686 178q61 3 100 65" fill="none" stroke="#d9eb9a" stroke-width="13" stroke-linecap="round"/><circle cx="713" cy="208" r="7"/><circle cx="753" cy="208" r="7"/><path d="M720 240q18 14 37 0" fill="none" stroke-width="5"/></g>
+    <g class="tail"><path d="M351 304Q214 268 138 334q90 23 198 5Z" fill="url(#skin)" stroke="#283b32" stroke-width="9"/><path d="m190 325 24-28m18 36 24-29m19 33 22-27" stroke="#b8c66b" stroke-width="8" stroke-linecap="round"/></g>
+    <g stroke="#283b32" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="384" cy="286" rx="113" ry="78" fill="url(#skin)" stroke-width="9"/><path d="M301 293q75 81 168 20" fill="none" stroke="url(#belly)" stroke-width="46"/>
+      <path d="M287 234l17-38 13 34 18-39 15 37 19-37 14 39" fill="#5a7c42" stroke-width="7"/>
+      <path d="M326 223Q360 134 462 156q47 10 76 34l105 4q35 3 34 27l-43 39q-70 24-142 10-82 21-157-12Z" fill="url(#skin)" stroke-width="9"/>
+      <path d="M348 239q126 39 280-2" fill="none" stroke="#d5d18a" stroke-width="19"/>
+      <path d="M478 169q29-25 59 6l13 24-83-4Z" fill="#806d46" stroke-width="7"/>
+      <ellipse cx="456" cy="188" rx="20" ry="16" fill="#d8ce75" stroke-width="7"/><ellipse cx="460" cy="188" rx="4" ry="11" fill="#18231e" stroke="none"/>
+      <ellipse cx="510" cy="190" rx="20" ry="16" fill="#d8ce75" stroke-width="7"/><ellipse cx="514" cy="190" rx="4" ry="11" fill="#18231e" stroke="none"/>
+      <ellipse cx="623" cy="211" rx="6" ry="4" fill="#283b32" stroke="none"/><ellipse cx="642" cy="214" rx="6" ry="4" fill="#283b32" stroke="none"/>
+      <path d="M532 229q48 16 95-2" fill="none" stroke-width="6"/>
+      <path d="M326 306q-32 38-11 80m111-66q19 37 45 58" fill="none" stroke="#4f763e" stroke-width="27"/><path d="M295 384h42m159-5h42" stroke-width="14"/>
+      <path d="M454 275q62 11 132-33" fill="none" stroke="#587f43" stroke-width="27"/><path d="M575 242h25" stroke-width="12"/>
+      <g fill="#a8bd68" stroke="none" opacity=".72"><ellipse cx="344" cy="281" rx="9" ry="5"/><ellipse cx="371" cy="268" rx="9" ry="5"/><ellipse cx="398" cy="282" rx="9" ry="5"/><ellipse cx="426" cy="269" rx="9" ry="5"/><ellipse cx="450" cy="286" rx="9" ry="5"/></g>
+    </g>
+    <rect x="619" y="349" width="250" height="113" rx="18" fill="#fffdf2" stroke="#456957" stroke-width="7"/><text x="744" y="403" text-anchor="middle" fill="#426d45" font-size="45" font-weight="800">BEAN</text><text x="744" y="436" text-anchor="middle" fill="#728464" font-size="21" font-weight="700">豆 子</text>
+    <text x="480" y="73" text-anchor="middle" fill="#315f63" font-size="42" font-weight="800">BEAN</text><text x="480" y="106" text-anchor="middle" fill="#578084" font-size="20" font-weight="700">Learn with Crocodile</text>
+  </svg>
+</body>
+</html>

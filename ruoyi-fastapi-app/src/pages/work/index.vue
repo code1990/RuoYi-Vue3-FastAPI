@@ -14,7 +14,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, ref } from "vue";
+import { onHide, onShow } from "@dcloudio/uni-app";
 import { useTradingStore } from "@/store";
 const trading = useTradingStore();
 const quantity = ref(1);
@@ -34,7 +35,11 @@ function confirmOpen(side) { const action = side === "多" ? "买入开多" : "�
 async function submit(side) { if (!canTrade.value || !await confirmOpen(side)) return; await trading.openPosition(side, quantity.value); await refreshStatus(); uni.showToast({ title: `已模拟开${side}`, icon: "success" }); }
 async function closeCurrent() { for (const position of activePositions.value) await close(position.id); }
 async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
-trading.sync().then(refreshStatus);
+let pollTimer;
+async function refresh() { try { await trading.sync(); await refreshStatus(); } catch {} }
+function startPolling() { stopPolling(); refresh(); pollTimer = setInterval(refresh, 15000); }
+function stopPolling() { clearInterval(pollTimer); }
+onShow(startPolling); onHide(stopPolling); onBeforeUnmount(stopPolling);
 </script>
 
 <style scoped>

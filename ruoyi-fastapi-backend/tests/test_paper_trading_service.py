@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from exceptions.exception import ServiceWarning
 from module_future.entity.vo.paper_trading_vo import PaperPositionModel, PaperTradeOpenModel
 from module_future.service.paper_trading_service import PaperTradingService
+from module_future.service.future_kline_service import FutureKlineService
 
 
 @pytest.mark.asyncio
@@ -76,6 +77,14 @@ def test_fee_supports_fixed_and_close_today_rates() -> None:
 def test_floating_pnl_uses_previous_mark_price() -> None:
     assert PaperTradingService.floating_pnl(5050, 5013, 10, 3, '多') == 1110
     assert PaperTradingService.floating_pnl(5050, 5013, 10, 3, '空') == -1110
+
+
+@pytest.mark.asyncio
+async def test_mark_price_uses_live_quote_and_falls_back(monkeypatch) -> None:
+    monkeypatch.setattr(FutureKlineService, 'get_latest_price', lambda _: 5050)
+    assert await PaperTradingService._mark_price('RB888.XSGE', 5013) == 5050
+    monkeypatch.setattr(FutureKlineService, 'get_latest_price', lambda _: (_ for _ in ()).throw(ValueError()))
+    assert await PaperTradingService._mark_price('RB888.XSGE', 5013) == 5013
 
 
 @pytest.mark.asyncio
