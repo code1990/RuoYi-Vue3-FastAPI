@@ -14,6 +14,8 @@ from module_future.entity.vo.training_vo import TrainingDecisionCreateModel
 
 class TrainingService:
     TZ = ZoneInfo('Asia/Shanghai')
+    # 不设夜盘：中金所、广期所全品种，以及交易所明确的日盘商品；交易所调整时以公告为准。
+    DAY_ONLY = {'IF', 'IH', 'IC', 'IM', 'IO', 'MO', 'HO', 'T', 'TF', 'TS', 'TL', 'LC', 'SI', 'PS', 'PT', 'PD', 'LH', 'JD', 'FB', 'BB', 'LG', 'AP', 'CJ', 'PK', 'UR', 'SF', 'SM', 'RS', 'PM', 'WH', 'JR', 'LR', 'RI', 'WR', 'EC'}
     NIGHT_TO_2300 = {'RB', 'HC', 'RU', 'BR', 'BU', 'FU', 'SP', 'M', 'Y', 'P', 'I', 'JM', 'J', 'C', 'CS', 'L', 'PP', 'V', 'EG', 'EB', 'PG', 'BZ', 'MA', 'TA', 'SA', 'FG', 'CF', 'SR', 'RM', 'OI', 'ZC', 'PX', 'PL', 'PR'}
     NIGHT_TO_0100 = {'CU', 'AL', 'ZN', 'PB', 'NI', 'SN', 'SS', 'AO', 'AD', 'BC'}
     NIGHT_TO_0230 = {'AU', 'AG', 'SC'}
@@ -28,6 +30,8 @@ class TrainingService:
             return True
         product = re.match(r'[A-Z]+', contract_code.upper())
         code = product.group() if product else ''
+        if code in cls.DAY_ONLY:
+            return False
         if code in cls.NIGHT_TO_2300:
             return time(21) <= current < time(23)
         if code in cls.NIGHT_TO_0100:
