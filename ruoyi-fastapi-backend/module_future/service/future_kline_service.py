@@ -1,11 +1,33 @@
+import re
+import sqlite3
+from pathlib import Path
 from typing import Any
 from time import time
 
 import requests
 
+from config.env import AppConfig
+
 
 class FutureKlineService:
     PERIODS = {'1m': 1, '5m': 2, '15m': 3, '30m': 4, '60m': 5, '1d': 6, '1w': 7, '1mo': 8, '1y': 9, 'minute': 10, '5d': 11}
+    EXCHANGES = {'XSGE': 'SHF', 'XDCE': 'DCE', 'XZCE': 'CZC', 'XGFE': 'GFEX', 'SHGE': 'SHGE'}
+
+    @classmethod
+    def _get_local_daily_rows(cls, contract_code: str, count: int) -> list[dict[str, Any]]:
+        match = re.match(r'([A-Z]+)\d+\.([A-Z]+)$', contract_code)
+        path = Path(AppConfig.future_stat_db_path)
+        if not match or not path.is_file() or match.group(2) not in cls.EXCHANGES:
+            return []
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            rows = connection.execute(
+                '''SELECT b.trade_date,b.open_price,b.high_price,b.low_price,b.close_price,b.volume,b.turnover
+                   FROM t_future_daily_bar b JOIN t_future_series s ON s.thscode=b.thscode
+                   WHERE s.product_code=? AND s.exchange_code=? AND s.series_type='main'
+                   ORDER BY b.trade_date DESC LIMIT ?''',
+                (match.group(1), cls.EXCHANGES[match.group(2)], count),
+            ).fetchall()
+        return [dict(zip(('time', 'open', 'high', 'low', 'close', 'volume', 'turnover'), row)) for row in reversed(rows)]
 
     @classmethod
     def _get_trend_rows(cls, contract_code: str, endpoint: str) -> list[dict[str, Any]]:
@@ -82,7 +104,9 @@ class FutureKlineService:
             # trend 接口是新华财经页面自身使用的逐分钟分时源；kline 的 10/11 档为稀疏 K 线数据。
             rows = cls._get_trend_rows(contract_code, 'real_trend' if period == 'minute' else 'trend5day')
         else:
-            rows = cls._get_rows(contract_code, cls.PERIODS[period], count)
+            rows = cls._get_local_daily_rows(contract_code, count) if period == '1d' else []
+            if not rows:
+                rows = cls._get_rows(contract_code, cls.PERIODS[period], count)
         if period == '5d':
             dates = sorted({str(item['time'])[:8] for item in rows})[-5:]
             rows = [item for item in rows if str(item['time'])[:8] in dates]

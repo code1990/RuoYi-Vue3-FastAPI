@@ -18,7 +18,7 @@ const rows = ref([]); const history = ref([]); const pending = computed(() => ro
 const price = value => Number(value || 0).toFixed(2); const change = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}%`; const result = item => change(item.pnlRate); const resultClass = item => item.pnlRate === null || item.pnlRate === undefined ? "" : Number(item.pnlRate) >= 0 ? "up" : "down";
 const historyItem = item => ({ id: item.decisionId ?? item.decision_id, name: item.contractName || item.contract_name || item.contractCode || item.contract_code || "未知品种", code: item.contractCode || item.contract_code || "--", decision: item.decision || item.direction || "未记录方向", pnlRate: item.pnlRate !== undefined ? item.pnlRate : item.pnl_rate, status: item.status });
 function open(item) { const code = item.contract_code || item.contractCode; const name = item.contract_name || item.contractName || code; if (!code) return uni.showToast({ title: "合约代码缺失", icon: "none" }); uni.navigateTo({ url: `/pages/training/detail?code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}` }); }
-async function load() { try { rows.value = (await getTrainingList()).data || []; const data = (await getTrainingHistory()).data; history.value = (Array.isArray(data) ? data : data?.rows || []).map(historyItem); } catch { rows.value = []; history.value = []; } }
+async function load() { try { rows.value = (await getTrainingList()).data || []; } catch {} try { const data = (await getTrainingHistory()).data; history.value = (Array.isArray(data) ? data : data?.rows || []).map(historyItem); } catch {} }
 onShow(load);
 </script>
 

@@ -47,8 +47,8 @@ class TrainingService:
         return cls.is_night_session(contract_code, now)
 
     @classmethod
-    async def _quote(cls, code: str) -> dict:
-        quote = FutureQuoteDao.get_contract(AppConfig.future_stat_db_path, code, True)
+    async def _quote(cls, code: str, live: bool = False) -> dict:
+        quote = FutureQuoteDao.get_contract(AppConfig.future_stat_db_path, code, live)
         if not quote or quote['market_code'] not in FutureQuoteDao.MARKETS['domestic']:
             raise ServiceWarning(message='仅支持国内有效期货合约训练')
         return quote
@@ -71,7 +71,7 @@ class TrainingService:
         today = now.date()
         decisions = (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == today))).all()
         done = {item.contract_code: item for item in decisions}
-        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 100, True)
+        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 200)
         await db.commit()
         return [item for item in rows if item['contract_code'] not in done and str(item.get('market_date', '')).replace('-', '') == now.strftime('%Y%m%d')]
 
@@ -80,7 +80,7 @@ class TrainingService:
         now = datetime.now(cls.TZ)
         if now.time().hour < 14 or (now.time().hour == 14 and now.time().minute < 55):
             raise ServiceWarning(message='训练决策请在14:55后的尾盘提交')
-        quote = await cls._quote(data.contract_code)
+        quote = await cls._quote(data.contract_code, True)
         if str(quote.get('market_date', '')).replace('-', '') != now.strftime('%Y%m%d'):
             raise ServiceWarning(message='今日没有可用于训练的收盘行情')
         current = await db.scalar(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == now.date(), FutureTrainingDecision.contract_code == quote['contract_code']))
