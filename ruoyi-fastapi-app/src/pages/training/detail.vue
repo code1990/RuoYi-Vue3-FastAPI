@@ -8,9 +8,6 @@ import { onLoad } from "@dcloudio/uni-app";
 // #ifdef H5
 import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 // #endif
-// #ifndef H5
-import { JSIndexScript } from "@/vendor/hqchart/uniapp/umychart.index.data.wechat.js";
-// #endif
 import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
 import { getTrainingList, submitTrainingDecision } from "@/api/future/training";
@@ -22,9 +19,6 @@ function registerIndicators() {
   // #ifdef H5
   HQChart.JSIndexScript.AddIndex(trainingIndicators);
   // #endif
-  // #ifndef H5
-  JSIndexScript.AddIndex(trainingIndicators);
-  // #endif
 }
 function returnChartData(callback, payload) {
   // #ifndef H5
@@ -34,7 +28,16 @@ function returnChartData(callback, payload) {
   callback(payload);
   // #endif
 }
-const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: [{ Index: "MA" }, { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" }], KLine: { Period: 0, PageSize: 180, DataWidth: 10, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
+const chartWindows = [
+  { Index: "MA" },
+  // #ifdef H5
+  { Index: "TRAIN_KDJ9" }, { Index: "TRAIN_KDJ90" },
+  // #endif
+  // #ifndef H5
+  { Index: "KDJ" }, { Index: "RSI" },
+  // #endif
+];
+const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: chartWindows, KLine: { Period: 0, PageSize: 180, DataWidth: 10, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });
 const realtimeData = rows => { const current = rows[rows.length - 1] || {}; const previous = rows[rows.length - 2] || {}; return { LatestPointFlash: { FlashCount: 2 }, stock: [{ name: name.value, symbol: hqSymbol(code.value), date: Number(String(current.time || "").slice(0, 8)), price: current.close, open: current.open, high: current.high, low: current.low, vol: current.volume || 0, amount: current.turnover || 0, yclose: previous.close || current.open, yclearing: previous.close || current.open }] }; };
 const network = async (data, callback) => { data.PreventDefault = true; const realtime = data.Name === "KLineChartContainer::RequestRealtimeData"; try { const response = await getFutureKline({ contractCode: code.value, period: "1d", count: realtime ? 2 : 180 }); const rows = response.data.rows || []; returnChartData(callback, realtime ? realtimeData(rows) : { name: name.value, symbol: hqSymbol(code.value), data: hqRows(rows) }); } catch { returnChartData(callback, realtime ? { stock: [] } : { name: name.value, symbol: hqSymbol(code.value), data: [] }); } };
 function createChart() { registerIndicators();
