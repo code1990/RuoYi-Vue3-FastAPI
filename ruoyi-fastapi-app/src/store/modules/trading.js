@@ -7,15 +7,21 @@ const seedQuotes = [
   { code: "AU2606", name: "沪金", price: 986.42, change: -0.31, multiplier: 1000 },
   { code: "RB2610", name: "螺纹钢", price: 3186, change: 1.22, multiplier: 10 },
 ];
+const QUOTE_CACHE_KEY = "future-quote-cache";
+const quoteCache = (() => { try { return uni.getStorageSync(QUOTE_CACHE_KEY) || {}; } catch { return {}; } })();
+const cachedDomesticQuotes = Array.isArray(quoteCache.domestic?.rows) && quoteCache.domestic.rows.length ? quoteCache.domestic.rows : seedQuotes;
 
 export const useTradingStore = defineStore("trading", () => {
   const statusCache = new Map();
-  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(seedQuotes); const selectedCode = ref(seedQuotes[0].code); const scope = ref("domestic");
+  const cash = ref(0); const equity = ref(0); const unrealizedPnl = ref(0); const positions = ref([]); const orders = ref([]); const quotes = ref(cachedDomesticQuotes); const selectedCode = ref(cachedDomesticQuotes[0].code); const scope = ref("domestic");
   const selectedQuote = computed(() => quotes.value.find((item) => item.code === selectedCode.value) || quotes.value[0]);
   const selectContract = (code) => { selectedCode.value = code; };
+  function restoreQuotes(value) { const rows = quoteCache[value]?.rows; if (Array.isArray(rows) && rows.length) { quotes.value = rows; selectedCode.value = rows.some(item => item.code === selectedCode.value) ? selectedCode.value : rows[0].code; } }
+  function cacheQuotes(value, rows) { quoteCache[value] = { rows, updatedAt: Date.now() }; try { uni.setStorageSync(QUOTE_CACHE_KEY, quoteCache); } catch {} }
   async function refreshQuotes() {
     const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
-    quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1, nightSessionOpen: item.nightSessionOpen }));
+    const rows = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1, nightSessionOpen: item.nightSessionOpen }));
+    quotes.value = rows; cacheQuotes(scope.value, rows);
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
   }
   async function getTradingStatus(contractCode, refresh = false) {
@@ -39,6 +45,6 @@ export const useTradingStore = defineStore("trading", () => {
   }
   async function openPosition(side, quantity) { await openPaperPosition({ contractCode: selectedCode.value, side, quantity: Number(quantity) }); statusCache.delete(selectedCode.value); await sync(); }
   async function closePosition(id) { await closePaperPosition(id); await sync(); }
-  async function setScope(value) { if (scope.value !== value) { scope.value = value; await sync(); } }
+  async function setScope(value) { if (scope.value !== value) { scope.value = value; restoreQuotes(value); await sync(); } }
   return { cash, equity, unrealizedPnl, positions, orders, quotes, scope, selectedQuote, refreshQuotes, getTradingStatus, selectContract, setScope, sync, openPosition, closePosition };
 });
