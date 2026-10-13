@@ -1,5 +1,4 @@
 import json
-import re
 import sqlite3
 from pathlib import Path
 
@@ -65,11 +64,6 @@ class FutureQuoteDao:
                 row['contract_unit'] = cls.number(data.get('contract_unit')) or row['contract_unit']
             refreshed.append(row)
         return refreshed
-
-    @staticmethod
-    def _main_contract_code(contract_code: str, market_code: str) -> str:
-        prefix = re.match(r'[A-Za-z]+', contract_code.split('.', 1)[0])
-        return f'{prefix.group(0).upper()}888.{market_code}' if prefix else contract_code
 
     @classmethod
     def get_contract(cls, database_path: str, contract_code: str, live: bool = False) -> dict | None:
@@ -142,14 +136,12 @@ class FutureQuoteDao:
             name = item['contract_name']
             priority = 2 if '主力' in name or '888' in item['contract_code'] else 1 if '主连' in name or '连续' in name else 0
             turnover = cls.number(payload.get('current_amount') or payload.get('amount') or payload.get('business_amount'))
-            key = (item['market_name'], item['product_name'])
+            key = (item['market_code'], item['product_code'], ''.join(char for char in item['contract_code'].split('.', 1)[0] if char.isalpha()))
             if key not in selected or (priority, turnover) > selected[key][:2]:
                 selected[key] = (priority, turnover, item)
         rows = [entry[2] for entry in selected.values()]
         if live:
             # 本地库只提供品种目录；旧报价绝不进入当前列表。
-            for row in rows:
-                row['contract_code'] = cls._main_contract_code(row['contract_code'], row['market_code'])
             rows = cls._refresh(rows, discard_missing=True)
         if keyword:
             text = keyword.lower()

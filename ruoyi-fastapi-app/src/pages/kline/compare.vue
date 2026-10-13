@@ -18,6 +18,7 @@ import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
+import { getFutureQuotes } from "@/api/future/paper-trading";
 
 const contracts = ref([]); const charts = []; const appCharts = new Map();
 function setAppChart(key, element) { if (element) appCharts.set(key, element); else appCharts.delete(key); }
@@ -54,7 +55,7 @@ function createChart(item) {
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }
-onLoad(async query => { const store = useTradingStore(); try { await store.refreshQuotes(); } catch {} const codes = [query.left, query.right].filter(Boolean); contracts.value = codes.map((code, index) => { const quote = store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
+onLoad(async query => { const store = useTradingStore(); const codes = [query.left, query.right].filter(Boolean); try { await store.refreshQuotes(); } catch {} const responses = await Promise.all(codes.map(code => getFutureQuotes({ scope: /\.(CBOT|CME|NYMEX|COMEX)$/i.test(code) ? "overseas" : "domestic", keyword: code, pageSize: 1 }).catch(() => ({ data: { rows: [] } })))); contracts.value = codes.map((code, index) => { const quote = responses[index].data.rows.find(item => item.contractCode === code) || store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.contractName || quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
 onBeforeUnmount(clearCharts);
 </script>
 
