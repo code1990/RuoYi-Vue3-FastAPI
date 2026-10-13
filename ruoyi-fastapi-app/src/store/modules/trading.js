@@ -15,7 +15,7 @@ export const useTradingStore = defineStore("trading", () => {
   const selectContract = (code) => { selectedCode.value = code; };
   async function refreshQuotes() {
     const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
-    quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1 }));
+    quotes.value = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1, nightSessionOpen: item.nightSessionOpen }));
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";
   }
   async function getTradingStatus(contractCode, refresh = false) {

@@ -20,6 +20,8 @@ class TrainingServiceTest(unittest.TestCase):
         self.assertFalse(TrainingService.is_trading_time('PK888.XZCE', self.at(21, 0)))
         self.assertFalse(TrainingService.is_trading_time('IF888.XCFE', self.at(21, 0)))
         self.assertFalse(TrainingService.is_trading_time('EC888.XINE', self.at(21, 0)))
+        self.assertTrue(TrainingService.is_night_session('RB888.XSGE', self.at(21, 0)))
+        self.assertFalse(TrainingService.is_night_session('RB888.XSGE', self.at(14, 55)))
         self.assertTrue(TrainingService.is_trading_time('RB888.XSGE', self.at(22, 59)))
         self.assertFalse(TrainingService.is_trading_time('RB888.XSGE', self.at(23, 0)))
         self.assertTrue(TrainingService.is_trading_time('CU888.XSGE', self.at(0, 59)))

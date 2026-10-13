@@ -22,6 +22,7 @@ class FutureQuoteModel(BaseModel):
     contract_unit: float = 1
     up_px: float | None = None
     down_px: float | None = None
+    night_session_open: bool = False
 
 
 class FutureQuotePageModel(BaseModel):

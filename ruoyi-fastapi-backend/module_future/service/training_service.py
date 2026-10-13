@@ -21,13 +21,11 @@ class TrainingService:
     NIGHT_TO_0230 = {'AU', 'AG', 'SC'}
 
     @classmethod
-    def is_trading_time(cls, contract_code: str, now: datetime) -> bool:
-        """Domestic session schedule; holidays are rejected by the live quote date check."""
+    def is_night_session(cls, contract_code: str, now: datetime) -> bool:
+        """Whether this contract is in an active night session; holiday checks belong to callers."""
         if now.weekday() >= 5:
             return False
         current = now.time()
-        if time(8, 55) <= current < time(10, 15) or time(10, 30) <= current < time(11, 30) or time(13, 30) <= current < time(15):
-            return True
         product = re.match(r'[A-Z]+', contract_code.upper())
         code = product.group() if product else ''
         if code in cls.DAY_ONLY:
@@ -39,6 +37,14 @@ class TrainingService:
         if code in cls.NIGHT_TO_0230:
             return current >= time(21) or current < time(2, 30)
         return False
+
+    @classmethod
+    def is_trading_time(cls, contract_code: str, now: datetime) -> bool:
+        """Domestic session schedule; holidays are rejected by the live quote date check."""
+        current = now.time()
+        if now.weekday() < 5 and (time(8, 55) <= current < time(10, 15) or time(10, 30) <= current < time(11, 30) or time(13, 30) <= current < time(15)):
+            return True
+        return cls.is_night_session(contract_code, now)
 
     @classmethod
     async def _quote(cls, code: str) -> dict:
