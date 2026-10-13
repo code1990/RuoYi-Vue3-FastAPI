@@ -19,7 +19,18 @@ class FutureRelationService:
                     FROM t_future_product_link ORDER BY sort_order, link_id''')
         )
         rows = [FutureRelationModel.model_validate(row) for row in result.mappings().all()]
+        for row in rows:
+            cls._domestic_first(row)
         return await asyncio.to_thread(cls._with_quotes, rows)
+
+    @staticmethod
+    def _domestic_first(row: FutureRelationModel) -> None:
+        if row.source_scope != 'overseas' or row.related_scope != 'domestic':
+            return
+        row.source_scope, row.related_scope = row.related_scope, row.source_scope
+        row.market_code, row.related_market_code = row.related_market_code, row.market_code
+        row.product_code, row.related_product_code = row.related_product_code, row.product_code
+        row.contract_prefix, row.related_contract_prefix = row.related_contract_prefix, row.contract_prefix
 
     @staticmethod
     def _with_quotes(rows: list[FutureRelationModel]) -> list[FutureRelationModel]:
