@@ -154,7 +154,8 @@ function loginSuccess(result) {
     });
 }
 
-onLoad(() => handleLogin());
+// 首次进入或会话清空后，使用内置测试账号静默恢复，不显示 loading。
+onLoad(() => pwdLogin());
 
 </script>
 
