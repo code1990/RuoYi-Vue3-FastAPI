@@ -1,5 +1,7 @@
+import asyncio
 from datetime import date, datetime
 import unittest
+from unittest.mock import AsyncMock, patch
 from zoneinfo import ZoneInfo
 
 from module_future.service.training_service import TrainingService
@@ -33,6 +35,25 @@ class TrainingServiceTest(unittest.TestCase):
         item = FutureTrainingDecision(decision_id=1, trade_date=date(2026, 10, 8), contract_code='RB888.XSGE', contract_name='螺纹钢主力', decision='多', reason='趋势向上', entry_price=3200, status='pending', create_time=datetime(2026, 10, 8, 15))
         row = TrainingDecisionModel.model_validate(item).model_dump(by_alias=True)
         self.assertEqual((row['contractCode'], row['contractName'], row['decision']), ('RB888.XSGE', '螺纹钢主力', '多'))
+
+    def test_history_commits_before_loading_response_rows(self) -> None:
+        class Result:
+            def all(self):
+                return []
+
+        class Db:
+            committed = False
+
+            async def commit(self):
+                self.committed = True
+
+            async def scalars(self, _statement):
+                if not self.committed:
+                    raise AssertionError('history rows were loaded before commit')
+                return Result()
+
+        with patch.object(TrainingService, 'settle', new=AsyncMock()):
+            self.assertEqual([], asyncio.run(TrainingService.history(Db(), 1)))
 
 
 if __name__ == '__main__':

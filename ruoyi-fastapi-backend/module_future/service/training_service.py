@@ -95,6 +95,5 @@ class TrainingService:
     @classmethod
     async def history(cls, db: AsyncSession, user_id: int) -> list[FutureTrainingDecision]:
         await cls.settle(db, user_id)
-        rows = (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id).order_by(FutureTrainingDecision.decision_id.desc()).limit(60))).all()
         await db.commit()
-        return rows
+        return (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id).order_by(FutureTrainingDecision.decision_id.desc()).limit(60))).all()
