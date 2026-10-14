@@ -72,8 +72,9 @@ DefaultData.GetKLineOption = function ()
         
         Windows: //窗口指标
         [
-            {Index:"MA",Modify: false, Change: false}, 
-			{Index:"VOL",Modify: false, Change: false},
+            {Index:"MA",Modify: false, Change: false},
+			{Index:"KDJ", Args:[{Name:"N",Value:9},{Name:"M1",Value:3},{Name:"M2",Value:3}], Modify: false, Change: false},
+			{Index:"KDJ", Args:[{Name:"N",Value:90},{Name:"M1",Value:3},{Name:"M2",Value:3}], Modify: false, Change: false},
 			//{Index:"AMO",Modify: false, Change: false}
 			/*
             { 
@@ -109,7 +110,7 @@ DefaultData.GetKLineOption = function ()
 			DragMode:1, 
             Right:1,                            //复权 0 不复权 1 前复权 2 后复权
             Period:0,                           //周期: 0 日线 1 周线 2 月线 3 年线 
-            PageSize:6,
+            PageSize:15,
             IsShowTooltip:false,
 			DrawType:0, 
 			DataWidth:10

@@ -19,7 +19,7 @@ export const useTradingStore = defineStore("trading", () => {
   function restoreQuotes(value) { const rows = quoteCache[value]?.rows; if (Array.isArray(rows) && rows.length) { quotes.value = rows; selectedCode.value = rows.some(item => item.code === selectedCode.value) ? selectedCode.value : rows[0].code; } }
   function cacheQuotes(value, rows) { quoteCache[value] = { rows, updatedAt: Date.now() }; try { uni.setStorageSync(QUOTE_CACHE_KEY, quoteCache); } catch {} }
   async function refreshQuotes() {
-    const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 100 });
+    const quoteRows = await getFutureQuotes({ scope: scope.value, pageSize: 200 });
     const rows = quoteRows.data.rows.map((item) => ({ code: item.contractCode, name: item.contractName, market: item.marketCode, price: item.lastPx, change: item.pxChangeRate, speed: item.min5Chgpct, amount: item.pxChange, open: item.openPx, high: item.highPx, low: item.lowPx, prevClose: item.prevSettlement, limitUp: item.upPx, limitDown: item.downPx, multiplier: item.contractUnit || 1, nightSessionOpen: item.nightSessionOpen }));
     quotes.value = rows; cacheQuotes(scope.value, rows);
     if (!quotes.value.some((item) => item.code === selectedCode.value)) selectedCode.value = quotes.value[0]?.code || "";

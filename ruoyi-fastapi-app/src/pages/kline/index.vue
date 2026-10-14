@@ -34,7 +34,7 @@ import FutureHQChart from "@/components/FutureHQChart.vue";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
 
-const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("MACD"); const error = ref(""); const appChart = ref(null); const swipeStart = ref({ x: 0, y: 0 }); let swipeSingleTouch = false; let chart;
+const code = ref(""); const name = ref(""); const period = ref("1d"); const indicator = ref("KDJ"); const error = ref(""); const appChart = ref(null); const swipeStart = ref({ x: 0, y: 0 }); let swipeSingleTouch = false; let chart;
 const flashing = ref(false); let pollTimer; let flashTimer; let refreshing = false;
 const trading = useTradingStore(); const quote = computed(() => trading.quotes.find(item => item.code === code.value) || { name: name.value, code: code.value });
 const lightning = ref(false); const quantity = ref(1); const tradeStatus = ref({ tradable: false, reason: "正在读取交易状态" });
@@ -86,7 +86,7 @@ async function network(data, callback) {
     const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; returnChartData(callback, result); }
   catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") returnChartData(callback, emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") returnChartData(callback, emptyHistoryMinute()); else returnChartData(callback, { name: code.value, symbol: hqSymbol(code.value), data: [] }); }
 }
-function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: indicator.value === "MA" || indicator.value === "BOLL" ? "VOL" : indicator.value }]; }
+function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: "KDJ", Args: [{ Name: "N", Value: 9 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }]; }
 function clearChart() { chart?.ChartDestroy?.(); chart = null;
   // #ifdef APP-PLUS
   appChart.value?.ClearChart?.();
@@ -98,7 +98,7 @@ function createChart() {
   // #ifdef H5
   const target = document.getElementById("future-hqchart"); if (!target || chart) return; target.innerHTML = "";
   HQChart.JSChart.GetResource().FrameLogo.Text = null;
-  chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: hqSymbol(code.value), DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: minuteIndicators.includes(indicator.value) ? indicator.value : "MACD" }], MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
+  chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: hqSymbol(code.value), DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: minuteIndicators.includes(indicator.value) ? indicator.value : "MACD" }], MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
   // #endif
   // #ifdef APP-PLUS
   const control = appChart.value; if (!control) return;
@@ -109,7 +109,7 @@ function createChart() {
     control.Minute.Option = { Type: "分钟走势图", Symbol: control.Symbol, DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: minuteIndicators.includes(indicator.value) ? indicator.value : "MACD" }], MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
     control.ChartType = "Minute";
   } else {
-    control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 60, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
+    control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
     control.ChartType = "KLine";
   }
   control.OnSize(); control.CreateHQChart();
