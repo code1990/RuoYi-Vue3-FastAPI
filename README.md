@@ -145,12 +145,4 @@ nginx -t && systemctl reload nginx
 
 ### 服务端提交范围
 
-服务器工作副本可提交 `ruoyi-fastapi-backend/**`（含测试）、`ruoyi-fastapi-frontend/**` 及根目录、`.github/**`、`scripts/**` 等服务器配置。前端源码在服务器开发和提交，Windows 仅负责构建并发布 `dist`；`ruoyi-fastapi-app/**`、`ruoyi-fastapi-test/**` 仍在 Windows 工作副本开发和提交。
-
-首次在服务器安装提交检查：
-
-```bash
-./scripts/install-server-git-hooks.sh
-```
-
-该检查只阻止受限目录进入提交，不阻止查看或临时编辑。紧急修复需要明确绕过时使用 `git commit --no-verify`。
+服务器工作副本可以开发和提交全部源码。不得在服务器安装依赖、编译/打包或发布前端；Windows 负责构建并发布 `dist`。
