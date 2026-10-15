@@ -9,17 +9,15 @@ import { onLoad } from "@dcloudio/uni-app";
 import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 // #endif
 import FutureHQChart from "@/components/FutureHQChart.vue";
-import { registerKdj9Signal } from "@/utils/kdj9Signal";
+import { registerKdjSignals } from "@/utils/kdj9Signal";
 import { getFutureKline } from "@/api/future/kline";
 import { getTrainingList, submitTrainingDecision } from "@/api/future/training";
 const code = ref(""); const name = ref(""); const dialog = ref(false); const decision = ref(""); const reason = ref(""); const appChart = ref(null); const contracts = ref([]); const swipeStart = ref({ x: 0, y: 0 }); let swipeSingleTouch = false; const labels = { 多: "看多", 空: "看空", 放弃: "放弃机会" }; let chart;
 const hqSymbol = value => String(value || "").replace(/\.XSGE$/i, ".SHFE").replace(/\.XDCE$/i, ".DCE").replace(/\.XZCE$/i, ".CZCE").replace(/\.XGFE$/i, ".GZFE").replace(/\.XCFE$/i, ".CFFEX").replace(/\.SHGE$/i, ".SHFE");
 const hqRows = rows => rows.map(item => { const text = String(item.time); return [Number(text.slice(0, 8)), item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; });
-const trainingIndicators = [{ ID: "TRAIN_KDJ90", Name: "训练KDJ90", Description: "KDJ 90 日信号", IsMainIndex: false, Script: "RSV90:=(CLOSE-LLV(LOW,90))/(HHV(HIGH,90)-LLV(LOW,90))*100;\nK90:SMA(RSV90,3,1);\nD90:SMA(K90,3,1);\nJ90:3*K90-2*D90;\nK11:=CROSS(RSV90,K90);\nK22:=CROSS(RSV90,D90);\nDRAWICON(K11,50,1);\nDRAWICON(K22,55,1);\nK100:(CROSS(J90,K90) AND CROSS(J90,D90))*100;" }];
 function registerIndicators() {
   // #ifdef H5
-  registerKdj9Signal(HQChart.JSIndexScript);
-  HQChart.JSIndexScript.AddIndex(trainingIndicators);
+  registerKdjSignals(HQChart.JSIndexScript);
   // #endif
 }
 function returnChartData(callback, payload) {
@@ -33,10 +31,10 @@ function returnChartData(callback, payload) {
 const chartWindows = [
   { Index: "MA" },
   // #ifdef H5
-  { Index: "KDJ9_SIGNAL" }, { Index: "TRAIN_KDJ90" },
+  { Index: "KDJ9_SIGNAL" }, { Index: "KDJ90_SIGNAL" },
   // #endif
   // #ifndef H5
-  { Index: "KDJ9_SIGNAL" }, { Index: "TRAIN_KDJ90" },
+  { Index: "KDJ9_SIGNAL" }, { Index: "KDJ90_SIGNAL" },
   // #endif
 ];
 const chartOption = network => ({ Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: chartWindows, KLine: { Period: 0, PageSize: 15, DataWidth: 10, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 34 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network });

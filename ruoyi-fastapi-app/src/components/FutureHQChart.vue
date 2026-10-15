@@ -36,7 +36,7 @@
 import HQChart from '@/vendor/hqchart/umychart.uniapp.h5'
 // #endif
 
-import { registerKdj9Signal } from '@/utils/kdj9Signal'
+import { registerKdjSignals } from '@/utils/kdj9Signal'
 	
 // #ifndef H5
 import {JSCommon} from '@/vendor/hqchart/uniapp/umychart.wechat.3.0.js'
@@ -77,7 +77,7 @@ DefaultData.GetKLineOption = function ()
         [
             {Index:"MA",Modify: false, Change: false},
 			{Index:"KDJ9_SIGNAL", Modify: false, Change: false},
-			{Index:"KDJ", Args:[{Name:"N",Value:90},{Name:"M1",Value:3},{Name:"M2",Value:3}], Modify: false, Change: false},
+			{Index:"KDJ90_SIGNAL", Modify: false, Change: false},
 			//{Index:"AMO",Modify: false, Change: false}
 			/*
             { 
@@ -243,10 +243,10 @@ export default
 	created()
 	{
 		// #ifdef H5
-		registerKdj9Signal(HQChart.JSIndexScript);
+		registerKdjSignals(HQChart.JSIndexScript);
 		// #endif
 		// #ifndef H5
-		registerKdj9Signal(JSIndexScript);
+		registerKdjSignals(JSIndexScript);
 		// #endif
 		if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
 		if (this.DefaultChart) 

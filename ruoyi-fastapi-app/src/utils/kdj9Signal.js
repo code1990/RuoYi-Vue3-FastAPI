@@ -1,9 +1,9 @@
-export const kdj9Signal = {
-  ID: "KDJ9_SIGNAL",
-  Name: "KDJ9 信号",
-  Description: "9 周期 KDJ 与 NM 共振信号",
+const createKdjSignal = period => ({
+  ID: `KDJ${period}_SIGNAL`,
+  Name: `KDJ${period} 信号`,
+  Description: `${period} 周期 KDJ 与 NM 共振信号`,
   IsMainIndex: false,
-  Script: `RSV:=(C-LLV(L,9))/(HHV(H,9)-LLV(L,9))*100;
+  Script: `RSV:=(C-LLV(L,${period}))/(HHV(H,${period})-LLV(L,${period}))*100;
 K:SMA(RSV,3,1);
 D:SMA(K,3,1);
 J:(3*K-2*D)/100;
@@ -12,6 +12,8 @@ DRAWICON(CROSS(RSV,K),10,1);
 DRAWICON(CROSS(RSV,D),30,1);
 DRAWICON(CROSS(D,RSV),30,2);
 DRAWICON(CROSS(K,RSV),10,2);`,
-};
+});
 
-export const registerKdj9Signal = indexScript => indexScript.AddIndex([kdj9Signal]);
+export const kdj9Signal = createKdjSignal(9);
+export const kdj90Signal = createKdjSignal(90);
+export const registerKdjSignals = indexScript => indexScript.AddIndex([kdj9Signal, kdj90Signal]);
