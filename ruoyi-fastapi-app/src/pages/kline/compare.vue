@@ -16,6 +16,7 @@ import { onLoad } from "@dcloudio/uni-app";
 import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 // #endif
 import FutureHQChart from "@/components/FutureHQChart.vue";
+import { registerKdj9Signal } from "@/utils/kdj9Signal";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
 import { getFutureQuotes } from "@/api/future/paper-trading";
@@ -39,9 +40,10 @@ function syncCharts(sourceChart) {
 }
 function createChart(item) {
   // #ifdef H5
+  registerKdj9Signal(HQChart.JSIndexScript);
   const target = document.getElementById(`relation-chart-${item.key}`); if (!target) return;
   const chart = HQChart.JSChart.Init(target); charts.push(chart); HQChart.JSChart.GetResource().FrameLogo.Text = null;
-  chart.SetOption({ Type: "历史K线图", Symbol: hqSymbol(item.code), Windows: [{ Index: "MA" }, { Index: "KDJ", Args: [{ Name: "N", Value: 9 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }], KLine: { Period: 0, PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); callback({ name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; callback({ name: item.name, symbol: hqSymbol(item.code), data: [] }); } } });
+  chart.SetOption({ Type: "历史K线图", Symbol: hqSymbol(item.code), Windows: [{ Index: "MA" }, { Index: "KDJ9_SIGNAL" }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }], KLine: { Period: 0, PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, EnableResize: true, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); callback({ name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; callback({ name: item.name, symbol: hqSymbol(item.code), data: [] }); } } });
   ["touchend", "mouseup"].forEach(event => target.addEventListener(event, () => setTimeout(() => syncCharts(chart), 0), { passive: true }));
   // #endif
   // #ifdef APP-PLUS
@@ -51,7 +53,7 @@ function createChart(item) {
   const network = async (data, callback) => { data.PreventDefault = true; try { const response = await getFutureKline({ contractCode: item.code, period: "1d", count: 120 }); returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: rowsForChart(response.data.rows || []) }); } catch { item.error = "行情暂不可用"; returnChartData(callback, { name: item.name, symbol: hqSymbol(item.code), data: [] }); } };
   // FutureHQChart 会将控制器的 NetworkFilter 写回 Option；两处必须使用同一个回调。
   control.NetworkFilter = network;
-  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "KDJ", Args: [{ Name: "N", Value: 9 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }], KLine: { Period: 0, PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
+  control.KLine.Option = { Type: "历史K线图", Symbol: control.Symbol, Windows: [{ Index: "MA" }, { Index: "KDJ9_SIGNAL" }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }], KLine: { Period: 0, PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 38 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], EnableYDrag: { Left: false, Right: false, Wheel: false }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network };
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }

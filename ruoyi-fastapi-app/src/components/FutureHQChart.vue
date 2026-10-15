@@ -35,9 +35,12 @@
 // #ifdef H5
 import HQChart from '@/vendor/hqchart/umychart.uniapp.h5'
 // #endif
+
+import { registerKdj9Signal } from '@/utils/kdj9Signal'
 	
 // #ifndef H5
 import {JSCommon} from '@/vendor/hqchart/uniapp/umychart.wechat.3.0.js'
+import {JSIndexScript} from '@/vendor/hqchart/uniapp/umychart.index.data.wechat.js'
 import {JSCommonHQStyle} from '@/vendor/hqchart/uniapp/umychart.style.wechat.js'
 import {JSConsole} from '@/vendor/hqchart/uniapp/umychart.console.wechat.js'
 
@@ -73,7 +76,7 @@ DefaultData.GetKLineOption = function ()
         Windows: //窗口指标
         [
             {Index:"MA",Modify: false, Change: false},
-			{Index:"KDJ", Args:[{Name:"N",Value:9},{Name:"M1",Value:3},{Name:"M2",Value:3}], Modify: false, Change: false},
+			{Index:"KDJ9_SIGNAL", Modify: false, Change: false},
 			{Index:"KDJ", Args:[{Name:"N",Value:90},{Name:"M1",Value:3},{Name:"M2",Value:3}], Modify: false, Change: false},
 			//{Index:"AMO",Modify: false, Change: false}
 			/*
@@ -239,6 +242,12 @@ export default
 	
 	created()
 	{
+		// #ifdef H5
+		registerKdj9Signal(HQChart.JSIndexScript);
+		// #endif
+		// #ifndef H5
+		registerKdj9Signal(JSIndexScript);
+		// #endif
 		if (this.DefaultSymbol) this.Symbol=this.DefaultSymbol; //默认股票
 		if (this.DefaultChart) 
 		{

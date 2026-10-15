@@ -31,6 +31,7 @@ import { onHide, onLoad, onShow } from "@dcloudio/uni-app";
 import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
 // #endif
 import FutureHQChart from "@/components/FutureHQChart.vue";
+import { registerKdj9Signal } from "@/utils/kdj9Signal";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
 
@@ -86,7 +87,7 @@ async function network(data, callback) {
     const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; returnChartData(callback, result); }
   catch { error.value = "行情暂不可用，请稍后重试"; if (data.Name === "MinuteChartContainer::RequestMinuteData") returnChartData(callback, emptyMinute()); else if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") returnChartData(callback, emptyHistoryMinute()); else returnChartData(callback, { name: code.value, symbol: hqSymbol(code.value), data: [] }); }
 }
-function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: "KDJ", Args: [{ Name: "N", Value: 9 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }]; }
+function windows() { return [{ Index: indicator.value === "MA" || indicator.value === "BOLL" ? indicator.value : "MA" }, { Index: "KDJ9_SIGNAL" }, { Index: "KDJ", Args: [{ Name: "N", Value: 90 }, { Name: "M1", Value: 3 }, { Name: "M2", Value: 3 }] }]; }
 function clearChart() { chart?.ChartDestroy?.(); chart = null;
   // #ifdef APP-PLUS
   appChart.value?.ClearChart?.();
@@ -96,6 +97,7 @@ function clearChart() { chart?.ChartDestroy?.(); chart = null;
 }
 function createChart() {
   // #ifdef H5
+  registerKdj9Signal(HQChart.JSIndexScript);
   const target = document.getElementById("future-hqchart"); if (!target || chart) return; target.innerHTML = "";
   HQChart.JSChart.GetResource().FrameLogo.Text = null;
   chart = HQChart.JSChart.Init(target); const option = isMinuteView.value ? { Type: "分钟走势图", Symbol: hqSymbol(code.value), DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: minuteIndicators.includes(indicator.value) ? indicator.value : "MACD" }], MinuteVol: { BarColorType: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network } : { Type: "历史K线图", Symbol: hqSymbol(code.value), Windows: windows(), KLine: { Period: hqPeriod[period.value], PageSize: 15, RightSpaceCount: 0 }, Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, Frame: [{ IsShowRightText: false }, { IsShowRightText: false }, { IsShowRightText: false }], CorssCursorInfo: { Left: 0, Right: 0 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; chart.SetOption(option);
@@ -122,7 +124,7 @@ function changePeriod(value) {
   clearChart();
   nextTick(createChart);
 }
-function changeIndicator(value) { indicator.value = value; const currentChart = chart || appChart.value?.GetJSChart?.(); if (!currentChart) return; if (isMinuteView.value) { currentChart.ChangeIndex?.(2, value); return; } currentChart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); currentChart.ChangeIndex?.(1, value === "MA" || value === "BOLL" ? "VOL" : value); }
+function changeIndicator(value) { indicator.value = value; const currentChart = chart || appChart.value?.GetJSChart?.(); if (!currentChart) return; if (isMinuteView.value) { currentChart.ChangeIndex?.(2, value); return; } currentChart.ChangeIndex?.(0, value === "MA" || value === "BOLL" ? value : "MA"); currentChart.ChangeIndex?.(1, value === "KDJ" ? "KDJ9_SIGNAL" : value === "MA" || value === "BOLL" ? "VOL" : value); }
 const number = value => value === null || value === undefined ? "--" : Number(value).toFixed(2);
 const signed = value => value === null || value === undefined ? "--" : `${Number(value) >= 0 ? "+" : ""}${Number(value).toFixed(2)}`;
 const priceClass = computed(() => Number(quote.value.change) >= 0 ? "up" : "down");
