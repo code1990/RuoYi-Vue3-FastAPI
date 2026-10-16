@@ -81,7 +81,7 @@ function returnChartData(callback, payload) {
 async function network(data, callback) {
   data.PreventDefault = true;
   const requestedPeriod = isMinuteView.value ? period.value : (apiPeriod[data?.Request?.Data?.period] || period.value);
-  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 500 }); const rows = response.data.rows || []; if (!rows.length && data.Name === "MinuteChartContainer::RequestMinuteData") { returnChartData(callback, emptyMinute()); return; } if (!rows.length && data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { returnChartData(callback, emptyHistoryMinute()); return; }
+  try { const response = await getFutureKline({ contractCode: code.value, period: requestedPeriod, count: 180 }); const rows = response.data.rows || []; if (!rows.length && data.Name === "MinuteChartContainer::RequestMinuteData") { returnChartData(callback, emptyMinute()); return; } if (!rows.length && data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { returnChartData(callback, emptyHistoryMinute()); return; }
     if (data.Name === "MinuteChartContainer::RequestMinuteData") { returnChartData(callback, minuteData(fillMinuteRows(rows))); return; }
     if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") { const groups = new Map(); fillMinuteRows(rows).forEach(item => { const text = String(item.time); const date = Number(text.slice(0, 8)); if (!groups.has(date)) groups.set(date, []); groups.get(date).push([Number(text.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); const days = [...groups].sort(([left], [right]) => left - right).slice(-5); returnChartData(callback, { code: 0, name: name.value || code.value, symbol: hqSymbol(code.value), data: days.map(([date, minute]) => ({ date, close: minute[minute.length - 1][2], yclose: minute[0][1], yclearing: minute[0][1], minute })).reverse() }); return; }
     const result = { name: name.value || code.value, symbol: hqSymbol(code.value), data: hqRows(rows) }; if (requestedPeriod.endsWith("m")) result.ver = 2.0; returnChartData(callback, result); }
@@ -151,13 +151,8 @@ async function refreshQuote() { if (refreshing) return; refreshing = true; try {
 function startPolling() { stopPolling(); refreshQuote(); pollTimer = setInterval(refreshQuote, 5000); }
 function stopPolling() { clearInterval(pollTimer); clearTimeout(flashTimer); flashing.value = false; }
 onLoad(async query => { code.value = query.code || ""; name.value = decodeURIComponent(query.name || "");
-  // #ifdef H5
   uni.setNavigationBarTitle({ title: name.value || code.value });
-  // #endif
-  // #ifdef APP-PLUS
-  uni.setNavigationBarTitle({ title: code.value });
-  // #endif
-  try { await trading.sync(); } catch {} await nextTick(); createChart(); });
+  await nextTick(); createChart(); });
 onShow(startPolling); onHide(stopPolling); onBeforeUnmount(() => { stopPolling(); clearChart(); });
 </script>
 
