@@ -11,7 +11,7 @@ if not exist "%FRONTEND_DIR%\package.json" (
 )
 
 pushd "%FRONTEND_DIR%"
-start "RuoYi Frontend Dev Server" cmd /k "call npm.cmd run dev -- --strictPort"
+start "RuoYi Frontend Dev Server" cmd /k "set CHOKIDAR_USEPOLLING=true&& set CHOKIDAR_INTERVAL=100&& call npm.cmd run dev -- --strictPort"
 popd
 
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$deadline = (Get-Date).AddSeconds(30); do { if (Test-NetConnection -ComputerName 127.0.0.1 -Port 5173 -InformationLevel Quiet) { Start-Process msedge.exe 'http://localhost:5173'; exit 0 }; Start-Sleep -Milliseconds 500 } while ((Get-Date) -lt $deadline); exit 1"
