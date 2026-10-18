@@ -53,7 +53,7 @@ class ExamReviewService:
             review.state, review.completed_repetitions, review.required_repetitions, review.next_review_time = 'learning', 0, max(4, card.difficulty + 2), None
         else:
             factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
-            review.interval_days = min(180, max(1, round(review.interval_days * factor)))
+            review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
             review.next_review_time = now + timedelta(days=review.interval_days)
         review.last_review_time = now; db.add(ExamCardReviewLog(user_id=user_id, card_id=card_id, rating=rating, reviewed_time=now)); await db.commit()
         return {'state': review.state, 'completed': review.completed_repetitions, 'required': review.required_repetitions, 'nextReviewTime': review.next_review_time}

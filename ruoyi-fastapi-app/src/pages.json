@@ -144,7 +144,7 @@
       {
         "pagePath": "pages/exam/index",
         "iconPath": "static/images/tabbar/exam.png",
-        "selectedIconPath": "static/images/tabbar/exam.png",
+        "selectedIconPath": "static/images/tabbar/exam_.png",
         "text": "Exam"
       },
       {
