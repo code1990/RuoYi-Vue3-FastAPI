@@ -106,6 +106,10 @@ GET /prod-api/stock/margin/combo/list?windowDays=2&pageNum=1&pageSize=20
 
 组合的计算与页面字段约定见 [`stock_cron/docs/margin_combo_web.md`](../stock_cron/docs/margin_combo_web.md)。新增策略时优先扩展 SQLite 表和一个参数化接口，不复制表、Controller 或页面。
 
+## 考试知识卡片
+
+卡片背面的 `ai_summary` 是便于主动回忆的 1 分钟面试口述版总结；长度、结构、审核边界和示例见 [AI 总结字段规范](docs/exam-card-ai-summary.md)。
+
 ## Windows：前端开发与发布
 
 Windows 只负责 `ruoyi-fastapi-frontend`。开发时配置 API 指向服务器，或用本地 Vite 代理；不在 Windows 上运行 `stock_cron` 和生产 FastAPI。
