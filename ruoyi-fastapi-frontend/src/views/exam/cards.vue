@@ -25,6 +25,7 @@
             </el-table-column>
             <el-table-column type="index" label="#" width="56" />
             <el-table-column prop="question" label="题目" min-width="360" show-overflow-tooltip />
+            <el-table-column prop="answer" label="原文" min-width="260" show-overflow-tooltip />
             <el-table-column label="类型" width="92"><template #default="{ row }"><el-tag size="small">{{ typeLabel(row.card_type) }}</el-tag></template></el-table-column>
             <el-table-column label="难度" width="76"><template #default="{ row }">{{ row.difficulty }}</template></el-table-column>
       </el-table>
