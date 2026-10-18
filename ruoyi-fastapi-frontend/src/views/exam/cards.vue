@@ -1,23 +1,37 @@
 <template>
   <div class="app-container exam-cards">
-    <el-card shadow="never" class="category-card">
-      <template #header>Java 知识卡片</template>
-      <el-tabs v-model="selectedCategory" @tab-change="loadCards">
-        <el-tab-pane v-for="category in chapters" :key="category.category_id" :label="category.name" :name="String(category.category_id)" />
-      </el-tabs>
-    </el-card>
-    <el-empty v-if="!loading && !cards.length" description="该章节的知识卡片正在整理中" />
-    <el-row v-loading="loading" :gutter="16">
-      <el-col v-for="card in cards" :key="card.card_id" :xs="24" :lg="12" class="card-column">
-        <el-card shadow="hover">
+    <el-row :gutter="16">
+      <el-col :xs="24" :md="6" :lg="5">
+        <el-card shadow="never" class="chapter-list">
+          <template #header>Java 章节</template>
+          <el-menu :default-active="selectedCategory" @select="selectCategory">
+            <el-menu-item v-for="chapter in chapters" :key="chapter.category_id" :index="String(chapter.category_id)">
+              {{ chapter.name }}
+            </el-menu-item>
+          </el-menu>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :md="18" :lg="19">
+        <el-card shadow="never">
           <template #header>
-            <div class="card-header"><span>{{ card.question }}</span><el-tag size="small">{{ typeLabel(card.card_type) }}</el-tag></div>
+            <div class="list-header"><span>{{ selectedName }} 知识卡片</span><el-tag>{{ cards.length }} 张</el-tag></div>
           </template>
-          <el-collapse>
-            <el-collapse-item title="点击查看答案" name="answer"><p>{{ card.answer }}</p></el-collapse-item>
-            <el-collapse-item title="关键得分点" name="points"><p>{{ card.key_points }}</p></el-collapse-item>
-          </el-collapse>
-          <div class="tags"><el-tag v-for="tag in card.tags.split(',').filter(Boolean)" :key="tag" size="small" type="info">{{ tag }}</el-tag></div>
+          <el-table v-loading="loading" :data="cards" row-key="card_id" border>
+            <el-table-column type="expand" width="52">
+              <template #default="{ row }">
+                <div class="answer-detail">
+                  <p><strong>参考答案：</strong>{{ row.answer }}</p>
+                  <p><strong>关键得分点：</strong>{{ row.key_points }}</p>
+                  <div class="tags"><el-tag v-for="tag in row.tags.split(',').filter(Boolean)" :key="tag" size="small" type="info">{{ tag }}</el-tag></div>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column type="index" label="#" width="56" />
+            <el-table-column prop="question" label="题目" min-width="360" show-overflow-tooltip />
+            <el-table-column label="类型" width="92"><template #default="{ row }"><el-tag size="small">{{ typeLabel(row.card_type) }}</el-tag></template></el-table-column>
+            <el-table-column label="难度" width="76"><template #default="{ row }">{{ row.difficulty }}</template></el-table-column>
+          </el-table>
+          <el-empty v-if="!loading && !cards.length" description="该章节的知识卡片正在整理中" />
         </el-card>
       </el-col>
     </el-row>
@@ -33,6 +47,7 @@ const cards = ref([])
 const loading = ref(false)
 const selectedCategory = ref('')
 const chapters = computed(() => categories.value.filter(item => item.parent_id !== 0))
+const selectedName = computed(() => chapters.value.find(item => String(item.category_id) === selectedCategory.value)?.name || 'Java')
 const typeLabels = { concept: '概念', enumeration: '枚举', comparison: '对比', scenario: '场景' }
 const typeLabel = type => typeLabels[type] || '知识卡'
 
@@ -47,6 +62,11 @@ async function loadCards() {
   }
 }
 
+async function selectCategory(categoryId) {
+  selectedCategory.value = categoryId
+  await loadCards()
+}
+
 onMounted(async () => {
   const response = await listExamCategories()
   categories.value = response.data || []
@@ -56,9 +76,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.category-card { margin-bottom: 16px; }
-.card-column { margin-bottom: 16px; }
-.card-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 600; }
-.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
-.el-collapse p { margin: 0; line-height: 1.75; white-space: pre-line; }
+.chapter-list { margin-bottom: 16px; }
+.chapter-list :deep(.el-card__body) { padding: 0; }
+.chapter-list .el-menu { border-right: 0; }
+.list-header { display: flex; align-items: center; justify-content: space-between; }
+.answer-detail { padding: 4px 24px; line-height: 1.8; white-space: pre-line; }
+.answer-detail p { margin: 8px 0; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 </style>
