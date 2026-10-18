@@ -9,7 +9,7 @@ from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCar
 class ExamReviewService:
     @staticmethod
     def _card(row: ExamCard, review: ExamCardReview | None = None) -> dict:
-        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'answer': row.answer, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': review.required_repetitions if review else max(4, row.difficulty + 2)}}
+        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': review.required_repetitions if review else max(4, row.difficulty + 2)}}
 
     @classmethod
     async def overview(cls, db: AsyncSession, user_id: int) -> dict:
