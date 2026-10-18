@@ -31,7 +31,7 @@ class ExamReviewService:
         review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCardReview.learning_batch, ExamCardReview.last_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
-        batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch).where(ExamCardReview.user_id == user_id))) or 0) + 1
+        batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch)).where(ExamCardReview.user_id == user_id)) or 0) + 1
         cards = (await db.scalars(select(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id))).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
         if not cards:
             return None
