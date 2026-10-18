@@ -1,6 +1,6 @@
 <template>
   <div class="app-container exam-cards">
-    <el-card shadow="never" class="review-heatmap"><div class="list-header"><span>学习热力图</span><el-tag>今日 {{ reviewOverview.completedToday || 0 }} 次</el-tag></div><div class="heatmap"><span v-for="day in heatmapDays" :key="day.date" :title="`${day.date}：${day.count} 次`" :class="['heatmap-day', heatLevel(day.count)]" /></div></el-card>
+    <el-card shadow="never" class="review-heatmap"><div class="list-header"><span>学习热力图</span><el-tag>今日 {{ reviewOverview.completedToday || 0 }} 次</el-tag></div><div class="heatmap"><span v-for="day in heatmapDays" :key="day.date" :title="`${day.date}：${day.count} 次`" :class="['heatmap-day', heatLevel(day.count)]" /></div><div class="heatmap-legend"><span>Less</span><i /><i class="low" /><i class="mid" /><i class="high" /><i class="max" /><span>More</span></div></el-card>
     <el-card shadow="never" class="chapter-filter">
       <div class="filter-title">知识分类</div>
       <div class="filter-options">
@@ -87,8 +87,9 @@ onMounted(async () => {
 <style scoped>
 .chapter-filter { margin-bottom: 16px; }
 .review-heatmap { margin-bottom: 16px; }
-.heatmap { display:grid; grid-template-columns:repeat(21, 14px); gap:4px; margin-top:16px; }
-.heatmap-day { width:14px; height:14px; border-radius:3px; background:#edf0f6; }.heatmap-day.low { background:#aebdf0; }.heatmap-day.mid { background:#748de0; }.heatmap-day.high { background:#4667cb; }.heatmap-day.max { background:#233f9f; }
+.heatmap { display:grid; grid-template-rows:repeat(7, 12px); grid-auto-flow:column; grid-auto-columns:12px; gap:4px; margin-top:16px; }
+.heatmap-day,.heatmap-legend i { width:12px; height:12px; border-radius:2px; background:#ebedf0; }.heatmap-day.low,.heatmap-legend .low { background:#9be9a8; }.heatmap-day.mid,.heatmap-legend .mid { background:#40c463; }.heatmap-day.high,.heatmap-legend .high { background:#30a14e; }.heatmap-day.max,.heatmap-legend .max { background:#216e39; }
+.heatmap-legend { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:12px; color:#57606a; font-size:12px; }.heatmap-legend span { margin:0 4px; }
 .filter-title { margin-bottom: 12px; font-weight: 600; }
 .filter-options { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .filter-options :deep(.el-check-tag) { margin: 0; }
