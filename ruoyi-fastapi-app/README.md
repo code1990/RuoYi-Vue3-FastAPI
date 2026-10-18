@@ -41,7 +41,7 @@ corepack enable
 
 **不要在 `src` 目录执行 `npm install`。** 必须在 `ruoyi-fastapi-app` 根目录使用 pnpm。你的目录可直接复制以下命令：
 
-也可以双击项目根目录的 `install_dependencies_windows.bat`；它会检查 Node.js 版本、启用 Corepack，并使用锁定的 pnpm 版本安装 `pnpm-lock.yaml` 中的依赖。
+也可以双击项目根目录的 `install_dependencies_windows.bat`；它会检查 Node.js 版本、启用 Corepack，并使用锁定的 pnpm 版本安装依赖。有 `pnpm-lock.yaml` 时会严格按锁文件安装；旧工作副本缺少该文件时会根据 `package.json` 安装并生成新的锁文件。
 
 ```powershell
 $project = "D:\dev\RuoYi-Vue3-FastAPI\ruoyi-fastapi-app"

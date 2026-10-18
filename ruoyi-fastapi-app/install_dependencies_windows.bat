@@ -36,7 +36,12 @@ pushd "%APP_DIR%"
 call corepack enable
 if errorlevel 1 goto :failed
 
-call corepack pnpm@%PNPM_VERSION% install --frozen-lockfile
+if exist "pnpm-lock.yaml" (
+  call corepack pnpm@%PNPM_VERSION% install --frozen-lockfile
+) else (
+  echo pnpm-lock.yaml was not found. Installing from package.json and creating a new lockfile.
+  call corepack pnpm@%PNPM_VERSION% install --no-frozen-lockfile
+)
 if errorlevel 1 goto :failed
 
 popd
