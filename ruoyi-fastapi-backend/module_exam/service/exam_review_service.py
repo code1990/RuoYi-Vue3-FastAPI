@@ -27,11 +27,17 @@ class ExamReviewService:
         review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now).order_by(ExamCardReview.next_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
-        review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCardReview.last_review_time))
+        review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCardReview.learning_batch, ExamCardReview.last_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
-        card = await db.scalar(select(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id))).order_by(ExamCard.sort_no, ExamCard.card_id).limit(1))
-        return cls._card(card) if card else None
+        batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch).where(ExamCardReview.user_id == user_id))) or 0) + 1
+        cards = (await db.scalars(select(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id))).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
+        if not cards:
+            return None
+        for card in cards:
+            db.add(ExamCardReview(user_id=user_id, card_id=card.card_id, state='learning', learning_batch=batch, required_repetitions=max(4, card.difficulty + 2), completed_repetitions=0, interval_days=1))
+        await db.commit()
+        return cls._card(cards[0])
 
     @classmethod
     async def rate(cls, db: AsyncSession, user_id: int, card_id: int, rating: str) -> dict:
