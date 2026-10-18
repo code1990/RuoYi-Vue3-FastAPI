@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,11 +12,12 @@ class ExamReviewService:
         return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': review.required_repetitions if review else max(4, row.difficulty + 2)}}
 
     @classmethod
-    async def overview(cls, db: AsyncSession, user_id: int) -> dict:
-        now = datetime.now(); today = now.date()
+    async def overview(cls, db: AsyncSession, user_id: int, year: int | None = None) -> dict:
+        now = datetime.now(); today = now.date(); year = year or today.year
         due = await db.scalar(select(func.count()).select_from(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now)) or 0
         new_count = await db.scalar(select(func.count()).select_from(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))) or 0
-        rows = (await db.execute(select(func.date(ExamCardReviewLog.reviewed_time), func.count()).where(ExamCardReviewLog.user_id == user_id, ExamCardReviewLog.reviewed_time >= datetime.combine(today - timedelta(days=83), datetime.min.time())).group_by(func.date(ExamCardReviewLog.reviewed_time)))).all()
+        start, end = date(year, 1, 1), date(year + 1, 1, 1)
+        rows = (await db.execute(select(func.date(ExamCardReviewLog.reviewed_time), func.count()).where(ExamCardReviewLog.user_id == user_id, ExamCardReviewLog.reviewed_time >= start, ExamCardReviewLog.reviewed_time < end).group_by(func.date(ExamCardReviewLog.reviewed_time)))).all()
         heatmap = [{'date': str(day), 'count': count} for day, count in rows]
         completed_today = next((item['count'] for item in heatmap if item['date'] == str(today)), 0)
         return {'dueCount': due, 'newAvailable': new_count, 'completedToday': completed_today, 'heatmap': heatmap}

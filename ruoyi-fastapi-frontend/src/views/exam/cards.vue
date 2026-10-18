@@ -1,6 +1,6 @@
 <template>
   <div class="app-container exam-cards">
-    <el-card shadow="never" class="review-heatmap"><div class="list-header"><span>学习热力图</span><el-tag>今日 {{ reviewOverview.completedToday || 0 }} 次</el-tag></div><div class="heatmap"><span v-for="day in heatmapDays" :key="day.date" :title="`${day.date}：${day.count} 次`" :class="['heatmap-day', heatLevel(day.count)]" /></div><div class="heatmap-legend"><span>Less</span><i /><i class="low" /><i class="mid" /><i class="high" /><i class="max" /><span>More</span></div></el-card>
+    <el-card shadow="never" class="review-heatmap"><div class="list-header"><span>学习热力图</span><div><el-button v-for="year in years" :key="year" size="small" :type="year === selectedYear ? 'primary' : 'default'" @click="loadHeatmap(year)">{{ year }}</el-button><el-tag>今日 {{ reviewOverview.completedToday || 0 }} 次</el-tag></div></div><div class="heatmap-wrap"><div class="heatmap-months"><span v-for="month in heatmapMonths" :key="month.label" :style="{ gridColumn: month.column }">{{ month.label }}</span></div><div class="heatmap"><span v-for="day in heatmapDays" :key="day.date" :title="`${day.date}：${day.count} 次`" :class="['heatmap-day', heatLevel(day.count)]" /></div></div><div class="heatmap-legend"><span>Less</span><i /><i class="low" /><i class="mid" /><i class="high" /><i class="max" /><span>More</span></div></el-card>
     <el-card shadow="never" class="chapter-filter">
       <div class="filter-title">知识分类</div>
       <div class="filter-options">
@@ -45,7 +45,11 @@ const selectedCategoryIds = ref([])
 const keyword = ref('')
 const selectedType = ref('')
 const reviewOverview = ref({})
-const heatmapDays = computed(() => { const map = Object.fromEntries((reviewOverview.value.heatmap || []).map(item => [item.date, item.count])); return Array.from({ length: 84 }, (_, index) => { const day = new Date(); day.setDate(day.getDate() - 83 + index); const date = day.toISOString().slice(0, 10); return { date, count: map[date] || 0 } }) })
+const selectedYear = ref(new Date().getFullYear())
+const years = computed(() => Array.from({ length: 4 }, (_, index) => selectedYear.value - index))
+const formatDate = day => `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+const heatmapDays = computed(() => { const map = Object.fromEntries((reviewOverview.value.heatmap || []).map(item => [item.date, item.count])); const first = new Date(selectedYear.value, 0, 1); first.setDate(first.getDate() - first.getDay()); const last = new Date(selectedYear.value, 11, 31); last.setDate(last.getDate() + 6 - last.getDay()); const days = []; for (const day = new Date(first); day <= last; day.setDate(day.getDate() + 1)) days.push({ date: formatDate(day), count: day.getFullYear() === selectedYear.value ? map[formatDate(day)] || 0 : null }); return days })
+const heatmapMonths = computed(() => heatmapDays.value.reduce((months, day, index) => { if (day.date.endsWith('-01') && !months.some(item => item.label === `${Number(day.date.slice(5, 7))}月`)) months.push({ label: `${Number(day.date.slice(5, 7))}月`, column: Math.floor(index / 7) + 1 }); return months }, []))
 const heatLevel = count => count >= 30 ? 'max' : count >= 20 ? 'high' : count >= 10 ? 'mid' : count ? 'low' : ''
 const chapters = computed(() => categories.value.filter(item => item.parent_id !== 0))
 const categoryNames = computed(() => Object.fromEntries(categories.value.map(item => [item.category_id, item.name])))
@@ -71,10 +75,12 @@ function toggleCategory(categoryId) {
     : [...selectedCategoryIds.value, categoryId]
 }
 
+async function loadHeatmap(year) { selectedYear.value = year; reviewOverview.value = (await getExamReviewOverview(year)).data || {} }
+
 onMounted(async () => {
   loading.value = true
   try {
-    const [categoryResponse, cardResponse, overviewResponse] = await Promise.all([listExamCategories(), listExamCards(), getExamReviewOverview()])
+    const [categoryResponse, cardResponse, overviewResponse] = await Promise.all([listExamCategories(), listExamCards(), getExamReviewOverview(selectedYear.value)])
     categories.value = categoryResponse.data || []
     allCards.value = cardResponse.data || []
     reviewOverview.value = overviewResponse.data || {}
@@ -87,7 +93,7 @@ onMounted(async () => {
 <style scoped>
 .chapter-filter { margin-bottom: 16px; }
 .review-heatmap { margin-bottom: 16px; }
-.heatmap { display:grid; grid-template-rows:repeat(7, 12px); grid-auto-flow:column; grid-auto-columns:12px; gap:4px; margin-top:16px; }
+.heatmap-wrap { overflow-x:auto; padding-top:8px; }.heatmap-months { display:grid; grid-template-columns:repeat(53, 12px); gap:4px; height:18px; color:#57606a; font-size:12px; }.heatmap { display:grid; grid-template-rows:repeat(7, 12px); grid-auto-flow:column; grid-auto-columns:12px; gap:4px; }
 .heatmap-day,.heatmap-legend i { width:12px; height:12px; border-radius:2px; background:#ebedf0; }.heatmap-day.low,.heatmap-legend .low { background:#9be9a8; }.heatmap-day.mid,.heatmap-legend .mid { background:#40c463; }.heatmap-day.high,.heatmap-legend .high { background:#30a14e; }.heatmap-day.max,.heatmap-legend .max { background:#216e39; }
 .heatmap-legend { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:12px; color:#57606a; font-size:12px; }.heatmap-legend span { margin:0 4px; }
 .filter-title { margin-bottom: 12px; font-weight: 600; }
