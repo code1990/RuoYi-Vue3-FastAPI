@@ -143,9 +143,9 @@
       },
       {
         "pagePath": "pages/exam/index",
-        "iconPath": "static/images/tabbar/Gear.png",
-        "selectedIconPath": "static/images/tabbar/Gear_.png",
-        "text": "考试"
+        "iconPath": "static/images/tabbar/exam.png",
+        "selectedIconPath": "static/images/tabbar/exam.png",
+        "text": "Exam"
       },
       {
         "pagePath": "pages/training/index",
