@@ -35,10 +35,11 @@ class ExamReviewService:
         cards = (await db.scalars(select(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id))).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
         if not cards:
             return None
+        first_card_id = cards[0].card_id
         for card in cards:
             db.add(ExamCardReview(user_id=user_id, card_id=card.card_id, state='learning', learning_batch=batch, required_repetitions=max(4, card.difficulty + 2), completed_repetitions=0, interval_days=1))
         await db.commit()
-        return cls._card(cards[0])
+        return cls._card(await db.get(ExamCard, first_card_id))
 
     @classmethod
     async def rate(cls, db: AsyncSession, user_id: int, card_id: int, rating: str) -> dict:
