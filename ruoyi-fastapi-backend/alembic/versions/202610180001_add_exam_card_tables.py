@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column('category_id', sa.BigInteger(), nullable=False),
         sa.Column('question', sa.String(500), nullable=False),
         sa.Column('answer', sa.Text(), nullable=False),
-        sa.Column('key_points', sa.Text(), nullable=False, server_default=''),
+        sa.Column('key_points', sa.Text(), nullable=False),
         sa.Column('tags', sa.String(500), nullable=False, server_default=''),
         sa.Column('card_type', sa.String(32), nullable=False, server_default='concept'),
         sa.Column('difficulty', sa.Integer(), nullable=False, server_default='3'),
