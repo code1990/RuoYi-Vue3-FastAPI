@@ -14,7 +14,6 @@ class ExamCategory(Base):
     name = Column(String(100), nullable=False)
     sort_no = Column(Integer, nullable=False, default=0)
     status = Column(String(16), nullable=False, default='published')
-    review_enabled = Column(Boolean, nullable=False, default=False)
     create_time = Column(DateTime, nullable=False, default=datetime.now)
     update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
@@ -57,6 +56,7 @@ class ExamCard(Base):
     card_type = Column(String(32), nullable=False, default='concept')
     difficulty = Column(Integer, nullable=False, default=3)
     status = Column(String(16), nullable=False, default='published')
+    review_enabled = Column(Boolean, nullable=False, default=False)
     sort_no = Column(Integer, nullable=False, default=0)
     create_time = Column(DateTime, nullable=False, default=datetime.now)
     update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)

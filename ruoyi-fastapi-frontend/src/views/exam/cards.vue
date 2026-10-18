@@ -1,5 +1,6 @@
 <template>
   <div class="app-container exam-cards">
+    <el-card shadow="never" class="review-heatmap"><div class="list-header"><span>学习热力图</span><el-tag>今日 {{ reviewOverview.completedToday || 0 }} 次</el-tag></div><div class="heatmap"><span v-for="day in heatmapDays" :key="day.date" :title="`${day.date}：${day.count} 次`" :class="['heatmap-day', heatLevel(day.count)]" /></div></el-card>
     <el-card shadow="never" class="chapter-filter">
       <div class="filter-title">知识分类</div>
       <div class="filter-options">
@@ -35,7 +36,7 @@
 
 <script setup name="ExamJavaCards">
 import { ref, computed, onMounted } from 'vue'
-import { listExamCards, listExamCategories } from '@/api/exam/card'
+import { getExamReviewOverview, listExamCards, listExamCategories } from '@/api/exam/card'
 
 const categories = ref([])
 const allCards = ref([])
@@ -43,6 +44,9 @@ const loading = ref(false)
 const selectedCategoryIds = ref([])
 const keyword = ref('')
 const selectedType = ref('')
+const reviewOverview = ref({})
+const heatmapDays = computed(() => { const map = Object.fromEntries((reviewOverview.value.heatmap || []).map(item => [item.date, item.count])); return Array.from({ length: 84 }, (_, index) => { const day = new Date(); day.setDate(day.getDate() - 83 + index); const date = day.toISOString().slice(0, 10); return { date, count: map[date] || 0 } }) })
+const heatLevel = count => count >= 30 ? 'max' : count >= 20 ? 'high' : count >= 10 ? 'mid' : count ? 'low' : ''
 const chapters = computed(() => categories.value.filter(item => item.parent_id !== 0))
 const categoryNames = computed(() => Object.fromEntries(categories.value.map(item => [item.category_id, item.name])))
 const cards = computed(() => allCards.value.filter(item => {
@@ -70,9 +74,10 @@ function toggleCategory(categoryId) {
 onMounted(async () => {
   loading.value = true
   try {
-    const [categoryResponse, cardResponse] = await Promise.all([listExamCategories(), listExamCards()])
+    const [categoryResponse, cardResponse, overviewResponse] = await Promise.all([listExamCategories(), listExamCards(), getExamReviewOverview()])
     categories.value = categoryResponse.data || []
     allCards.value = cardResponse.data || []
+    reviewOverview.value = overviewResponse.data || {}
   } finally {
     loading.value = false
   }
@@ -81,6 +86,9 @@ onMounted(async () => {
 
 <style scoped>
 .chapter-filter { margin-bottom: 16px; }
+.review-heatmap { margin-bottom: 16px; }
+.heatmap { display:grid; grid-template-columns:repeat(21, 14px); gap:4px; margin-top:16px; }
+.heatmap-day { width:14px; height:14px; border-radius:3px; background:#edf0f6; }.heatmap-day.low { background:#aebdf0; }.heatmap-day.mid { background:#748de0; }.heatmap-day.high { background:#4667cb; }.heatmap-day.max { background:#233f9f; }
 .filter-title { margin-bottom: 12px; font-weight: 600; }
 .filter-options { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .filter-options :deep(.el-check-tag) { margin: 0; }
