@@ -25,6 +25,7 @@ class ExamCardService:
                 'category_id': row.category_id,
                 'question': row.question,
                 'answer': row.answer,
+                'ai_summary': row.ai_summary,
                 'key_points': row.key_points,
                 'tags': row.tags,
                 'card_type': row.card_type,

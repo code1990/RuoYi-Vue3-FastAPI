@@ -18,6 +18,7 @@
               <template #default="{ row }">
                 <div class="answer-detail">
                   <p><strong>参考答案：</strong>{{ row.answer }}</p>
+                  <p v-if="row.ai_summary"><strong>AI 总结：</strong>{{ row.ai_summary }}</p>
                   <p><strong>关键得分点：</strong>{{ row.key_points }}</p>
                   <div class="tags"><el-tag v-for="tag in row.tags.split(',').filter(Boolean)" :key="tag" size="small" type="info">{{ tag }}</el-tag></div>
                 </div>

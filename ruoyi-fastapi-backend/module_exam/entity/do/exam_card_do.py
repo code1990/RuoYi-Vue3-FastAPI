@@ -25,6 +25,7 @@ class ExamCard(Base):
     category_id = Column(BigInteger, nullable=False, index=True)
     question = Column(String(500), nullable=False)
     answer = Column(Text, nullable=False)
+    ai_summary = Column(Text, nullable=False, default='')
     key_points = Column(Text, nullable=False, default='')
     tags = Column(String(500), nullable=False, default='')
     card_type = Column(String(32), nullable=False, default='concept')
