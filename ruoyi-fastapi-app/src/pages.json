@@ -145,7 +145,7 @@
         "pagePath": "pages/exam/index",
         "iconPath": "static/images/tabbar/exam.png",
         "selectedIconPath": "static/images/tabbar/exam_.png",
-        "text": "Exam"
+        "text": "复习"
       },
       {
         "pagePath": "pages/training/index",
