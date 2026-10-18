@@ -41,7 +41,7 @@ class ExamReviewService:
         now = datetime.now()
         review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.card_id == card_id))
         if not review:
-            review = ExamCardReview(user_id=user_id, card_id=card_id, required_repetitions=max(4, card.difficulty + 2)); db.add(review)
+            review = ExamCardReview(user_id=user_id, card_id=card_id, state='learning', required_repetitions=max(4, card.difficulty + 2), completed_repetitions=0, interval_days=1); db.add(review)
             if rating == 'hard': review.required_repetitions += 1
             if rating == 'again': review.required_repetitions += 2
         if review.state == 'learning':
