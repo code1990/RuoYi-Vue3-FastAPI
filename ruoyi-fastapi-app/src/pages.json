@@ -31,6 +31,7 @@
         "navigationBarTitleText": "盘感训练"
       }
     },
+    { "path": "pages/exam/index", "style": { "navigationBarTitleText": "考试复习" } },
     {
       "path": "pages/training/detail",
       "style": {
@@ -139,6 +140,12 @@
         "iconPath": "static/images/tabbar/work.png",
         "selectedIconPath": "static/images/tabbar/work_.png",
         "text": "交易"
+      },
+      {
+        "pagePath": "pages/exam/index",
+        "iconPath": "static/images/tabbar/Gear.png",
+        "selectedIconPath": "static/images/tabbar/Gear_.png",
+        "text": "考试"
       },
       {
         "pagePath": "pages/training/index",
