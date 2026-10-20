@@ -69,6 +69,16 @@ class FutureQuoteDaoTest(unittest.TestCase):
             rows, total = FutureQuoteDao.get_page(str(path), 'domestic', None, 1, 50)
             self.assertEqual((total, rows[0]['contract_code'], rows[0]['contract_name'], rows[0]['min5_chgpct'], rows[0]['contract_unit']), (1, 'RU888.XSGE', '橡胶主力', 0.2, 10.0))
 
+    def test_tradable_page_excludes_synthetic_main_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'future.db'
+            with sqlite3.connect(path) as connection:
+                connection.executescript('CREATE TABLE t_future_quote (contract_code TEXT, market_code TEXT, product_code TEXT, market_date TEXT, last_px TEXT, px_change TEXT, px_change_rate TEXT, open_px TEXT, high_px TEXT, low_px TEXT, prev_settlement TEXT, payload_json TEXT); CREATE TABLE t_future_product (market_code TEXT, product_code TEXT, market_name TEXT, product_name TEXT);')
+                connection.executemany("INSERT INTO t_future_quote VALUES (?, 'XSGE', 'RB', '20261008', '3200', '0', '0', '3200', '3200', '3200', '3200', ?)", [('RB888.XSGE', '{"prod_name":"螺纹主力"}'), ('RB2610.XSGE', '{"prod_name":"螺纹2610","current_amount":999}')])
+                connection.execute("INSERT INTO t_future_product VALUES ('XSGE', 'RB', '上海期货交易所', '螺纹钢')")
+            rows, total = FutureQuoteDao.get_page(str(path), 'domestic', None, 1, 50, tradable=True)
+            self.assertEqual((total, rows[0]['contract_code']), (1, 'RB2610.XSGE'))
+
     def test_calculates_opening_profit_effect_and_stock_comparison(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'future.db'

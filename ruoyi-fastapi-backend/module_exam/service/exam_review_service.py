@@ -18,9 +18,11 @@ class ExamReviewService:
         new_count = await db.scalar(select(func.count()).select_from(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))) or 0
         start, end = date(year, 1, 1), date(year + 1, 1, 1)
         rows = (await db.execute(select(func.date(ExamCardReviewLog.reviewed_time), func.count()).where(ExamCardReviewLog.user_id == user_id, ExamCardReviewLog.reviewed_time >= start, ExamCardReviewLog.reviewed_time < end).group_by(func.date(ExamCardReviewLog.reviewed_time)))).all()
+        planned_rows = (await db.execute(select(func.date(ExamCardReview.next_review_time), func.count()).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time > now, ExamCardReview.next_review_time >= start, ExamCardReview.next_review_time < end).group_by(func.date(ExamCardReview.next_review_time)))).all()
         heatmap = [{'date': str(day), 'count': count} for day, count in rows]
+        planned_reviews = [{'date': str(day), 'count': count} for day, count in planned_rows]
         completed_today = next((item['count'] for item in heatmap if item['date'] == str(today)), 0)
-        return {'dueCount': due, 'newAvailable': new_count, 'completedToday': completed_today, 'heatmap': heatmap}
+        return {'dueCount': due, 'newAvailable': new_count, 'completedToday': completed_today, 'heatmap': heatmap, 'plannedReviews': planned_reviews}
 
     @classmethod
     async def next_card(cls, db: AsyncSession, user_id: int) -> dict | None:
@@ -28,11 +30,13 @@ class ExamReviewService:
         review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now).order_by(ExamCardReview.next_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
-        review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCardReview.learning_batch, ExamCardReview.last_review_time))
+        review = await db.scalar(select(ExamCardReview).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCardReview.learning_batch, ExamCardReview.last_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
         batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch)).where(ExamCardReview.user_id == user_id)) or 0) + 1
-        cards = (await db.scalars(select(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id))).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
+        available_cards = (ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))
+        category_id = await db.scalar(select(ExamCard.category_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(*available_cards).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCard.sort_no, ExamCard.card_id).limit(1))
+        cards = (await db.scalars(select(ExamCard).where(*available_cards, ExamCard.category_id == category_id).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
         if not cards:
             return None
         first_card_id = cards[0].card_id

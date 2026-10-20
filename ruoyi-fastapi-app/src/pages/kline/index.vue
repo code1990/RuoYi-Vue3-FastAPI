@@ -133,7 +133,7 @@ function switchContract(direction) { const contracts = trading.quotes; if (!cont
   uni.setNavigationBarTitle({ title: next.name || next.code });
   // #endif
   // #ifdef APP-PLUS
-  uni.setNavigationBarTitle({ title: next.code });
+  uni.setNavigationBarTitle({ title: next.name || next.code });
   // #endif
   (chart || appChart.value?.GetJSChart?.())?.ChangeSymbol?.(hqSymbol(next.code)); }
 function startSwipe(event) { swipeSingleTouch = event.touches.length === 1; if (swipeSingleTouch) { const touch = event.touches[0]; swipeStart.value = { x: touch.clientX, y: touch.clientY }; } }

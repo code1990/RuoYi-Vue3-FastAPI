@@ -71,7 +71,7 @@ class TrainingService:
         today = now.date()
         decisions = (await db.scalars(select(FutureTrainingDecision).where(FutureTrainingDecision.user_id == user_id, FutureTrainingDecision.trade_date == today))).all()
         done = {item.contract_code: item for item in decisions}
-        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 200)
+        rows, _ = FutureQuoteDao.get_page(AppConfig.future_stat_db_path, 'domestic', None, 1, 200, tradable=True)
         await db.commit()
         return [item for item in rows if item['contract_code'] not in done and str(item.get('market_date', '')).replace('-', '') == now.strftime('%Y%m%d')]
 
