@@ -1,5 +1,4 @@
 import json
-import re
 import sqlite3
 from pathlib import Path
 
@@ -27,11 +26,6 @@ class FutureQuoteDao:
         except (TypeError, ValueError):
             return 0
 
-    @staticmethod
-    def is_tradable_contract(contract_code: str) -> bool:
-        match = re.fullmatch(r'[A-Z]+(\d{3,4})(?:\.[A-Z]+)?', contract_code.upper())
-        return bool(match and match.group(1) not in {'000', '00', '888', '999', '0000', '8888', '9999'})
-
     @classmethod
     def _live_rows(cls, contract_codes: list[str]) -> dict[str, dict]:
         """Return the latest snapshots; the database remains the fallback catalog."""
@@ -57,12 +51,6 @@ class FutureQuoteDao:
         refreshed = []
         for row in rows:
             data = snapshots.get(row['contract_code'])
-            if not data:
-                prefix = re.match(r'[A-Z]+', row['contract_code'])
-                exchange = row['contract_code'].rsplit('.', 1)[-1]
-                replacement = next((code for code in snapshots if code.rsplit('.', 1)[-1] == exchange and prefix and (candidate := re.match(r'[A-Z]+', code)) and candidate.group() == prefix.group()), None)
-                if replacement:
-                    row['contract_code'], data = replacement, snapshots[replacement]
             if not data or cls.number(data.get('last_px')) <= 0:
                 if not discard_missing:
                     refreshed.append(row)
@@ -117,7 +105,7 @@ class FutureQuoteDao:
         return cls._refresh([result])[0] if live else result
 
     @classmethod
-    def get_page(cls, database_path: str, scope: str, keyword: str | None, page_num: int, page_size: int, live: bool = False, tradable: bool = False) -> tuple[list[dict], int]:
+    def get_page(cls, database_path: str, scope: str, keyword: str | None, page_num: int, page_size: int, live: bool = False) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Future statistics database does not exist: {path}')
@@ -145,8 +133,6 @@ class FutureQuoteDao:
             item['up_px'] = cls.number(payload.get('up_px')) or None
             item['down_px'] = cls.number(payload.get('down_px')) or None
             item['min5_chgpct'] = payload.get('min5_chgpct')
-            if tradable and not cls.is_tradable_contract(item['contract_code']):
-                continue
             name = item['contract_name']
             priority = 2 if '主力' in name or '888' in item['contract_code'] else 1 if '主连' in name or '连续' in name else 0
             turnover = cls.number(payload.get('current_amount') or payload.get('amount') or payload.get('business_amount'))
@@ -157,8 +143,6 @@ class FutureQuoteDao:
         if live:
             # 本地库只提供品种目录；旧报价绝不进入当前列表。
             rows = cls._refresh(rows, discard_missing=True)
-        if tradable:
-            rows = [row for row in rows if cls.is_tradable_contract(row['contract_code'])]
         if keyword:
             text = keyword.lower()
             rows = [row for row in rows if text in row['contract_code'].lower() or text in row['contract_name'].lower() or text in row['product_name'].lower()]
