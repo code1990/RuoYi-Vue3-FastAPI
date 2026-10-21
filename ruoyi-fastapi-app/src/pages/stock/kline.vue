@@ -1,0 +1,46 @@
+<template>
+  <view class="page"><view class="head"><b>{{ name || code }}</b><text>{{ code }} · 新华财经</text></view><scroll-view scroll-x class="tabs"><text v-for="item in periods" :key="item.value" :class="{active: period === item.value}" @click="changePeriod(item.value)">{{ item.label }}</text></scroll-view><view class="chart"><!-- #ifdef H5 --><div id="stock-hqchart"></div><!-- #endif --><!-- #ifdef APP-PLUS --><FutureHQChart ref="appChart" :DefaultSymbol="code" :DefaultChart="{ Type: 'KLine' }" /><!-- #endif --><text v-if="error" class="error">{{ error }}</text></view><scroll-view scroll-x class="tabs indicators"><text v-for="item in visibleIndicators" :key="item" :class="{active: indicator === item}" @click="changeIndicator(item)">{{ item }}</text></scroll-view></view>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
+// #ifdef H5
+import HQChart from "@/vendor/hqchart/umychart.uniapp.h5";
+// #endif
+import FutureHQChart from "@/components/FutureHQChart.vue";
+import { registerKdjSignals } from "@/utils/kdj9Signal";
+import { getStockKline } from "@/api/stock/kline";
+
+const code = ref(""), name = ref(""), period = ref("1d"), indicator = ref("KDJ"), error = ref(""), appChart = ref(null); let chart;
+const periods = [{ label: "分时", value: "minute" }, { label: "五日", value: "5d" }, { label: "日线", value: "1d" }, { label: "周线", value: "1w" }, { label: "月线", value: "1mo" }, { label: "年线", value: "1y" }, { label: "1分", value: "1m" }, { label: "5分", value: "5m" }, { label: "15分", value: "15m" }, { label: "30分", value: "30m" }, { label: "60分", value: "60m" }];
+const klinePeriods = { "1m": 4, "5m": 5, "15m": 6, "30m": 7, "60m": 8, "1d": 0, "1w": 1, "1mo": 2, "1y": 3 }, apiPeriods = { 0: "1d", 1: "1w", 2: "1mo", 3: "1y", 4: "1m", 5: "5m", 6: "15m", 7: "30m", 8: "60m" };
+const minute = computed(() => ["minute", "5d"].includes(period.value)), visibleIndicators = computed(() => minute.value ? ["MACD", "KDJ", "RSI"] : ["MA", "BOLL", "MACD", "KDJ", "RSI"]);
+const chartRows = rows => { let previous; return rows.map(item => { const value = String(item.time), row = [Number(value.slice(0, 8)), previous ?? item.open, item.open, item.high, item.low, item.close, item.volume || 0, item.turnover || 0]; if (value.length > 8) row.push(Number(value.slice(8))); previous = item.close; return row; }); };
+const minuteRows = rows => { const last = rows[rows.length - 1] || {}, value = String(last.time || ""); return { code: 0, stock: [{ name: name.value || code.value, symbol: code.value, date: Number(value.slice(0, 8)) || 0, time: Number(value.slice(8)) || 0, price: last.close || 0, open: last.open || 0, high: last.high || 0, low: last.low || 0, vol: last.volume || 0, amount: last.turnover || 0, yclose: rows[0]?.open || 0, minute: rows.map(item => { const time = String(item.time); return { date: Number(time.slice(0, 8)), time: Number(time.slice(8)), price: item.close, open: item.open, high: item.high, low: item.low, vol: item.volume || 0, amount: item.turnover || 0, avprice: item.close }; }) }] }; };
+const historyMinuteRows = rows => { const days = new Map(); rows.forEach(item => { const value = String(item.time), date = Number(value.slice(0, 8)); if (!days.has(date)) days.set(date, []); days.get(date).push([Number(value.slice(8)), item.open, item.close, item.high, item.low, item.volume || 0, item.turnover || 0, item.close]); }); return { code: 0, name: name.value || code.value, symbol: code.value, data: [...days].sort(([left], [right]) => left - right).slice(-5).map(([date, items]) => ({ date, close: items[items.length - 1][2], yclose: items[0][1], yclearing: items[0][1], minute: items })).reverse() }; };
+function callback(done, data) { // #ifndef H5
+  done({ data }); // #endif
+  // #ifdef H5
+  done(data); // #endif
+}
+async function network(data, done) { data.PreventDefault = true; const requested = minute.value ? period.value : (apiPeriods[data?.Request?.Data?.period] || period.value); try { const rows = (await getStockKline({ stockCode: code.value, period: requested, count: 180 })).data.rows || []; if (data.Name === "MinuteChartContainer::RequestMinuteData") return callback(done, minuteRows(rows)); if (data.Name === "MinuteChartContainer::RequestHistoryMinuteData") return callback(done, historyMinuteRows(rows)); callback(done, { name: name.value || code.value, symbol: code.value, data: chartRows(rows) }); } catch { error.value = "行情暂不可用，请稍后重试"; callback(done, data.Name?.includes("Minute") ? minuteRows([]) : { name: code.value, symbol: code.value, data: [] }); } }
+function option() { const base = { Border: { Left: 0, Right: 0, Top: 0, Bottom: 20 }, IsAutoUpdate: false, IsShowRightMenu: false, NetworkFilter: network }; return minute.value ? { ...base, Type: "分钟走势图", Symbol: code.value, DayCount: period.value === "5d" ? 5 : 1, Windows: [{ Index: visibleIndicators.value.includes(indicator.value) ? indicator.value : "MACD" }] } : { ...base, Type: "历史K线图", Symbol: code.value, Windows: [{ Index: ["MA", "BOLL"].includes(indicator.value) ? indicator.value : "MA" }, { Index: indicator.value === "KDJ" ? "KDJ9_SIGNAL" : indicator.value }, { Index: "KDJ90_SIGNAL" }], KLine: { Period: klinePeriods[period.value], PageSize: 15, RightSpaceCount: 0 } }; }
+function clear() { chart?.ChartDestroy?.(); chart = null; // #ifdef APP-PLUS
+  appChart.value?.ClearChart?.(); // #endif
+  // #ifdef H5
+  const node = document.getElementById("stock-hqchart"); while (node?.hasChildNodes()) node.removeChild(node.lastChild); // #endif
+}
+function create() { // #ifdef H5
+  registerKdjSignals(HQChart.JSIndexScript); const node = document.getElementById("stock-hqchart"); if (!node || chart) return; chart = HQChart.JSChart.Init(node); chart.SetOption(option()); // #endif
+  // #ifdef APP-PLUS
+  const control = appChart.value; if (!control) return; control.SetSize(uni.getSystemInfoSync().windowWidth, uni.upx2px(760)); control.Symbol = code.value; control.NetworkFilter = network; if (minute.value) { control.Minute.Option = option(); control.ChartType = "Minute"; } else { control.KLine.Option = option(); control.ChartType = "KLine"; } control.OnSize(); control.CreateHQChart(); // #endif
+}
+function changePeriod(value) { period.value = value; if (minute.value && !visibleIndicators.value.includes(indicator.value)) indicator.value = "MACD"; clear(); nextTick(create); }
+function changeIndicator(value) { indicator.value = value; const current = chart || appChart.value?.GetJSChart?.(); if (minute.value) current?.ChangeIndex?.(2, value); else { current?.ChangeIndex?.(0, ["MA", "BOLL"].includes(value) ? value : "MA"); current?.ChangeIndex?.(1, value === "KDJ" ? "KDJ9_SIGNAL" : value); } }
+onLoad(async query => { code.value = query.code || ""; name.value = decodeURIComponent(query.name || ""); uni.setNavigationBarTitle({ title: name.value || code.value || "股票K线" }); await nextTick(); create(); }); onBeforeUnmount(clear);
+</script>
+
+<style scoped>
+.page{min-height:100vh;background:#f5f7fb}.head{display:flex;flex-direction:column;gap:8rpx;padding:26rpx 30rpx;background:#fff;color:#25324a}.head b{font-size:34rpx}.head text{font-size:21rpx;color:#8b96a8}.tabs{white-space:nowrap;background:#fff;border-top:1rpx solid #eef1f5;padding:14rpx 22rpx;box-sizing:border-box}.tabs text{display:inline-block;margin-right:28rpx;padding:10rpx 4rpx;color:#7e8b9c;font-size:26rpx}.tabs .active{color:#294cc9;border-bottom:4rpx solid #294cc9;font-weight:700}.indicators{margin-top:16rpx;border-top:0}.chart{position:relative;height:760rpx;background:#fff;overflow:hidden}.chart>div,.chart :deep(.kline2){width:100%;height:100%}.error{position:absolute;top:45%;left:0;right:0;text-align:center;color:#8b97a8;font-size:26rpx}
+</style>

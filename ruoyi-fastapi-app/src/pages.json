@@ -69,6 +69,12 @@
       }
     },
     {
+      "path": "pages/stock/kline",
+      "style": {
+        "navigationBarTitleText": "股票K线"
+      }
+    },
+    {
       "path": "pages/mine/avatar/index",
       "style": {
         "navigationBarTitleText": "修改头像"
