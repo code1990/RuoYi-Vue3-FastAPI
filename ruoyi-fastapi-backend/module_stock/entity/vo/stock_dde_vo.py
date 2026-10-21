@@ -11,6 +11,7 @@ class StockDdeSignalPerformanceModel(BaseModel):
     signal_slot: str = Field(description='最早信号时段')
     entry_price: float = Field(description='买入价')
     remark: str = ''
+    is_marked: bool = False
     signal_change_pct: float | None = Field(default=None, description='信号时涨跌幅')
     large_net_amount: float | None = Field(default=None, description='大单净额')
     market_cap: float | None = Field(default=None, description='市值')
@@ -38,6 +39,16 @@ class StockDdeCalendarModel(BaseModel):
 
     trade_date: str
     signal_count: int
+    marked_count: int = 0
+
+
+class StockDdeUserMarkModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    stock_code: str = Field(pattern=r'^\d{6}$')
+    trade_date: str = Field(pattern=r'^\d{8}$')
+    signal_slot: str = Field(pattern=r'^(morning|noon|close)$')
+    marked: bool
 
 
 class StockDdeQuoteModel(BaseModel):

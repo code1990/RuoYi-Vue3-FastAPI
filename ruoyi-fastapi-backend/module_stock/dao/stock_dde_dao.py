@@ -37,7 +37,7 @@ class StockDdeDao:
         return f"({change_column} IS NULL OR CAST({change_column} AS REAL) < CASE WHEN UPPER({name_column}) LIKE '%ST%' THEN 4.5 ELSE 9.5 END)"
 
     @staticmethod
-    def get_signal_calendar(database_path: str, month: str) -> list[dict]:
+    def get_signal_calendar(database_path: str, month: str, user_id: int) -> list[dict]:
         path = Path(database_path)
         if not path.is_file():
             raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
@@ -47,9 +47,10 @@ class StockDdeDao:
             if not connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (source,)).fetchone():
                 return []
             if source == 't_stock_dde_signal':
-                rows = connection.execute("""SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal
-                    WHERE signal_side='inflow' AND snapshot_slot IN ('morning','noon','close') AND COALESCE(remark, '0000') <> '0000' AND trade_date LIKE ?
-                    GROUP BY trade_date ORDER BY trade_date""", (f'{month}%',)).fetchall()
+                rows = connection.execute("""SELECT signal.trade_date, COUNT(*) AS signal_count, COUNT(mark.stock_code) AS marked_count FROM t_stock_dde_signal AS signal
+                    LEFT JOIN t_stock_dde_user_mark AS mark ON mark.user_id=? AND mark.stock_code=signal.stock_code AND mark.trade_date=signal.trade_date AND mark.signal_slot=signal.snapshot_slot
+                    WHERE signal.signal_side='inflow' AND signal.snapshot_slot IN ('morning','noon','close') AND COALESCE(signal.remark, '0000') <> '0000' AND signal.trade_date LIKE ?
+                    GROUP BY signal.trade_date ORDER BY signal.trade_date""", (user_id, f'{month}%')).fetchall()
             else:
                 rows = connection.execute("SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal_performance WHERE trade_date LIKE ? GROUP BY trade_date ORDER BY trade_date", (f'{month}%',)).fetchall()
         return [dict(row) for row in rows]
@@ -71,7 +72,7 @@ class StockDdeDao:
 
     @staticmethod
     def get_signal_performance_page(
-        database_path: str, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
+        database_path: str, user_id: int, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
         sort_by: str | None, sort_order: str | None,
     ) -> tuple[list[dict], int]:
         path = Path(database_path)
@@ -89,7 +90,7 @@ class StockDdeDao:
                     connection, stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
                 )
             clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", "COALESCE(signal.remark, '0000') <> '0000'", 'signal.entry_price > 0', StockDdeDao.limit_up_change_sql('signal.stock_name', 'flow.change_pct')]
-            params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
+            params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size, 'user_id': user_id}
             if stock_code:
                 clauses.append('signal.stock_code = :stock_code')
                 params['stock_code'] = stock_code
@@ -113,11 +114,12 @@ class StockDdeDao:
             rows = connection.execute(
                 f'''
                 SELECT signal.stock_code, signal.trade_date, signal.stock_name, signal.snapshot_slot AS signal_slot, signal.entry_price, signal.remark,
-                       flow.change_pct AS signal_change_pct, CAST(flow.large_net_amount AS REAL) AS large_net_amount, signal.market_cap, signal.main_net_ratio,
+                       mark.stock_code IS NOT NULL AS is_marked, flow.change_pct AS signal_change_pct, CAST(flow.large_net_amount AS REAL) AS large_net_amount, signal.market_cap, signal.main_net_ratio,
                        performance.close_return_pct, performance.t1_max_return_pct, performance.t2_max_return_pct,
                        performance.t3_max_return_pct, performance.t4_max_return_pct, performance.t5_max_return_pct
                 FROM t_stock_dde_signal AS signal
                 JOIN t_stock_dde_fund_flow AS flow ON flow.stock_code = signal.stock_code AND flow.trade_date = signal.trade_date AND flow.snapshot_slot = signal.snapshot_slot
+                LEFT JOIN t_stock_dde_user_mark AS mark ON mark.user_id=:user_id AND mark.stock_code=signal.stock_code AND mark.trade_date=signal.trade_date AND mark.signal_slot=signal.snapshot_slot
                 LEFT JOIN t_stock_dde_signal_performance AS performance ON performance.stock_code = signal.stock_code AND performance.trade_date = signal.trade_date AND performance.signal_slot = signal.snapshot_slot
                 WHERE {where_sql}
                 ORDER BY {order_by}
@@ -126,6 +128,15 @@ class StockDdeDao:
                 params,
             ).fetchall()
         return [dict(row) for row in rows], total
+
+    @staticmethod
+    def set_signal_mark(database_path: str, user_id: int, stock_code: str, trade_date: str, signal_slot: str, marked: bool) -> None:
+        path = Path(database_path)
+        with sqlite3.connect(path, timeout=30) as connection:
+            if marked:
+                connection.execute('INSERT OR IGNORE INTO t_stock_dde_user_mark (user_id, stock_code, trade_date, signal_slot) VALUES (?, ?, ?, ?)', (user_id, stock_code, trade_date, signal_slot))
+            else:
+                connection.execute('DELETE FROM t_stock_dde_user_mark WHERE user_id=? AND stock_code=? AND trade_date=? AND signal_slot=?', (user_id, stock_code, trade_date, signal_slot))
 
     @staticmethod
     def _get_saved_signal_performance_page(connection: sqlite3.Connection, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None) -> tuple[list[dict], int]:

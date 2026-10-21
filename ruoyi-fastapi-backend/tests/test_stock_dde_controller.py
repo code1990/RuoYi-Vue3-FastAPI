@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sqlite3
+from types import SimpleNamespace
 
 import pytest
 
@@ -20,12 +21,15 @@ from module_stock.controller.stock_dde_controller import (
     get_stock_dde_top30_statistics,
 )
 
+CURRENT_USER = SimpleNamespace(user=SimpleNamespace(user_id=1))
+
 
 @pytest.fixture
 def stock_database(tmp_path):
     database_path = tmp_path / 'stock_stat.db'
     with sqlite3.connect(database_path) as connection:
         connection.execute('''CREATE TABLE t_stock_dde_signal_performance (stock_code TEXT NOT NULL, trade_date TEXT NOT NULL, stock_name TEXT NOT NULL, signal_slot TEXT NOT NULL, signal_rank_no INTEGER, entry_price REAL NOT NULL, signal_change_pct REAL, large_net_amount REAL, market_cap REAL, main_net_ratio REAL, industry_name TEXT NOT NULL, close_return_pct REAL, t1_max_return_pct REAL, t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL, PRIMARY KEY (stock_code, trade_date))''')
+        connection.execute('''CREATE TABLE t_stock_dde_user_mark (user_id INTEGER NOT NULL, stock_code TEXT NOT NULL, trade_date TEXT NOT NULL, signal_slot TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, stock_code, trade_date, signal_slot))''')
         connection.execute("""INSERT INTO t_stock_dde_signal_performance VALUES ('000001','20260806','平安银行','noon',2,10,1.2,100000000,2000000000,0.05,'银行',2,3,4,5,6,7), ('603459','20260806','红板科技','morning',1,105.58,9.5,1310000000,6800000000,0.1941,'电子',1,2,3,4,5,6), ('600000','20260805','浦发银行','close',1,8,-0.2,20000000,1000000000,0.01,'银行',NULL,NULL,NULL,NULL,NULL,NULL)""")
         connection.execute('''CREATE TABLE t_stock_dde_combo_signal (signal_date TEXT, previous_signal_date TEXT, stock_code TEXT, stock_name TEXT, previous_signal_count INTEGER, today_signal_count INTEGER, today_morning_count INTEGER, today_noon_count INTEGER, today_close_count INTEGER, today_best_rank INTEGER, today_main_net_ratio REAL, previous_main_net_ratio REAL, entry_price REAL, current_price REAL, combo_rank INTEGER, close_return_pct REAL, t1_max_return_pct REAL, t2_max_return_pct REAL, t3_max_return_pct REAL, t4_max_return_pct REAL, t5_max_return_pct REAL)''')
         connection.execute("INSERT INTO t_stock_dde_combo_signal VALUES ('20260807','20260806','000001','平安银行',1,2,1,1,0,3,.02,.01,10.5,11,1,1,2,3,4,5,6)")
@@ -79,7 +83,7 @@ def stock_database(tmp_path):
 def test_dde_performance_list_reads_sqlite_result_table(stock_database, monkeypatch):
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
     response = asyncio.run(
-        get_stock_dde_signal_performance_list(start_date='20260806', end_date='20260806', page_num=1, page_size=20)
+        get_stock_dde_signal_performance_list(CURRENT_USER, start_date='20260806', end_date='20260806', page_num=1, page_size=20)
     )
     payload = json.loads(response.body)
     assert payload['data']['total'] == 2
@@ -94,9 +98,9 @@ def test_dde_calendar_and_latest_quotes(stock_database, monkeypatch):
         connection.execute('CREATE TABLE t_stock_quote (stock_code TEXT, market_date TEXT, last_px REAL)')
         connection.execute("INSERT INTO t_stock_quote VALUES ('000001.SZ', '2026-08-07', 10.5)")
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
-    calendar = json.loads(asyncio.run(get_stock_dde_signal_calendar(month='202608')).body)
+    calendar = json.loads(asyncio.run(get_stock_dde_signal_calendar(month='202608', current_user=CURRENT_USER)).body)
     quotes = json.loads(asyncio.run(get_stock_dde_quotes(stock_codes='000001')).body)
-    assert calendar['data'] == [{'tradeDate': '20260805', 'signalCount': 1}, {'tradeDate': '20260806', 'signalCount': 2}]
+    assert calendar['data'] == [{'tradeDate': '20260805', 'signalCount': 1, 'markedCount': 0}, {'tradeDate': '20260806', 'signalCount': 2, 'markedCount': 0}]
     assert quotes['data'] == [{'stockCode': '000001', 'lastPrice': 10.5, 'marketDate': '20260807'}]
 
 
@@ -112,10 +116,31 @@ def test_dde_performance_list_includes_newly_captured_signal_without_returns(sto
         connection.execute("INSERT INTO t_stock_dde_signal VALUES ('000001', '20260826', 'close', 'inflow', 1, '平安银行', 12.34, 2000000000, 0, 100000000, 0, .05, '1000')")
         connection.execute("INSERT INTO t_stock_dde_fund_flow VALUES ('000001', '20260826', 'close', 1.2, 80000000)")
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
-    payload = json.loads(asyncio.run(get_stock_dde_signal_performance_list(start_date='20260826', end_date='20260826', page_num=1, page_size=20)).body)
+    payload = json.loads(asyncio.run(get_stock_dde_signal_performance_list(CURRENT_USER, start_date='20260826', end_date='20260826', page_num=1, page_size=20)).body)
     assert payload['data']['total'] == 1
     assert payload['data']['rows'][0]['entryPrice'] == 12.34
     assert payload['data']['rows'][0]['t1MaxReturnPct'] is None
+
+
+def test_dde_mark_is_private_and_colours_its_trade_date(stock_database, monkeypatch):
+    with sqlite3.connect(stock_database) as connection:
+        connection.execute('''CREATE TABLE t_stock_dde_signal (
+            stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, signal_side TEXT, rank_no INTEGER, stock_name TEXT,
+            entry_price REAL, market_cap REAL, turnover_amount REAL, main_net_amount REAL, total_net_amount REAL, main_net_ratio REAL, remark TEXT
+        )''')
+        connection.execute('''CREATE TABLE t_stock_dde_fund_flow (
+            stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, change_pct REAL, large_net_amount REAL
+        )''')
+        connection.execute("INSERT INTO t_stock_dde_signal VALUES ('000001', '20260826', 'close', 'inflow', 1, '平安银行', 12.34, 0, 0, 0, 0, .05, '1000')")
+        connection.execute("INSERT INTO t_stock_dde_fund_flow VALUES ('000001', '20260826', 'close', 1.2, 80000000)")
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    StockDdeDao.set_signal_mark(str(stock_database), 1, '000001', '20260826', 'close', True)
+    user_one = json.loads(asyncio.run(get_stock_dde_signal_performance_list(CURRENT_USER, start_date='20260826', end_date='20260826')).body)
+    user_two = json.loads(asyncio.run(get_stock_dde_signal_performance_list(SimpleNamespace(user=SimpleNamespace(user_id=2)), start_date='20260826', end_date='20260826')).body)
+    calendar = json.loads(asyncio.run(get_stock_dde_signal_calendar(month='202608', current_user=CURRENT_USER)).body)
+    assert user_one['data']['rows'][0]['isMarked'] is True
+    assert user_two['data']['rows'][0]['isMarked'] is False
+    assert calendar['data'][-1]['markedCount'] == 1
 
 
 def test_dde_combo_list_reads_yesterday_today_candidates(stock_database, monkeypatch):
