@@ -5,17 +5,29 @@ from module_stock.dao.stock_dde_dao import StockDdeDao
 from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
     StockDdeComboStatisticsModel,
+    StockDdeCalendarModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
     StockDdeObservationStatisticsModel,
     StockDdeIntradayComboStatisticsModel,
     StockDdeSignalPerformancePageModel,
+    StockDdeQuoteModel,
     StockDdeTop30PerformancePageModel,
     StockDdeTop30ListStatisticsModel,
 )
 
 
 class StockDdeService:
+    @classmethod
+    async def get_signal_calendar_services(cls, month: str) -> list[dict]:
+        rows = await asyncio.to_thread(StockDdeDao.get_signal_calendar, AppConfig.stock_stat_db_path, month)
+        return [StockDdeCalendarModel.model_validate(row) for row in rows]
+
+    @classmethod
+    async def get_latest_quotes_services(cls, stock_codes: list[str]) -> list[dict]:
+        rows = await asyncio.to_thread(StockDdeDao.get_latest_quotes, AppConfig.stock_stat_db_path, stock_codes)
+        return [StockDdeQuoteModel.model_validate(row) for row in rows]
+
     @classmethod
     async def get_combo_page_services(cls, start_date, end_date, page_num, page_size, sort_by, sort_order) -> StockDdeComboSignalPageModel:
         rows, total = await asyncio.to_thread(StockDdeDao.get_combo_page, AppConfig.stock_stat_db_path, start_date, end_date, page_num, page_size, sort_by, sort_order)

@@ -63,6 +63,12 @@
       }
     },
     {
+      "path": "pages/dde/index",
+      "style": {
+        "navigationBarTitleText": "DDE资金"
+      }
+    },
+    {
       "path": "pages/mine/avatar/index",
       "style": {
         "navigationBarTitleText": "修改头像"

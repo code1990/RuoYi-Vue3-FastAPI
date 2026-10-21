@@ -32,6 +32,21 @@ class StockDdeSignalPerformancePageModel(BaseModel):
     has_next: bool
 
 
+class StockDdeCalendarModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    trade_date: str
+    signal_count: int
+
+
+class StockDdeQuoteModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    stock_code: str
+    last_price: float
+    market_date: str
+
+
 class StockDdeTop30PerformanceModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

@@ -7,11 +7,13 @@ from common.vo import DataResponseModel
 from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
     StockDdeComboStatisticsModel,
+    StockDdeCalendarModel,
     StockDdeHotRankPageModel,
     StockDdeObservationPageModel,
     StockDdeObservationStatisticsModel,
     StockDdeIntradayComboStatisticsModel,
     StockDdeSignalPerformancePageModel,
+    StockDdeQuoteModel,
     StockDdeTop30PerformancePageModel,
     StockDdeTop30ListStatisticsModel,
     StockDdeTop30StatisticsModel,
@@ -20,6 +22,20 @@ from module_stock.service.stock_dde_service import StockDdeService
 from utils.response_util import ResponseUtil
 
 stock_dde_controller = APIRouterPro(prefix='/stock/dde', order_num=31, tags=['股票-DDE资金'])
+
+
+@stock_dde_controller.get('/performance/calendar', summary='查询DDE信号日历', response_model=DataResponseModel[list[StockDdeCalendarModel]])
+async def get_stock_dde_signal_calendar(month: Annotated[str, Query(pattern=r'^\d{6}$')]) -> Response:
+    try:
+        result = await StockDdeService.get_signal_calendar_services(month)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
+    return ResponseUtil.success(data=result)
+
+
+@stock_dde_controller.get('/quote/list', summary='查询DDE股票最新行情', response_model=DataResponseModel[list[StockDdeQuoteModel]])
+async def get_stock_dde_quotes(stock_codes: Annotated[list[str], Query(alias='stockCode', min_length=1, max_length=200, pattern=r'^\d{6}$')]) -> Response:
+    return ResponseUtil.success(data=await StockDdeService.get_latest_quotes_services(stock_codes))
 
 
 @stock_dde_controller.get('/combo/list', summary='查询昨日今日DDE捡漏候选', response_model=DataResponseModel[StockDdeComboSignalPageModel])

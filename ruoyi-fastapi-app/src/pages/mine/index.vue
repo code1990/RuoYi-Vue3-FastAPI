@@ -23,6 +23,7 @@
 const entries = [
   { title: "模拟下单", desc: "快速开仓与平仓", icon: "i-mdi-flash-outline", tone: "blue", tab: "/pages/work/index" },
   { title: "个人账户", desc: "权益、持仓与盈亏", icon: "i-mdi-account-circle-outline", tone: "orange", url: "/pages/account/index" },
+  { title: "DDE资金", desc: "日历查看 T+1 收益", icon: "i-mdi-calendar-month-outline", tone: "green", url: "/pages/dde/index" },
   { title: "盘感训练", desc: "每日交易决策练习", icon: "i-mdi-brain", tone: "purple", tab: "/pages/training/index" },
   { title: "考试复习", desc: "复习交易知识点", icon: "i-mdi-notebook-outline", tone: "green", tab: "/pages/exam/index" },
   { title: "行情分析", desc: "选择合约查看 K 线", icon: "i-mdi-chart-line", tone: "red", tab: "/pages/index" }

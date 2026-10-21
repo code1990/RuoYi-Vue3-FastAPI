@@ -8,6 +8,8 @@ from config.env import AppConfig
 from module_stock.dao.stock_dde_dao import StockDdeDao
 from module_stock.controller.stock_dde_controller import (
     get_stock_dde_combo_list,
+    get_stock_dde_signal_calendar,
+    get_stock_dde_quotes,
     get_stock_dde_combo_statistics,
     get_stock_dde_hot_rank_list,
     get_stock_dde_observation_list,
@@ -85,6 +87,17 @@ def test_dde_performance_list_reads_sqlite_result_table(stock_database, monkeypa
     assert payload['data']['rows'][0]['tradeDate'] == '20260806'
     assert payload['data']['rows'][0]['signalSlot'] == 'noon'
     assert payload['data']['rows'][0]['t5MaxReturnPct'] == 7.0
+
+
+def test_dde_calendar_and_latest_quotes(stock_database, monkeypatch):
+    with sqlite3.connect(stock_database) as connection:
+        connection.execute('CREATE TABLE t_stock_quote (stock_code TEXT, market_date TEXT, last_px REAL)')
+        connection.execute("INSERT INTO t_stock_quote VALUES ('000001.SZ', '2026-08-07', 10.5)")
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
+    calendar = json.loads(asyncio.run(get_stock_dde_signal_calendar(month='202608')).body)
+    quotes = json.loads(asyncio.run(get_stock_dde_quotes(stock_codes=['000001'])).body)
+    assert calendar['data'] == [{'tradeDate': '20260805', 'signalCount': 1}, {'tradeDate': '20260806', 'signalCount': 2}]
+    assert quotes['data'] == [{'stockCode': '000001', 'lastPrice': 10.5, 'marketDate': '20260807'}]
 
 
 def test_dde_performance_list_includes_newly_captured_signal_without_returns(stock_database, monkeypatch):

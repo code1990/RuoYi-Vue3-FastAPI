@@ -37,6 +37,39 @@ class StockDdeDao:
         return f"({change_column} IS NULL OR CAST({change_column} AS REAL) < CASE WHEN UPPER({name_column}) LIKE '%ST%' THEN 4.5 ELSE 9.5 END)"
 
     @staticmethod
+    def get_signal_calendar(database_path: str, month: str) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            source = 't_stock_dde_signal' if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_stock_dde_signal'").fetchone() else 't_stock_dde_signal_performance'
+            if not connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (source,)).fetchone():
+                return []
+            if source == 't_stock_dde_signal':
+                rows = connection.execute("""SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal
+                    WHERE signal_side='inflow' AND snapshot_slot IN ('morning','noon','close') AND trade_date LIKE ?
+                    GROUP BY trade_date ORDER BY trade_date""", (f'{month}%',)).fetchall()
+            else:
+                rows = connection.execute("SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal_performance WHERE trade_date LIKE ? GROUP BY trade_date ORDER BY trade_date", (f'{month}%',)).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
+    def get_latest_quotes(database_path: str, stock_codes: list[str]) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file() or not stock_codes:
+            return []
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            if not connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='t_stock_quote'").fetchone():
+                return []
+            marks = ','.join('?' for _ in stock_codes)
+            rows = connection.execute(f"""SELECT substr(stock_code, 1, 6) AS stock_code, CAST(last_px AS REAL) AS last_price,
+                replace(market_date, '-', '') AS market_date FROM t_stock_quote
+                WHERE substr(stock_code, 1, 6) IN ({marks}) AND CAST(last_px AS REAL) > 0""", stock_codes).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
     def get_signal_performance_page(
         database_path: str, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int,
         sort_by: str | None, sort_order: str | None,
