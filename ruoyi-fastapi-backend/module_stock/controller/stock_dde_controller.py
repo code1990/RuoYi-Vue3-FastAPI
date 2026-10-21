@@ -34,8 +34,8 @@ async def get_stock_dde_signal_calendar(month: Annotated[str, Query(pattern=r'^\
 
 
 @stock_dde_controller.get('/quote/list', summary='查询DDE股票最新行情', response_model=DataResponseModel[list[StockDdeQuoteModel]])
-async def get_stock_dde_quotes(stock_codes: Annotated[list[str], Query(alias='stockCode', min_length=1, max_length=200, pattern=r'^\d{6}$')]) -> Response:
-    return ResponseUtil.success(data=await StockDdeService.get_latest_quotes_services(stock_codes))
+async def get_stock_dde_quotes(stock_codes: Annotated[str, Query(alias='stockCode', pattern=r'^\d{6}(,\d{6}){0,199}$')]) -> Response:
+    return ResponseUtil.success(data=await StockDdeService.get_latest_quotes_services(stock_codes.split(',')))
 
 
 @stock_dde_controller.get('/combo/list', summary='查询昨日今日DDE捡漏候选', response_model=DataResponseModel[StockDdeComboSignalPageModel])

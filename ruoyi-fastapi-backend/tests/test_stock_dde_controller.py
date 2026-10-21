@@ -95,7 +95,7 @@ def test_dde_calendar_and_latest_quotes(stock_database, monkeypatch):
         connection.execute("INSERT INTO t_stock_quote VALUES ('000001.SZ', '2026-08-07', 10.5)")
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
     calendar = json.loads(asyncio.run(get_stock_dde_signal_calendar(month='202608')).body)
-    quotes = json.loads(asyncio.run(get_stock_dde_quotes(stock_codes=['000001'])).body)
+    quotes = json.loads(asyncio.run(get_stock_dde_quotes(stock_codes='000001')).body)
     assert calendar['data'] == [{'tradeDate': '20260805', 'signalCount': 1}, {'tradeDate': '20260806', 'signalCount': 2}]
     assert quotes['data'] == [{'stockCode': '000001', 'lastPrice': 10.5, 'marketDate': '20260807'}]
 
