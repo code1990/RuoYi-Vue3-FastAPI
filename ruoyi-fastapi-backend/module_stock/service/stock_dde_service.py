@@ -19,8 +19,8 @@ from module_stock.entity.vo.stock_dde_vo import (
 
 class StockDdeService:
     @classmethod
-    async def get_signal_calendar_services(cls, month: str, user_id: int) -> list[dict]:
-        rows = await asyncio.to_thread(StockDdeDao.get_signal_calendar, AppConfig.stock_stat_db_path, month, user_id)
+    async def get_signal_calendar_services(cls, month: str) -> list[dict]:
+        rows = await asyncio.to_thread(StockDdeDao.get_signal_calendar, AppConfig.stock_stat_db_path, month)
         return [StockDdeCalendarModel.model_validate(row) for row in rows]
 
     @classmethod
@@ -42,12 +42,11 @@ class StockDdeService:
 
     @classmethod
     async def get_signal_performance_page_services(
-        cls, user_id: int, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
+        cls, stock_code: str | None, start_date: str | None, end_date: str | None, page_num: int, page_size: int, sort_by: str | None, sort_order: str | None,
     ) -> StockDdeSignalPerformancePageModel:
         rows, total = await asyncio.to_thread(
             StockDdeDao.get_signal_performance_page,
             AppConfig.stock_stat_db_path,
-            user_id,
             stock_code,
             start_date,
             end_date,
@@ -65,8 +64,8 @@ class StockDdeService:
         )
 
     @classmethod
-    async def set_signal_mark_services(cls, user_id: int, stock_code: str, trade_date: str, signal_slot: str, marked: bool) -> None:
-        await asyncio.to_thread(StockDdeDao.set_signal_mark, AppConfig.stock_stat_db_path, user_id, stock_code, trade_date, signal_slot, marked)
+    async def set_signal_mark_services(cls, stock_code: str, trade_date: str, signal_slot: str, marked: bool) -> None:
+        await asyncio.to_thread(StockDdeDao.set_signal_mark, AppConfig.stock_stat_db_path, stock_code, trade_date, signal_slot, marked)
 
     @classmethod
     async def get_top30_performance_page_services(

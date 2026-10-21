@@ -3,8 +3,6 @@ from typing import Annotated
 from fastapi import HTTPException, Query, Response, status
 
 from common.router import APIRouterPro
-from common.aspect.pre_auth import CurrentUserDependency
-from module_admin.entity.vo.user_vo import CurrentUserModel
 from common.vo import DataResponseModel
 from module_stock.entity.vo.stock_dde_vo import (
     StockDdeComboSignalPageModel,
@@ -19,7 +17,7 @@ from module_stock.entity.vo.stock_dde_vo import (
     StockDdeTop30PerformancePageModel,
     StockDdeTop30ListStatisticsModel,
     StockDdeTop30StatisticsModel,
-    StockDdeUserMarkModel,
+    StockDdeSignalMarkModel,
 )
 from module_stock.service.stock_dde_service import StockDdeService
 from utils.response_util import ResponseUtil
@@ -28,9 +26,9 @@ stock_dde_controller = APIRouterPro(prefix='/stock/dde', order_num=31, tags=['�
 
 
 @stock_dde_controller.get('/performance/calendar', summary='查询DDE信号日历', response_model=DataResponseModel[list[StockDdeCalendarModel]])
-async def get_stock_dde_signal_calendar(month: Annotated[str, Query(pattern=r'^\d{6}$')], current_user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+async def get_stock_dde_signal_calendar(month: Annotated[str, Query(pattern=r'^\d{6}$')]) -> Response:
     try:
-        result = await StockDdeService.get_signal_calendar_services(month, current_user.user.user_id)
+        result = await StockDdeService.get_signal_calendar_services(month)
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
     return ResponseUtil.success(data=result)
@@ -76,7 +74,6 @@ async def get_stock_dde_combo_statistics(
     response_model=DataResponseModel[StockDdeSignalPerformancePageModel],
 )
 async def get_stock_dde_signal_performance_list(
-    current_user: Annotated[CurrentUserModel, CurrentUserDependency()],
     stock_code: Annotated[str | None, Query(alias='stockCode', pattern=r'^\d{6}$')] = None,
     start_date: Annotated[str | None, Query(alias='startDate', pattern=r'^\d{8}$')] = None,
     end_date: Annotated[str | None, Query(alias='endDate', pattern=r'^\d{8}$')] = None,
@@ -87,7 +84,7 @@ async def get_stock_dde_signal_performance_list(
 ) -> Response:
     try:
         result = await StockDdeService.get_signal_performance_page_services(
-            current_user.user.user_id, stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
+            stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
         )
     except FileNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Stock data source unavailable') from error
@@ -95,8 +92,8 @@ async def get_stock_dde_signal_performance_list(
 
 
 @stock_dde_controller.put('/performance/mark', summary='标记DDE模拟买入')
-async def set_stock_dde_signal_mark(mark: StockDdeUserMarkModel, current_user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
-    await StockDdeService.set_signal_mark_services(current_user.user.user_id, mark.stock_code, mark.trade_date, mark.signal_slot, mark.marked)
+async def set_stock_dde_signal_mark(mark: StockDdeSignalMarkModel) -> Response:
+    await StockDdeService.set_signal_mark_services(mark.stock_code, mark.trade_date, mark.signal_slot, mark.marked)
     return ResponseUtil.success()
 
 

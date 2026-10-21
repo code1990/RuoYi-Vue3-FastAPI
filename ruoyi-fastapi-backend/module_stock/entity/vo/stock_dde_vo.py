@@ -42,7 +42,7 @@ class StockDdeCalendarModel(BaseModel):
     marked_count: int = 0
 
 
-class StockDdeUserMarkModel(BaseModel):
+class StockDdeSignalMarkModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
     stock_code: str = Field(pattern=r'^\d{6}$')
