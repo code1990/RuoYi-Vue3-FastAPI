@@ -48,7 +48,7 @@ class StockDdeDao:
                 return []
             if source == 't_stock_dde_signal':
                 rows = connection.execute("""SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal
-                    WHERE signal_side='inflow' AND snapshot_slot IN ('morning','noon','close') AND trade_date LIKE ?
+                    WHERE signal_side='inflow' AND snapshot_slot IN ('morning','noon','close') AND COALESCE(remark, '0000') <> '0000' AND trade_date LIKE ?
                     GROUP BY trade_date ORDER BY trade_date""", (f'{month}%',)).fetchall()
             else:
                 rows = connection.execute("SELECT trade_date, COUNT(*) AS signal_count FROM t_stock_dde_signal_performance WHERE trade_date LIKE ? GROUP BY trade_date ORDER BY trade_date", (f'{month}%',)).fetchall()
@@ -88,7 +88,7 @@ class StockDdeDao:
                 return StockDdeDao._get_saved_signal_performance_page(
                     connection, stock_code, start_date, end_date, page_num, page_size, sort_by, sort_order
                 )
-            clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", 'signal.entry_price > 0', StockDdeDao.limit_up_change_sql('signal.stock_name', 'flow.change_pct')]
+            clauses = ["signal.signal_side = 'inflow'", "signal.snapshot_slot IN ('morning', 'noon', 'close')", "COALESCE(signal.remark, '0000') <> '0000'", 'signal.entry_price > 0', StockDdeDao.limit_up_change_sql('signal.stock_name', 'flow.change_pct')]
             params: dict[str, str | int] = {'limit': page_size, 'offset': (page_num - 1) * page_size}
             if stock_code:
                 clauses.append('signal.stock_code = :stock_code')
@@ -112,7 +112,7 @@ class StockDdeDao:
             ).fetchone()[0]
             rows = connection.execute(
                 f'''
-                SELECT signal.stock_code, signal.trade_date, signal.stock_name, signal.snapshot_slot AS signal_slot, signal.entry_price,
+                SELECT signal.stock_code, signal.trade_date, signal.stock_name, signal.snapshot_slot AS signal_slot, signal.entry_price, signal.remark,
                        flow.change_pct AS signal_change_pct, CAST(flow.large_net_amount AS REAL) AS large_net_amount, signal.market_cap, signal.main_net_ratio,
                        performance.close_return_pct, performance.t1_max_return_pct, performance.t2_max_return_pct,
                        performance.t3_max_return_pct, performance.t4_max_return_pct, performance.t5_max_return_pct

@@ -104,12 +104,12 @@ def test_dde_performance_list_includes_newly_captured_signal_without_returns(sto
     with sqlite3.connect(stock_database) as connection:
         connection.execute('''CREATE TABLE t_stock_dde_signal (
             stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, signal_side TEXT, rank_no INTEGER, stock_name TEXT,
-            entry_price REAL, market_cap REAL, turnover_amount REAL, main_net_amount REAL, total_net_amount REAL, main_net_ratio REAL
+            entry_price REAL, market_cap REAL, turnover_amount REAL, main_net_amount REAL, total_net_amount REAL, main_net_ratio REAL, remark TEXT
         )''')
         connection.execute('''CREATE TABLE t_stock_dde_fund_flow (
             stock_code TEXT, trade_date TEXT, snapshot_slot TEXT, change_pct REAL, large_net_amount REAL
         )''')
-        connection.execute("INSERT INTO t_stock_dde_signal VALUES ('000001', '20260826', 'close', 'inflow', 1, '平安银行', 12.34, 2000000000, 0, 100000000, 0, .05)")
+        connection.execute("INSERT INTO t_stock_dde_signal VALUES ('000001', '20260826', 'close', 'inflow', 1, '平安银行', 12.34, 2000000000, 0, 100000000, 0, .05, '1000')")
         connection.execute("INSERT INTO t_stock_dde_fund_flow VALUES ('000001', '20260826', 'close', 1.2, 80000000)")
     monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(stock_database))
     payload = json.loads(asyncio.run(get_stock_dde_signal_performance_list(start_date='20260826', end_date='20260826', page_num=1, page_size=20)).body)

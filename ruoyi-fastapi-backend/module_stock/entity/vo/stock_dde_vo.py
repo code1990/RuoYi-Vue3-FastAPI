@@ -10,6 +10,7 @@ class StockDdeSignalPerformanceModel(BaseModel):
     stock_name: str = Field(description='股票名称')
     signal_slot: str = Field(description='最早信号时段')
     entry_price: float = Field(description='买入价')
+    remark: str = ''
     signal_change_pct: float | None = Field(default=None, description='信号时涨跌幅')
     large_net_amount: float | None = Field(default=None, description='大单净额')
     market_cap: float | None = Field(default=None, description='市值')
