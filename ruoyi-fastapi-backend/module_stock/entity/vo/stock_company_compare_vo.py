@@ -24,6 +24,22 @@ class StockCompanyCompareCompanyModel(BaseModel):
     fund_holding_rate: float | None = None
 
 
+class StockCompanyProfileModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    stock_code: str
+    stock_name: str = ''
+    industry: str = ''
+    concept: str = ''
+    last_price: float | None = None
+    previous_close: float | None = None
+    change_pct: float | None = None
+    market_date: str | None = None
+    report_date: str | None = None
+    main_holding_rate: float | None = None
+    fund_holding_rate: float | None = None
+
+
 class StockCompanyCompareHistoryModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

@@ -2,8 +2,10 @@ import asyncio
 import json
 import sqlite3
 
+import pytest
+
 from config.env import AppConfig
-from module_stock.controller.stock_company_compare_controller import get_stock_company_compare
+from module_stock.controller.stock_company_compare_controller import get_stock_company_compare, get_stock_company_profile
 
 
 def test_company_compare_returns_requested_price_history(tmp_path, monkeypatch):
@@ -36,3 +38,25 @@ def test_company_compare_returns_requested_price_history(tmp_path, monkeypatch):
     ]
     assert [row['stockCode'] for row in payload['data']['companies']] == ['000002', '000001']
     assert payload['data']['companies'][1]['fundHoldingRate'] == 2.5
+
+
+def test_company_profile_returns_quote_industry_concept_and_holdings(tmp_path, monkeypatch):
+    database_path = tmp_path / 'stock_stat.db'
+    with sqlite3.connect(database_path) as connection:
+        connection.execute('CREATE TABLE t_stock_daily_240 (stock_code TEXT, trade_date INTEGER, close REAL)')
+        connection.execute('CREATE TABLE t_stock_quote (stock_code TEXT, market_date TEXT, last_px REAL)')
+        connection.execute('CREATE TABLE t_stock_pool (stock_code TEXT, stock_name TEXT, full_industry TEXT, full_concept TEXT, capital REAL)')
+        connection.execute('CREATE TABLE t_stock_org_holder_tab (stock_code TEXT, report_period TEXT, report_date TEXT, tab_id TEXT, tab_name TEXT, holder_rate TEXT)')
+        connection.execute("INSERT INTO t_stock_pool VALUES ('002343.SZ', '慈文传媒', '传媒', '短剧;影视', 100)")
+        connection.executemany("INSERT INTO t_stock_daily_240 VALUES ('002343.SZ', ?, ?)", [(20261020, 8), (20261021, 8.2)])
+        connection.execute("INSERT INTO t_stock_quote VALUES ('002343.SZ', '2026-10-21', 8.4)")
+        connection.executemany("INSERT INTO t_stock_org_holder_tab VALUES ('002343.SZ', '2026三季报', '2026-09-30', ?, ?, ?)", [('all', '全部', '15.2'), ('fund', '基金', '3.4')])
+    monkeypatch.setattr(AppConfig, 'stock_stat_db_path', str(database_path))
+
+    payload = json.loads(asyncio.run(get_stock_company_profile(stock_code='002343')).body)
+
+    assert payload['data'] == {
+        'stockCode': '002343', 'stockName': '慈文传媒', 'industry': '传媒', 'concept': '短剧;影视',
+        'lastPrice': 8.4, 'previousClose': 8.2, 'changePct': pytest.approx(2.4390243902439046),
+        'marketDate': '20261021', 'reportDate': '2026-09-30', 'mainHoldingRate': 15.2, 'fundHoldingRate': 3.4,
+    }
