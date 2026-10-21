@@ -147,7 +147,7 @@ function confirmOpen(side) { const action = side === "多" ? "买入开多" : "�
 async function submit(side) { if (!canTrade.value || !await confirmOpen(side)) return; try { await trading.openPosition(side, quantity.value); await refreshStatus(); uni.showToast({ title: `已模拟开${side}`, icon: "success" }); } catch (error) { uni.showToast({ title: error?.msg || "下单失败", icon: "none" }); } }
 async function closeCurrent() { for (const position of activePositions.value) { try { await trading.closePosition(position.id); } catch (error) { uni.showToast({ title: error?.msg || "平仓失败", icon: "none" }); return; } } uni.showToast({ title: "已模拟平仓", icon: "none" }); await refreshStatus(); }
 async function trade() { trading.selectContract(code.value); quantity.value = 1; lightning.value = true; await refreshStatus(); }
-async function refreshQuote() { if (refreshing) return; refreshing = true; try { await trading.refreshQuotes(); flashing.value = false; await nextTick(); flashing.value = true; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashing.value = false; }, 450); } finally { refreshing = false; } }
+async function refreshQuote() { if (refreshing) return; refreshing = true; try { await trading.refreshQuotes(); flashing.value = false; await nextTick(); flashing.value = true; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashing.value = false; }, 450); } catch {} finally { refreshing = false; } }
 function startPolling() { stopPolling(); refreshQuote(); pollTimer = setInterval(refreshQuote, 5000); }
 function stopPolling() { clearInterval(pollTimer); clearTimeout(flashTimer); flashing.value = false; }
 onLoad(async query => { code.value = query.code || ""; name.value = decodeURIComponent(query.name || "");

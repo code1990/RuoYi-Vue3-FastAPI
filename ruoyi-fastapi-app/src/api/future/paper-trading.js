@@ -7,4 +7,4 @@ export const getPaperFloatingCalendar = (month) => request({ url: "/future/paper
 export const getPaperProfitSummary = () => request({ url: "/future/paper-trading/profit-summary", method: "get" });
 export const openPaperPosition = (data) => request({ url: "/future/paper-trading/open", method: "post", data });
 export const closePaperPosition = (positionId) => request({ url: `/future/paper-trading/positions/${positionId}/close`, method: "post" });
-export const getFutureQuotes = (params = {}) => request({ url: "/future/quote/list", method: "get", params: { scope: "domestic", pageNum: 1, pageSize: 100, ...params } });
+export const getFutureQuotes = (params = {}) => request({ url: "/future/quote/list", method: "get", silent: true, params: { scope: "domestic", pageNum: 1, pageSize: 100, ...params } });
