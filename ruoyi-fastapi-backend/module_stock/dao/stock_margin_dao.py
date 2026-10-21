@@ -4,6 +4,27 @@ from pathlib import Path
 
 class StockMarginDao:
     @staticmethod
+    def get_calendar(database_path: str, month: str, mode: str, window_days: int | None = None) -> list[dict]:
+        path = Path(database_path)
+        if not path.is_file():
+            raise FileNotFoundError(f'Stock statistics database does not exist: {path}')
+        sources = {
+            'model': ('t_stock_margin_long_model', 'trade_date', ''),
+            'single': ('t_stock_margin_long_performance', 'signal_date', ''),
+            'combo': ('t_stock_margin_combo_signal', 'signal_date', ' AND window_days=:window_days'),
+        }
+        table, date_column, extra = sources[mode]
+        with sqlite3.connect(f'file:{path.resolve().as_posix()}?mode=ro', uri=True) as connection:
+            connection.row_factory = sqlite3.Row
+            if not connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone():
+                return []
+            params = {'month': f'{month}%', 'window_days': window_days}
+            rows = connection.execute(f'''SELECT CAST({date_column} AS TEXT) AS trade_date, COUNT(*) AS signal_count
+                FROM {table} WHERE CAST({date_column} AS TEXT) LIKE :month{extra}
+                GROUP BY {date_column} ORDER BY {date_column}''', params).fetchall()
+        return [dict(row) for row in rows]
+
+    @staticmethod
     def get_long_model(database_path: str, page_num: int, page_size: int, start_date: str | None = None, end_date: str | None = None) -> tuple[list[dict], int]:
         path = Path(database_path)
         if not path.is_file():

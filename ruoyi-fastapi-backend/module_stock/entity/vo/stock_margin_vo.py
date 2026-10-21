@@ -71,6 +71,13 @@ class StockMarginLongModelPage(BaseModel):
     has_next: bool
 
 
+class StockMarginCalendarModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    trade_date: str
+    signal_count: int
+
+
 class StockMarginComboStatisticsModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 

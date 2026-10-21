@@ -5,6 +5,7 @@ import sqlite3
 from config.env import AppConfig
 from module_stock.controller.stock_margin_controller import (
     get_stock_margin_combo_list,
+    get_stock_margin_calendar,
     get_stock_margin_long_performance_list,
     get_stock_margin_long_statistics,
 )
@@ -46,3 +47,5 @@ def test_margin_combo_list_sorts_by_total_score(tmp_path, monkeypatch):
     payload = json.loads(response.body)
 
     assert [row['stockCode'] for row in payload['data']['rows']] == ['000002', '000001']
+    calendar = json.loads(asyncio.run(get_stock_margin_calendar(month='202608', mode='combo', window_days=2)).body)
+    assert calendar['data'] == [{'tradeDate': '20260807', 'signalCount': 2}]
