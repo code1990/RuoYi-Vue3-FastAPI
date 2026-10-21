@@ -723,7 +723,7 @@ function AverageWidthFrame()
     this.DrawCustomItem = function (item) //显示自定义刻度
     {
         //if (this.IsHScreen === true) return;  //横屏不画
-        if (!item.Message[1] && !item.Message[0]) return;
+        if (!item.Message[1] && !item.Message[0] && item.IsShowText !== false) return;
         if (item.Value > this.HorizontalMax || item.Value < this.HorizontalMin) 
         {
             if (item.CountDown===true) this.SendDrawCountDownEvent( { IsShow:false } );
@@ -738,12 +738,20 @@ function AverageWidthFrame()
         var borderLeft = this.ChartBorder.Left;
         var titleHeight = this.ChartBorder.TitleHeight;
 
-        if (this.IsHScreen) 
+        if (this.IsHScreen)
         {
             borderLeft = this.ChartBorder.Top;
             borderRight = this.ChartBorder.Bottom;
             top = this.ChartBorder.GetTop();
             bottom = this.ChartBorder.GetBottom();
+        }
+
+        if (item.IsShowText === false)
+        {
+            var y=this.GetYFromData(item.Value);
+            if (this.IsHScreen) this.DrawLine(top, bottom, y, item.LineColor, item.LineType);
+            else this.DrawLine(left, right, y, item.LineColor, item.LineType);
+            return;
         }
 
         var defaultTextHeight=16

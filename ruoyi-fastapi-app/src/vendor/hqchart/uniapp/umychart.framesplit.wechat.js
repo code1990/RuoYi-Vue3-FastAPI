@@ -825,6 +825,7 @@ function FrameSplitKLinePriceY()
             info.LineType = 2;    //虚线
             if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine == false) info.LineType = -1;
+            if (option.IsShowText === false) info.IsShowText = false;
 
             info.Value = item.Value;
             var text;
@@ -1719,6 +1720,7 @@ function FrameSplitMinutePriceY()
             info.LineType = 2;    //虚线
             if (IFrameSplitOperator.IsNumber(option.LineType)) info.LineType=option.LineType;
             if (option.IsShowLine == false) info.LineType = -1;
+            if (option.IsShowText === false) info.IsShowText = false;
 
             if (IFrameSplitOperator.IsNumber(item.Increase)) //涨幅计算价格
             {
