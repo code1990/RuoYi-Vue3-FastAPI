@@ -53,6 +53,12 @@
     {
       "path": "pages/mine/index",
       "style": {
+        "navigationBarTitleText": "商城"
+      }
+    },
+    {
+      "path": "pages/account/index",
+      "style": {
         "navigationBarTitleText": "模拟账户"
       }
     },
@@ -155,9 +161,9 @@
       },
       {
         "pagePath": "pages/mine/index",
-        "iconPath": "static/images/tabbar/mine.png",
-        "selectedIconPath": "static/images/tabbar/mine_.png",
-        "text": "资产"
+        "iconPath": "static/images/tabbar/mall.png",
+        "selectedIconPath": "static/images/tabbar/mall_.png",
+        "text": "商城"
       }
     ]
   },
