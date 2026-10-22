@@ -18,6 +18,7 @@
 
 <script setup>
 import { computed, ref } from "vue";
+import { onShow } from "@dcloudio/uni-app";
 import { useTradingStore } from "@/store";
 import { getPaperFloatingCalendar, getPaperProfitSummary } from "@/api/future/paper-trading";
 const trading = useTradingStore();
@@ -28,8 +29,8 @@ const percent = (value, base) => Number(base) ? `${Number(value) >= 0 ? "+" : ""
 const netPnl = (item) => Number(item.netPnl ?? item.net_pnl ?? 0);
 const calendarDays = computed(() => { const [year, mon] = month.split("-").map(Number); const first = new Date(year, mon - 1, 1).getDay(); const count = new Date(year, mon, 0).getDate(); const values = Object.fromEntries(calendarRows.value.map((item) => [Number((item.tradeDate || item.trade_date).slice(-2)), item])); return Array.from({ length: first + count }, (_, index) => { const day = index - first + 1; const item = values[day]; return index < first ? { key: `blank-${index}`, day: "", value: null } : { key: day, day, value: item?.floatingPnl ?? item?.floating_pnl ?? null, estimated: item?.estimated, closed: item?.closed }; }); });
 async function close(id) { await trading.closePosition(id); uni.showToast({ title: "已模拟平仓", icon: "none" }); }
-async function load() { await trading.sync(); try { const [calendar, summary] = await Promise.all([getPaperFloatingCalendar(month), getPaperProfitSummary()]); calendarRows.value = calendar.data; profitSummary.value = summary.data; } catch { calendarRows.value = []; profitSummary.value = []; } }
-load();
+async function load() { const [calendar, summary] = await Promise.allSettled([getPaperFloatingCalendar(month), getPaperProfitSummary(), trading.sync()]); calendarRows.value = calendar.status === "fulfilled" ? calendar.value.data || [] : []; profitSummary.value = summary.status === "fulfilled" ? summary.value.data || [] : []; }
+onShow(load);
 </script>
 
 <style scoped>
