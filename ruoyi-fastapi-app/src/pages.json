@@ -32,6 +32,7 @@
       }
     },
     { "path": "pages/exam/index", "style": { "navigationBarTitleText": "考试复习" } },
+    { "path": "pages/review/index", "style": { "navigationBarTitleText": "复习热力图" } },
     {
       "path": "pages/training/detail",
       "style": {
