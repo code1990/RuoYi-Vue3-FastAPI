@@ -12,7 +12,7 @@
       <text v-if="error" class="error">{{ error }}</text>
     </view>
     <scroll-view scroll-x class="tabs indicators" :show-scrollbar="false"><text v-for="item in activeIndicators" :key="item" :class="indicator === item ? 'active' : ''" @click="changeIndicator(item)">{{ item }}</text></scroll-view>
-    <view class="footer"><button size="mini" @click.stop="trade">闪电下单</button><text>数据：新华财经</text></view>
+    <view class="footer"><button size="mini" @click.stop="trade">闪电下单</button></view>
     <view v-if="lightning" class="lightning" @click.stop>
         <view class="lightning-head"><text>模拟下单</text><text @click="lightning = false">收起</text></view>
         <text class="margin">1 手保证金 ¥ {{ format(oneMargin) }}</text>
@@ -61,7 +61,7 @@ function fillMinuteRows(rows) {
     const daytime = items.filter(item => toMinute(item.time) >= 540 && toMinute(item.time) <= 900);
     if (!daytime.length) return items;
     const points = new Map(daytime.map(item => [toMinute(item.time), item])); const date = String(daytime[0].time).slice(0, 8); let previous = daytime[0]; const filled = [];
-    // 与新华财经及 HQChart 线材时间表一致：09:00–10:15、10:31–11:30、13:31–15:00。
+    // 日盘线材时间：09:00–10:15、10:31–11:30、13:31–15:00。
     [[540, 615], [631, 690], [811, 900]].forEach(([start, end]) => { for (let minute = start; minute <= end; minute += 1) { const current = points.get(minute); if (current) previous = current; else { const hour = String(Math.floor(minute / 60)).padStart(2, "0"); const second = String(minute % 60).padStart(2, "0"); previous = { ...previous, time: Number(`${date}${hour}${second}`), open: previous.close, high: previous.close, low: previous.close, volume: 0, turnover: 0 }; } filled.push(previous); } });
     return [...items.filter(item => toMinute(item.time) < 540 || toMinute(item.time) > 900), ...filled].sort((left, right) => Number(left.time) - Number(right.time));
   });
