@@ -2,7 +2,7 @@
   <view class="page">
     <view class="heatmap-card">
       <view class="heatmap-header">
-        <view><text class="heatmap-title">复习热力图</text><text class="heatmap-subtitle">最近三个月</text></view>
+        <view><text class="heatmap-title">复习热力图</text><text class="heatmap-subtitle">上月、本月、下月</text></view>
         <text class="today-count">今日 {{ completedToday }} 次</text>
       </view>
       <view v-for="month in heatmapMonths" :key="month.key" class="heatmap-month">
@@ -34,7 +34,7 @@ const heatmapMonths = computed(() => {
   const now = new Date()
   const today = formatDate(now)
   return Array.from({ length: 3 }, (_, index) => {
-    const month = new Date(now.getFullYear(), now.getMonth() - 2 + index, 1)
+    const month = new Date(now.getFullYear(), now.getMonth() - 1 + index, 1)
     const leading = month.getDay()
     const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate()
     const days = Array.from({ length: Math.ceil((leading + lastDay) / 7) * 7 }, (_, cell) => {
@@ -50,10 +50,12 @@ const heatmapMonths = computed(() => {
 })
 
 async function load() {
-  const year = new Date().getFullYear()
-  const [current, previous] = await Promise.all([getReviewOverview(year), getReviewOverview(year - 1)])
-  const currentData = current.data || {}
-  reviewOverview.value = { ...currentData, heatmap: [...(previous.data?.heatmap || []), ...(currentData.heatmap || [])], plannedReviews: currentData.plannedReviews || [] }
+  const now = new Date()
+  const years = [...new Set([-1, 0, 1].map(offset => new Date(now.getFullYear(), now.getMonth() + offset, 1).getFullYear()))]
+  const responses = await Promise.all(years.map(getReviewOverview))
+  const data = responses.map(response => response.data || {})
+  const currentData = data[years.indexOf(now.getFullYear())] || {}
+  reviewOverview.value = { ...currentData, heatmap: data.flatMap(item => item.heatmap || []), plannedReviews: data.flatMap(item => item.plannedReviews || []) }
 }
 
 onShow(() => { load().catch(() => {}) })
