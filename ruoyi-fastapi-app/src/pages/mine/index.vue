@@ -1,7 +1,7 @@
 <template>
   <view class="page">
     <view class="grid">
-      <view v-for="item in entries" :key="item.title" class="entry" hover-class="entry-hover" @click="open(item)">
+      <view v-for="item in entries" :key="item.title" class="entry" hover-class="entry-hover" @tap="open(item)">
         <view :class="['icon', item.tone]"><text :class="item.icon"></text></view>
         <text class="entry-title">{{ item.title }}</text>
       </view>
