@@ -8,8 +8,13 @@ from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCar
 
 class ExamReviewService:
     @staticmethod
+    def _review_required(review: ExamCardReview) -> int:
+        return max(3, review.required_repetitions - max(0, (review.review_round or 1) - 4))
+
+    @staticmethod
     def _card(row: ExamCard, review: ExamCardReview | None = None) -> dict:
-        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': review.required_repetitions if review else max(4, row.difficulty + 2)}}
+        required = ExamReviewService._review_required(review) if review and review.state == 'review' else review.required_repetitions if review else max(4, row.difficulty + 2)
+        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': required, 'phase': review.state if review else 'learning', 'round': review.review_round if review and review.state == 'review' else None}}
 
     @classmethod
     async def overview(cls, db: AsyncSession, user_id: int, year: int | None = None) -> dict:
@@ -60,14 +65,19 @@ class ExamReviewService:
             if rating == 'again': review.required_repetitions = min(10, review.required_repetitions + 1)
             else: review.completed_repetitions += 1
             if review.completed_repetitions >= review.required_repetitions:
-                review.state, review.interval_days, review.next_review_time = 'review', 1, now + timedelta(days=1)
+                review.state, review.completed_repetitions, review.review_round, review.interval_days, review.next_review_time = 'review', 0, 1, 1, now + timedelta(days=1)
         elif rating == 'again':
-            review.state, review.completed_repetitions, review.required_repetitions, review.next_review_time = 'learning', 0, max(4, card.difficulty + 2), None
+            review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, None
         else:
-            factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
-            review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
-            review.next_review_time = now + timedelta(days=review.interval_days)
+            review.completed_repetitions += 1
+            if review.completed_repetitions >= cls._review_required(review):
+                factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
+                review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
+                review.next_review_time = now + timedelta(days=review.interval_days)
+                review.completed_repetitions = 0
+                review.review_round += 1
         review.last_review_time = now; db.add(ExamCardReviewLog(user_id=user_id, card_id=card_id, rating=rating, reviewed_time=now))
-        result = {'state': review.state, 'completed': review.completed_repetitions, 'required': review.required_repetitions, 'nextReviewTime': review.next_review_time}
+        required = cls._review_required(review) if review.state == 'review' else review.required_repetitions
+        result = {'state': review.state, 'completed': review.completed_repetitions, 'required': required, 'reviewRound': review.review_round, 'nextReviewTime': review.next_review_time}
         await db.commit()
         return result

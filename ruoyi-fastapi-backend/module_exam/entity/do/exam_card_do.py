@@ -27,6 +27,7 @@ class ExamCardReview(Base):
     state = Column(String(16), nullable=False, default='learning')
     required_repetitions = Column(Integer, nullable=False, default=4)
     completed_repetitions = Column(Integer, nullable=False, default=0)
+    review_round = Column(Integer, nullable=False, default=0)
     learning_batch = Column(Integer, nullable=False, default=0)
     interval_days = Column(Integer, nullable=False, default=1)
     next_review_time = Column(DateTime, nullable=True)

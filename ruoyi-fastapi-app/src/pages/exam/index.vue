@@ -15,7 +15,7 @@
         </view>
       </view>
     </view>
-    <view v-if="card" class="card"><text class="progress">学习进度 {{ card.progress.completed }} / {{ card.progress.required }} 次有效回忆</text><text class="question">{{ card.question }}</text><view v-if="showAnswer"><view class="points"><text v-for="point in keyPoints" :key="point">{{ point }}</text></view><view v-if="card.aiSummary" class="summary"><view v-for="section in summarySections" :key="section.title" class="summary-section"><text class="summary-title">{{ section.title }}：</text><text class="summary-content">{{ section.content }}</text></view></view></view></view>
+    <view v-if="card" class="card"><text class="progress">{{ card.progress.phase === 'review' ? `第 ${card.progress.round} 轮复习` : '学习进度' }} {{ card.progress.completed }} / {{ card.progress.required }} 次有效回忆</text><text class="question">{{ card.question }}</text><view v-if="showAnswer"><view class="points"><text v-for="point in keyPoints" :key="point">{{ point }}</text></view><view v-if="card.aiSummary" class="summary"><view v-for="section in summarySections" :key="section.title" class="summary-section"><text class="summary-title">{{ section.title }}：</text><text class="summary-content">{{ section.content }}</text></view></view></view></view>
     <view v-else class="empty">暂无待复习卡片，明天再来看看。</view>
     <view v-if="card" class="bottom-panel"><button v-if="!showAnswer" class="reveal" @click="showAnswer=true">显示答案</button><view v-else class="actions"><button class="again" @click="rate('again')">重来</button><button class="hard" @click="rate('hard')">困难</button><button class="good" @click="rate('good')">良好</button><button class="easy" @click="rate('easy')">简单</button></view></view>
   </view>
