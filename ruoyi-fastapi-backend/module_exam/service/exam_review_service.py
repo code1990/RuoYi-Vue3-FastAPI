@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 from math import ceil
 
@@ -91,12 +92,36 @@ class ExamReviewService:
         studied_cards = new_cards + reviewed_cards
         average_new = new_cards / 30
         estimated_days = 0 if not levels['unlearned'] else ceil(levels['unlearned'] / average_new) if average_new else None
+        calendar_start = today.replace(day=1)
+        next_month = (calendar_start.replace(day=28) + timedelta(days=4)).replace(day=1)
+        calendar_end = (next_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+        calendar_known_cards = set((await db.scalars(
+            select(ExamCardReviewLog.card_id).join(ExamCard, ExamCard.card_id == ExamCardReviewLog.card_id)
+            .where(*log_filters, ExamCardReviewLog.reviewed_time < calendar_start).distinct()
+        )).all())
+        calendar_logs = (await db.execute(
+            select(ExamCardReviewLog.card_id, ExamCardReviewLog.reviewed_time)
+            .join(ExamCard, ExamCard.card_id == ExamCardReviewLog.card_id)
+            .where(*log_filters, ExamCardReviewLog.reviewed_time >= calendar_start, ExamCardReviewLog.reviewed_time < min(calendar_end, end))
+            .order_by(ExamCardReviewLog.reviewed_time, ExamCardReviewLog.log_id)
+        )).all()
+        planned = defaultdict(int)
+        planned_rows = (await db.scalars(
+            select(ExamCardReview.next_review_time).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id)
+            .where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time >= today, ExamCardReview.next_review_time < calendar_end, *active_cards)
+        )).all()
+        for next_review_time in planned_rows:
+            planned[str(next_review_time.date())] += 1
+        calendar = cls._daily_question_counts(calendar_start, (calendar_end - calendar_start).days, calendar_known_cards, calendar_logs)
+        for item in calendar:
+            item['plannedCards'] = planned[item['date']]
         return {
             'questionBank': {**levels, 'started': total - levels['unlearned'], 'progressPercent': round((total - levels['unlearned']) * 100 / total) if total else 0},
             'recent30Days': {
                 'days': daily, 'newCards': new_cards, 'reviewedCards': reviewed_cards, 'studiedCards': studied_cards,
                 'averageDailyStudied': round(studied_cards / 30, 1), 'averageDailyNew': round(average_new, 1), 'estimatedCoverageDays': estimated_days,
             },
+            'calendar': calendar,
         }
 
     @classmethod
