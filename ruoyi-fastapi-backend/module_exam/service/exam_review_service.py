@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from math import ceil
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +29,75 @@ class ExamReviewService:
         planned_reviews = [{'date': str(day), 'count': count} for day, count in planned_rows]
         completed_today = next((item['count'] for item in heatmap if item['date'] == str(today)), 0)
         return {'dueCount': due, 'newAvailable': new_count, 'completedToday': completed_today, 'heatmap': heatmap, 'plannedReviews': planned_reviews}
+
+    @staticmethod
+    def _daily_question_counts(start: date, days: int, known_cards: set[int], rows: list[tuple[int, datetime]]) -> list[dict]:
+        """Count each card once per day; its first-ever rating is new learning."""
+        counts = {str(start + timedelta(days=offset)): {'newCards': set(), 'reviewedCards': set()} for offset in range(days)}
+        seen_cards = set(known_cards)
+        for card_id, reviewed_time in rows:
+            item = counts[str(reviewed_time.date())]
+            if card_id in item['newCards'] or card_id in item['reviewedCards']:
+                continue
+            if card_id in seen_cards:
+                item['reviewedCards'].add(card_id)
+            else:
+                item['newCards'].add(card_id)
+                seen_cards.add(card_id)
+        return [
+            {'date': day, 'newCards': len(item['newCards']), 'reviewedCards': len(item['reviewedCards']), 'studiedCards': len(item['newCards']) + len(item['reviewedCards'])}
+            for day, item in counts.items()
+        ]
+
+    @classmethod
+    async def progress(cls, db: AsyncSession, user_id: int) -> dict:
+        """Question-centric learning progress; kept separate from the legacy overview API."""
+        today = date.today()
+        start, end = today - timedelta(days=29), today + timedelta(days=1)
+        active_cards = (ExamCard.review_enabled.is_(True), ExamCard.status == 'published')
+        total = await db.scalar(select(func.count()).select_from(ExamCard).where(*active_cards)) or 0
+        review_rows = (await db.execute(
+            select(ExamCardReview.state, ExamCardReview.review_round, func.count())
+            .join(ExamCard, ExamCard.card_id == ExamCardReview.card_id)
+            .where(ExamCardReview.user_id == user_id, *active_cards)
+            .group_by(ExamCardReview.state, ExamCardReview.review_round)
+        )).all()
+        levels = {'unlearned': total, 'learning': 0, 'initialReview': 0, 'consolidating': 0, 'mastered': 0}
+        for state, review_round, count in review_rows:
+            levels['unlearned'] -= count
+            if state == 'learning':
+                levels['learning'] += count
+            elif review_round <= 1:
+                levels['initialReview'] += count
+            elif review_round <= 3:
+                levels['consolidating'] += count
+            else:
+                levels['mastered'] += count
+
+        log_filters = (ExamCardReviewLog.user_id == user_id, *active_cards)
+        known_cards = set((await db.scalars(
+            select(ExamCardReviewLog.card_id).join(ExamCard, ExamCard.card_id == ExamCardReviewLog.card_id)
+            .where(*log_filters, ExamCardReviewLog.reviewed_time < start).distinct()
+        )).all())
+        logs = (await db.execute(
+            select(ExamCardReviewLog.card_id, ExamCardReviewLog.reviewed_time)
+            .join(ExamCard, ExamCard.card_id == ExamCardReviewLog.card_id)
+            .where(*log_filters, ExamCardReviewLog.reviewed_time >= start, ExamCardReviewLog.reviewed_time < end)
+            .order_by(ExamCardReviewLog.reviewed_time, ExamCardReviewLog.log_id)
+        )).all()
+        daily = cls._daily_question_counts(start, 30, known_cards, logs)
+        new_cards = sum(item['newCards'] for item in daily)
+        reviewed_cards = sum(item['reviewedCards'] for item in daily)
+        studied_cards = new_cards + reviewed_cards
+        average_new = new_cards / 30
+        estimated_days = 0 if not levels['unlearned'] else ceil(levels['unlearned'] / average_new) if average_new else None
+        return {
+            'questionBank': {**levels, 'started': total - levels['unlearned'], 'progressPercent': round((total - levels['unlearned']) * 100 / total) if total else 0},
+            'recent30Days': {
+                'days': daily, 'newCards': new_cards, 'reviewedCards': reviewed_cards, 'studiedCards': studied_cards,
+                'averageDailyStudied': round(studied_cards / 30, 1), 'averageDailyNew': round(average_new, 1), 'estimatedCoverageDays': estimated_days,
+            },
+        }
 
     @classmethod
     async def next_card(cls, db: AsyncSession, user_id: int) -> dict | None:

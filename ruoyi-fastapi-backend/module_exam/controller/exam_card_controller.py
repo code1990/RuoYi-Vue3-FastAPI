@@ -11,7 +11,7 @@ from module_exam.service.exam_card_service import ExamCardService
 from utils.response_util import ResponseUtil
 
 
-exam_card_controller = APIRouterPro(prefix='/exam', order_num=42, tags=['考试-知识卡片'], dependencies=[PreAuthDependency()])
+exam_card_controller = APIRouterPro(prefix='/exam', order_num=42, tags=['考试'], dependencies=[PreAuthDependency()])
 
 
 @exam_card_controller.get('/categories', response_model=DataResponseModel[list[dict]], summary='查询知识卡片分类')

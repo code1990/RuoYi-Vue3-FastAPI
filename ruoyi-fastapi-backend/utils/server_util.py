@@ -229,7 +229,8 @@ class APIDocsUtil:
         """
         if not AppConfig.app_disable_swagger:
             return get_swagger_ui_html(
-                openapi_url=cls._OPENAPI_URL,
+                # Relative path works both directly and through the /prod-api proxy.
+                openapi_url='openapi.json',
                 title=f'{app.title} - Swagger UI',
                 swagger_js_url=swagger_js_url,
                 swagger_css_url=swagger_css_url,
