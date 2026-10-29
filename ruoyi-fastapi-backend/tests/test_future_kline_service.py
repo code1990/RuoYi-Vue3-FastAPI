@@ -33,3 +33,12 @@ def test_latest_price_uses_the_last_valid_real_time_point(monkeypatch) -> None:
     ]))
 
     assert FutureKlineService.get_latest_price('RB888.XSGE') == 3212.5
+
+
+def test_daily_kline_appends_today_from_upstream_when_local_bars_are_stale(monkeypatch) -> None:
+    monkeypatch.setattr(FutureKlineService, '_get_local_daily_rows', classmethod(lambda cls, *args: [{'time': 20261028, 'close': 93300}]))
+    monkeypatch.setattr(FutureKlineService, '_get_rows', classmethod(lambda cls, *args: [{'time': 20261029, 'close': 92580}]))
+
+    result = FutureKlineService.get('LC888.XGFE', '1d', 180)
+
+    assert [item['time'] for item in result['rows']] == [20261028, 20261029]

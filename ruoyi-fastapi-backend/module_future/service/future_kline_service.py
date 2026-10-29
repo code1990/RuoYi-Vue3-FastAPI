@@ -103,10 +103,15 @@ class FutureKlineService:
         if period in ('minute', '5d'):
             # trend 接口是新华财经页面自身使用的逐分钟分时源；kline 的 10/11 档为稀疏 K 线数据。
             rows = cls._get_trend_rows(contract_code, 'real_trend' if period == 'minute' else 'trend5day')
-        else:
-            rows = cls._get_local_daily_rows(contract_code, count) if period == '1d' else []
+        elif period == '1d':
+            rows = cls._get_local_daily_rows(contract_code, count)
+            today_row = cls._get_rows(contract_code, cls.PERIODS[period], 1 if rows else count)
             if not rows:
-                rows = cls._get_rows(contract_code, cls.PERIODS[period], count)
+                rows = today_row
+            if today_row and (not rows or str(today_row[-1]['time'])[:8] > str(rows[-1]['time'])[:8]):
+                rows = [*rows, today_row[-1]][-count:]
+        else:
+            rows = cls._get_rows(contract_code, cls.PERIODS[period], count)
         if period == '5d':
             dates = sorted({str(item['time'])[:8] for item in rows})[-5:]
             rows = [item for item in rows if str(item['time'])[:8] in dates]
