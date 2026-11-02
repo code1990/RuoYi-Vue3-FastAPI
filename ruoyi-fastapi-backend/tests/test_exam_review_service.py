@@ -34,3 +34,8 @@ def test_today_task_uses_five_seconds_per_remaining_card_round():
         'remainingRounds': 8,
         'estimatedSeconds': 40,
     }
+
+
+def test_due_reviews_pause_new_learning_task():
+    assert ExamReviewService._learning_task(54, 5, 0) == (0, 0)
+    assert ExamReviewService._learning_task(0, 5, 1) == (6, 1)

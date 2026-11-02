@@ -22,6 +22,10 @@ class ExamReviewService:
         }
 
     @staticmethod
+    def _learning_task(due: int, pending: int, completed: int) -> tuple[int, int]:
+        return (0, 0) if due else (pending + completed, completed)
+
+    @staticmethod
     def _review_required(review: ExamCardReview) -> int:
         return max(3, review.required_repetitions - max(0, (review.review_round or 1) - 4))
 
@@ -56,11 +60,12 @@ class ExamReviewService:
         heatmap = [{'date': str(day), 'count': count} for day, count in rows]
         planned_reviews = [{'date': str(day), 'count': count} for day, count in planned_rows]
         completed_today = next((item['count'] for item in heatmap if item['date'] == str(today)), 0)
+        learning_total, learning_done = cls._learning_task(due, learning_pending, learning_completed)
         return {
             'dueCount': due,
             'newAvailable': new_count,
             'completedToday': completed_today,
-            'todayTask': cls._today_task(due + review_completed, review_completed, learning_pending + learning_completed, learning_completed),
+            'todayTask': cls._today_task(due + review_completed, review_completed, learning_total, learning_done),
             'heatmap': heatmap,
             'plannedReviews': planned_reviews,
         }
