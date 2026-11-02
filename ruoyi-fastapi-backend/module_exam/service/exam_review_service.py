@@ -10,6 +10,18 @@ from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCar
 
 class ExamReviewService:
     @staticmethod
+    def _today_task(review_total: int, review_completed: int, learning_total: int, learning_completed: int) -> dict:
+        remaining_rounds = max(0, review_total - review_completed) + max(0, learning_total - learning_completed)
+        return {
+            'reviewTotal': review_total,
+            'reviewCompleted': review_completed,
+            'learningTotal': learning_total,
+            'learningCompleted': learning_completed,
+            'remainingRounds': remaining_rounds,
+            'estimatedSeconds': remaining_rounds * 5,
+        }
+
+    @staticmethod
     def _review_required(review: ExamCardReview) -> int:
         return max(3, review.required_repetitions - max(0, (review.review_round or 1) - 4))
 
@@ -22,6 +34,21 @@ class ExamReviewService:
     async def overview(cls, db: AsyncSession, user_id: int, year: int | None = None) -> dict:
         now = datetime.now(); today = now.date(); year = year or today.year
         due = await db.scalar(select(func.count()).select_from(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now)) or 0
+        today_start = datetime.combine(today, datetime.min.time())
+        tomorrow_start = today_start + timedelta(days=1)
+        review_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
+            ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round > 1,
+            ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
+            ExamCardReview.next_review_time > now,
+        )) or 0
+        learning_pending = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
+            ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning'
+        )) or 0
+        learning_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
+            ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round == 1,
+            ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
+            ExamCardReview.next_review_time > now,
+        )) or 0
         new_count = await db.scalar(select(func.count()).select_from(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))) or 0
         start, end = date(year, 1, 1), date(year + 1, 1, 1)
         rows = (await db.execute(select(func.date(ExamCardReviewLog.reviewed_time), func.count()).where(ExamCardReviewLog.user_id == user_id, ExamCardReviewLog.reviewed_time >= start, ExamCardReviewLog.reviewed_time < end).group_by(func.date(ExamCardReviewLog.reviewed_time)))).all()
@@ -29,7 +56,14 @@ class ExamReviewService:
         heatmap = [{'date': str(day), 'count': count} for day, count in rows]
         planned_reviews = [{'date': str(day), 'count': count} for day, count in planned_rows]
         completed_today = next((item['count'] for item in heatmap if item['date'] == str(today)), 0)
-        return {'dueCount': due, 'newAvailable': new_count, 'completedToday': completed_today, 'heatmap': heatmap, 'plannedReviews': planned_reviews}
+        return {
+            'dueCount': due,
+            'newAvailable': new_count,
+            'completedToday': completed_today,
+            'todayTask': cls._today_task(due + review_completed, review_completed, learning_pending + learning_completed, learning_completed),
+            'heatmap': heatmap,
+            'plannedReviews': planned_reviews,
+        }
 
     @staticmethod
     def _daily_question_counts(start: date, days: int, known_cards: set[int], rows: list[tuple[int, datetime]]) -> list[dict]:

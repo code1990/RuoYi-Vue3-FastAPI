@@ -23,3 +23,14 @@ def test_daily_question_counts_new_and_reviewed_cards_without_duplicate_ratings(
         {'date': '2026-10-01', 'newCards': 1, 'reviewedCards': 1, 'studiedCards': 2},
         {'date': '2026-10-02', 'newCards': 0, 'reviewedCards': 1, 'studiedCards': 1},
     ]
+
+
+def test_today_task_uses_five_seconds_per_remaining_card_round():
+    assert ExamReviewService._today_task(6, 2, 5, 1) == {
+        'reviewTotal': 6,
+        'reviewCompleted': 2,
+        'learningTotal': 5,
+        'learningCompleted': 1,
+        'remainingRounds': 8,
+        'estimatedSeconds': 40,
+    }

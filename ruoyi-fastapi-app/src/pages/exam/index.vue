@@ -1,6 +1,7 @@
 <template>
   <view class="page">
-    <view v-if="card" class="card"><text class="progress">{{ card.progress.phase === 'review' ? `第 ${card.progress.round} 轮复习` : '学习进度' }} {{ card.progress.completed }} / {{ card.progress.required }} 次有效回忆</text><text class="question">{{ card.question }}</text><view v-if="showAnswer"><view class="points"><text v-for="point in keyPoints" :key="point">{{ point }}</text></view><view v-if="card.aiSummary" class="summary"><view v-for="section in summarySections" :key="section.title" class="summary-section"><text class="summary-title">{{ section.title }}：</text><text class="summary-content">{{ section.content }}</text></view></view></view></view>
+    <view class="today-task">今日：复习 {{ task.reviewCompleted || 0 }}/{{ task.reviewTotal || 0 }}｜学习 {{ task.learningCompleted || 0 }}/{{ task.learningTotal || 0 }}｜剩 {{ task.remainingRounds || 0 }} 轮·{{ estimatedTime }}</view>
+    <view v-if="card" class="card"><text class="progress">本题 {{ card.progress.completed }} / {{ card.progress.required }} 次有效回忆</text><text class="question">{{ card.question }}</text><view v-if="showAnswer"><view class="points"><text v-for="point in keyPoints" :key="point">{{ point }}</text></view><view v-if="card.aiSummary" class="summary"><view v-for="section in summarySections" :key="section.title" class="summary-section"><text class="summary-title">{{ section.title }}：</text><text class="summary-content">{{ section.content }}</text></view></view></view></view>
     <view v-else class="empty">暂无待复习卡片，明天再来看看。</view>
     <view v-if="card" class="bottom-panel"><button v-if="!showAnswer" class="reveal" @click="showAnswer=true">显示答案</button><view v-else class="actions"><button class="again" @click="rate('again')">重来</button><button class="hard" @click="rate('hard')">困难</button><button class="good" @click="rate('good')">良好</button><button class="easy" @click="rate('easy')">简单</button></view></view>
   </view>
@@ -9,9 +10,11 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getNextReviewCard, rateReviewCard } from '@/api/exam/review'
+import { getNextReviewCard, getReviewOverview, rateReviewCard } from '@/api/exam/review'
 
 const card = ref(null)
+const task = ref({})
+const estimatedTime = computed(() => { const seconds = task.value.estimatedSeconds || 0; return seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)} 分${seconds % 60 ? `${seconds % 60} 秒` : ''}` })
 const showAnswer = ref(false)
 const summarySections = computed(() => ['结论', '要点', '补充'].map(title => {
   const content = String(card.value?.aiSummary || '').match(new RegExp(`${title}：([\\s\\S]*?)(?=结论：|要点：|补充：|$)`))?.[1]?.trim() || ''
@@ -19,11 +22,11 @@ const summarySections = computed(() => ['结论', '要点', '补充'].map(title 
 }).filter(section => section.content))
 const keyPoints = computed(() => String(card.value?.keyPoints || '').split('；').filter(Boolean))
 
-async function load() { card.value = (await getNextReviewCard()).data || null; showAnswer.value = false }
+async function load() { card.value = (await getNextReviewCard()).data || null; task.value = (await getReviewOverview()).data?.todayTask || {}; showAnswer.value = false }
 async function rate(value) { await rateReviewCard(card.value.cardId, value); await load() }
 onShow(() => { load().catch(() => {}) })
 </script>
 
 <style scoped>
-.page{min-height:100vh;background:#f5f7fb;padding:28rpx 30rpx 190rpx}.card,.empty{background:#fff;border-radius:22rpx;padding:30rpx}.progress{display:block;color:#748198;font-size:22rpx;margin-bottom:22rpx}.question{display:block;color:#25324a;line-height:1.6;font-size:34rpx;font-weight:700}.summary{margin-top:28rpx}.summary-section{margin-bottom:24rpx}.summary-title,.summary-content{display:block;color:#344158;font-size:25rpx;line-height:1.8}.summary-title{font-weight:700;color:#1f4c7c}.summary-content{margin-top:4rpx;white-space:pre-line}.points{display:flex;flex-wrap:wrap;gap:12rpx;margin-top:24rpx}.points text{padding:10rpx 16rpx;border-radius:10rpx;background:#e8f3ff;color:#3b78aa;font-size:22rpx}.bottom-panel{position:fixed;left:0;right:0;bottom:0;padding:18rpx 30rpx 20rpx;background:#fff;box-shadow:0 -6rpx 20rpx rgba(38,57,84,.1)}.reveal,.actions button{height:90rpx;line-height:90rpx;font-size:30rpx}.reveal{width:100%;margin:0;background:#2979ff;color:#fff}.actions{display:flex;gap:10rpx}.actions button{flex:1;margin:0;border:0}.actions .again{background:#f56c6c;color:#fff}.actions .hard{background:#e6a23c;color:#fff}.actions .good{background:#f2c94c;color:#594400}.actions .easy{background:#e8f7ea;color:#2e7d32}.empty{text-align:center;color:#8b96a8;margin-top:24rpx}
+.page{min-height:100vh;background:#f5f7fb;padding:28rpx 30rpx 190rpx}.today-task{margin-bottom:18rpx;color:#536177;font-size:23rpx;white-space:nowrap}.card,.empty{background:#fff;border-radius:22rpx;padding:30rpx}.progress{display:block;color:#748198;font-size:22rpx;margin-bottom:22rpx}.question{display:block;color:#25324a;line-height:1.6;font-size:34rpx;font-weight:700}.summary{margin-top:28rpx}.summary-section{margin-bottom:24rpx}.summary-title,.summary-content{display:block;color:#344158;font-size:25rpx;line-height:1.8}.summary-title{font-weight:700;color:#1f4c7c}.summary-content{margin-top:4rpx;white-space:pre-line}.points{display:flex;flex-wrap:wrap;gap:12rpx;margin-top:24rpx}.points text{padding:10rpx 16rpx;border-radius:10rpx;background:#e8f3ff;color:#3b78aa;font-size:22rpx}.bottom-panel{position:fixed;left:0;right:0;bottom:0;padding:18rpx 30rpx 20rpx;background:#fff;box-shadow:0 -6rpx 20rpx rgba(38,57,84,.1)}.reveal,.actions button{height:90rpx;line-height:90rpx;font-size:30rpx}.reveal{width:100%;margin:0;background:#2979ff;color:#fff}.actions{display:flex;gap:10rpx}.actions button{flex:1;margin:0;border:0}.actions .again{background:#f56c6c;color:#fff}.actions .hard{background:#e6a23c;color:#fff}.actions .good{background:#f2c94c;color:#594400}.actions .easy{background:#e8f7ea;color:#2e7d32}.empty{text-align:center;color:#8b96a8;margin-top:24rpx}
 </style>
