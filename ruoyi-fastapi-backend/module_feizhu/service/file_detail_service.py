@@ -2,7 +2,7 @@ import os
 import sqlite3
 from pathlib import Path
 
-from module_feizhu.entity.vo.file_detail_vo import FileDetailModel, FileDetailOptionsModel, FileDetailPageModel
+from module_feizhu.entity.vo.file_detail_vo import FileDetailModel, FileDetailOptionsModel, FileDetailPageModel, FileKeywordTopicsModel
 
 
 RESOURCE_DB_PATH = Path(os.getenv('FEIZHU_RESOURCE_DB_PATH', '/root/data/disk/ruoyi-fastapi/feizhu_resources.db'))
@@ -12,6 +12,31 @@ class FileDetailService:
     @staticmethod
     def split_values(value: str | None) -> list[str]:
         return [item.strip() for item in (value or '').split(',') if item.strip()]
+
+    @classmethod
+    async def keyword_topics(cls) -> list[FileKeywordTopicsModel]:
+        if not RESOURCE_DB_PATH.exists():
+            return []
+        with sqlite3.connect(RESOURCE_DB_PATH) as connection:
+            rows = connection.execute('''
+                SELECT k.id,k.keyword,t.topic FROM t_file_keyword k
+                LEFT JOIN t_file_keyword_topic t ON t.keyword_id=k.id
+                ORDER BY k.sort_no,k.keyword,t.sort_no,t.topic
+            ''').fetchall()
+        keywords: dict[str, FileKeywordTopicsModel] = {}
+        for keyword_id, keyword, topic in rows:
+            item = keywords.setdefault(keyword_id, FileKeywordTopicsModel(id=keyword_id, name=keyword, topics=[]))
+            if topic:
+                item.topics.append(topic)
+        return list(keywords.values())
+
+    @classmethod
+    async def remove_keyword_topic(cls, keyword_id: str, topic: str) -> bool:
+        if not RESOURCE_DB_PATH.exists():
+            return False
+        with sqlite3.connect(RESOURCE_DB_PATH) as connection:
+            cursor = connection.execute('DELETE FROM t_file_keyword_topic WHERE keyword_id=? AND topic=?', (keyword_id, topic))
+        return cursor.rowcount > 0
 
     @classmethod
     async def options(cls, keyword_ids: str | None) -> FileDetailOptionsModel:

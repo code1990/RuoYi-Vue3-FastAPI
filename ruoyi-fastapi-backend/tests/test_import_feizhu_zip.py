@@ -44,6 +44,21 @@ class ImportFeizhuZipTest(unittest.TestCase):
             with sqlite3.connect(db_path) as connection:
                 self.assertEqual([('shared', '外汇')], connection.execute('SELECT id,topic FROM t_file_detail').fetchall())
 
+    def test_does_not_restore_a_removed_default_topic_on_reimport(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_path, db_path = root / 'resources.zip', root / 'resources.db'
+            with zipfile.ZipFile(archive_path, 'w') as archive:
+                archive.writestr('外汇/1.json', json.dumps({'resources': [{'res': {'id': 'resource', 'eu': 'resource'}}]}))
+                archive.writestr('detail/resource.json', json.dumps({'id': 'resource'}))
+
+            import_archive(archive_path, db_path)
+            with sqlite3.connect(db_path) as connection:
+                connection.execute("DELETE FROM t_file_keyword_topic WHERE keyword_id='forex' AND topic='MQL'")
+            import_archive(archive_path, db_path)
+            with sqlite3.connect(db_path) as connection:
+                self.assertIsNone(connection.execute("SELECT 1 FROM t_file_keyword_topic WHERE keyword_id='forex' AND topic='MQL'").fetchone())
+
 
 if __name__ == '__main__':
     unittest.main()

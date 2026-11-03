@@ -56,6 +56,19 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/feizhu/keyword-topics',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/feizhu/keyword-topics.vue'),
+        name: 'FeizhuKeywordTopics',
+        meta: { title: '关键词主题词', activeMenu: '/file-detail' }
+      }
+    ]
+  },
+  {
     path: '/chat',
     component: Layout,
     children: [

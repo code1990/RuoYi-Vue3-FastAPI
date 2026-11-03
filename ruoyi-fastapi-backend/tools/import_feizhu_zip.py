@@ -12,7 +12,9 @@ from typing import Any
 
 
 DEFAULT_DB_PATH = Path('/root/data/disk/ruoyi-fastapi/feizhu_resources.db')
-KEYWORD_TOPICS = {'forex': ('外汇', ('外汇', 'MT4', 'MT5', 'MQL'))}
+KEYWORD_TOPICS = {
+    'forex': ('外汇', ('外汇', 'Forex', 'MT4', 'MT5', 'MQL', 'MetaTrader', 'cTrader', '货币对', '汇率')),
+}
 EXCLUDED_TOPICS = {'帝国时代', '帝国时代4', 'Age Of Empire IV'}
 
 
@@ -110,9 +112,10 @@ def create_table(connection: sqlite3.Connection) -> None:
     connection.execute('CREATE TABLE IF NOT EXISTS t_file_keyword (id TEXT PRIMARY KEY, keyword TEXT NOT NULL UNIQUE, sort_no INTEGER NOT NULL DEFAULT 0)')
     connection.execute('CREATE TABLE IF NOT EXISTS t_file_keyword_topic (id TEXT PRIMARY KEY, keyword_id TEXT NOT NULL, topic TEXT NOT NULL, sort_no INTEGER NOT NULL DEFAULT 0, UNIQUE(keyword_id, topic))')
     for keyword_id, (keyword, topics) in KEYWORD_TOPICS.items():
-        connection.execute('INSERT OR IGNORE INTO t_file_keyword(id,keyword,sort_no) VALUES (?,?,?)', (keyword_id, keyword, 0))
-        connection.execute('DELETE FROM t_file_keyword_topic WHERE keyword_id=?', (keyword_id,))
-        connection.executemany('INSERT OR IGNORE INTO t_file_keyword_topic(id,keyword_id,topic,sort_no) VALUES (?,?,?,?)', [(f'{keyword_id}:{index}', keyword_id, topic, index) for index, topic in enumerate(topics)])
+        if connection.execute('SELECT 1 FROM t_file_keyword WHERE id=?', (keyword_id,)).fetchone():
+            continue
+        connection.execute('INSERT INTO t_file_keyword(id,keyword,sort_no) VALUES (?,?,?)', (keyword_id, keyword, 0))
+        connection.executemany('INSERT INTO t_file_keyword_topic(id,keyword_id,topic,sort_no) VALUES (?,?,?,?)', [(f'{keyword_id}:{index}', keyword_id, topic, index) for index, topic in enumerate(topics)])
 
 
 def remove_excluded_topics(connection: sqlite3.Connection) -> None:

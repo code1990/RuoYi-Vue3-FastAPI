@@ -40,3 +40,23 @@ def test_file_detail_reads_sqlite_and_matches_one_topic_in_a_multi_topic_row():
         assert options.exts == ['mq5', 'pdf']
         assert (page.total, page.rows[0].id, page.rows[0].topic) == (1, '1', '外汇,期货')
         assert expanded_page.total == 3
+
+
+def test_file_keyword_topics_can_be_removed_from_sqlite():
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / 'resources.db'
+        with sqlite3.connect(path) as connection:
+            connection.executescript('''
+                CREATE TABLE t_file_keyword (id TEXT, keyword TEXT, sort_no INTEGER);
+                CREATE TABLE t_file_keyword_topic (id TEXT, keyword_id TEXT, topic TEXT, sort_no INTEGER);
+                INSERT INTO t_file_keyword VALUES ('forex', '外汇', 0);
+                INSERT INTO t_file_keyword_topic VALUES ('forex:0', 'forex', '外汇', 0);
+                INSERT INTO t_file_keyword_topic VALUES ('forex:1', 'forex', 'MQL', 1);
+            ''')
+        with patch('module_feizhu.service.file_detail_service.RESOURCE_DB_PATH', path):
+            before = asyncio.run(FileDetailService.keyword_topics())
+            removed = asyncio.run(FileDetailService.remove_keyword_topic('forex', 'MQL'))
+            after = asyncio.run(FileDetailService.keyword_topics())
+        assert before[0].topics == ['外汇', 'MQL']
+        assert removed is True
+        assert after[0].topics == ['外汇']

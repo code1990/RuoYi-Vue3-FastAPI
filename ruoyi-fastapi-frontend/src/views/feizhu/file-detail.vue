@@ -1,7 +1,7 @@
 <template>
   <div class="app-container file-detail-page">
     <el-card shadow="never" class="filter-card">
-      <div class="page-heading"><div><h2>文件明细</h2><p>按关键字、主题和资源属性组合检索</p></div><el-input v-model="filters.keyword" clearable placeholder="文件名、主题或链接" class="search-input" @keyup.enter="search"><template #append><el-button icon="Search" @click="search">查询</el-button></template></el-input></div>
+      <div class="page-heading"><div><h2>文件明细</h2><p>按关键字、主题和资源属性组合检索</p></div><div class="header-actions"><el-button @click="manageKeywords">管理主题词</el-button><el-input v-model="filters.keyword" clearable placeholder="文件名、主题或链接" class="search-input" @keyup.enter="search"><template #append><el-button icon="Search" @click="search">查询</el-button></template></el-input></div></div>
       <div v-if="activeFilters.length" class="selected-row"><strong>已选条件：</strong><el-tag v-for="item in activeFilters" :key="item.key" closable @close="removeFilter(item)">{{ item.label }}</el-tag><el-button link type="primary" @click="reset">清空条件</el-button></div>
       <div class="filter-list">
         <FilterRow label="关键字"><el-check-tag :checked="!filters.keywordIds.length" @change="setAll('keywordIds')">不限</el-check-tag><el-check-tag v-for="item in options.keywords" :key="item.id" :checked="filters.keywordIds.includes(item.id)" @change="toggle('keywordIds', item.id)">{{ item.name }}</el-check-tag></FilterRow>
@@ -21,10 +21,12 @@
 
 <script setup name="FeizhuFileDetail">
 import { computed, h, reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getFileDetailOptions, listFileDetails } from '@/api/feizhu/fileDetail'
 
 const FilterRow = (_, { slots }) => h('div', { class: 'filter-row' }, [h('strong', { class: 'filter-label' }, _.label), h('div', { class: 'filter-values' }, slots.default())])
+const router = useRouter()
 const categoryLabel = value => ({ 0: '其他', 1: '视频', 2: '音频', 3: '图片', 4: '文档', 5: '程序', 6: '其他/目录', 7: '种子' }[value] || '其他')
 const typeLabel = value => ({ baidu: '百度网盘' }[value] || value)
 const validLabel = value => value === '1' ? '有效' : '无效'
@@ -49,6 +51,7 @@ function setOne(field, value) { filters[field] = value; apply() }
 function removeFilter(item) { Array.isArray(filters[item.field]) ? filters[item.field] = filters[item.field].filter(value => value !== item.value) : filters[item.field] = item.field === 'category' ? null : ''; if (item.field === 'keywordIds') { filters.topics = []; loadOptions().then(apply) } else apply() }
 function reset() { Object.assign(filters, { pageNum: 1, keywordIds: [], topics: [], exts: [], category: null, resourceType: '', valid: '', haspwd: '', keyword: '' }); loadOptions().then(load) }
 function search() { apply() }
+function manageKeywords() { router.push('/feizhu/keyword-topics') }
 function copy(value) { navigator.clipboard.writeText(value).then(() => ElMessage.success('已复制')) }
 function open(url) { window.open(url, '_blank', 'noopener,noreferrer') }
 watch(() => filters.keywordIds.join(','), () => { if (filters.topics.some(topic => !options.topics.includes(topic))) filters.topics = filters.topics.filter(topic => options.topics.includes(topic)) })
@@ -56,6 +59,6 @@ loadOptions().then(load)
 </script>
 
 <style scoped>
-.filter-card,.table-card { border-color: var(--el-border-color-lighter); }.table-card { margin-top: 16px; }.page-heading,.table-title,.selected-row,.filter-row,.more-row { display:flex; align-items:center; }.page-heading { justify-content:space-between; gap:24px; }.page-heading h2 { margin:0; font-size:20px; color:var(--el-text-color-primary); }.page-heading p { margin:6px 0 0; color:var(--el-text-color-secondary); font-size:13px; }.search-input { width:340px; }.selected-row { gap:8px; flex-wrap:wrap; padding:14px 0; margin:14px 0 2px; border-top:1px solid var(--el-border-color-lighter); }.selected-row strong,.filter-label { color:var(--el-text-color-regular); font-size:14px; font-weight:600; }.filter-list { border-top:1px solid var(--el-border-color-lighter); }.filter-row { min-height:46px; border-bottom:1px solid var(--el-border-color-lighter); align-items:flex-start; padding:10px 0; }.filter-label { flex:0 0 82px; line-height:26px; }.filter-values { display:flex; gap:8px; flex-wrap:wrap; }.filter-values :deep(.el-check-tag) { margin:0; line-height:26px; padding:0 9px; }.more-row { justify-content:center; padding-top:8px; }.more-row .el-icon { margin-left:4px; }.table-title { justify-content:space-between; margin-bottom:14px; font-weight:600; }.el-table :deep(.cell) { white-space:nowrap; }.el-button + .el-button { margin-left:6px; }
+.filter-card,.table-card { border-color: var(--el-border-color-lighter); }.table-card { margin-top: 16px; }.page-heading,.table-title,.selected-row,.filter-row,.more-row,.header-actions { display:flex; align-items:center; }.page-heading { justify-content:space-between; gap:24px; }.page-heading h2 { margin:0; font-size:20px; color:var(--el-text-color-primary); }.page-heading p { margin:6px 0 0; color:var(--el-text-color-secondary); font-size:13px; }.header-actions { gap:10px; }.search-input { width:340px; }.selected-row { gap:8px; flex-wrap:wrap; padding:14px 0; margin:14px 0 2px; border-top:1px solid var(--el-border-color-lighter); }.selected-row strong,.filter-label { color:var(--el-text-color-regular); font-size:14px; font-weight:600; }.filter-list { border-top:1px solid var(--el-border-color-lighter); }.filter-row { min-height:46px; border-bottom:1px solid var(--el-border-color-lighter); align-items:flex-start; padding:10px 0; }.filter-label { flex:0 0 82px; line-height:26px; }.filter-values { display:flex; gap:8px; flex-wrap:wrap; }.filter-values :deep(.el-check-tag) { margin:0; line-height:26px; padding:0 9px; }.more-row { justify-content:center; padding-top:8px; }.more-row .el-icon { margin-left:4px; }.table-title { justify-content:space-between; margin-bottom:14px; font-weight:600; }.el-table :deep(.cell) { white-space:nowrap; }.el-button + .el-button { margin-left:6px; }
 @media (max-width: 768px) { .page-heading { align-items:flex-start; flex-direction:column; }.search-input { width:100%; }.filter-label { flex-basis:68px; } }
 </style>

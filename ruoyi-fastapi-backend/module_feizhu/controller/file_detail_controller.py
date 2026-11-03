@@ -4,11 +4,21 @@ from fastapi import Query, Response
 from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
-from module_feizhu.entity.vo.file_detail_vo import FileDetailOptionsModel, FileDetailPageModel
+from module_feizhu.entity.vo.file_detail_vo import FileDetailOptionsModel, FileDetailPageModel, FileKeywordTopicsModel
 from module_feizhu.service.file_detail_service import FileDetailService
 from utils.response_util import ResponseUtil
 
 file_detail_controller = APIRouterPro(prefix='/feizhu/file-details', order_num=44, tags=['飞猪盘'], dependencies=[PreAuthDependency()])
+
+
+@file_detail_controller.get('/keywords', response_model=DataResponseModel[list[FileKeywordTopicsModel]], summary='查询关键字主题词')
+async def get_keyword_topics() -> Response:
+    return ResponseUtil.success(data=await FileDetailService.keyword_topics())
+
+
+@file_detail_controller.delete('/keywords/{keyword_id}/topics', summary='删除关键字主题词')
+async def delete_keyword_topic(keyword_id: str, topic: Annotated[str, Query(min_length=1, max_length=255)]) -> Response:
+    return ResponseUtil.success(data=await FileDetailService.remove_keyword_topic(keyword_id, topic))
 
 
 @file_detail_controller.get('/options', response_model=DataResponseModel[FileDetailOptionsModel], summary='查询文件明细筛选项')
