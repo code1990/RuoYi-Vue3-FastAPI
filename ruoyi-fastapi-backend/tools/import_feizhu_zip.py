@@ -13,6 +13,7 @@ from typing import Any
 
 DEFAULT_DB_PATH = Path('/root/data/disk/ruoyi-fastapi/feizhu_resources.db')
 KEYWORD_TOPICS = {'forex': ('外汇', ('外汇', 'MT4', 'MT5', 'MQL'))}
+EXCLUDED_TOPICS = {'帝国时代', '帝国时代4', 'Age Of Empire IV'}
 
 
 def archive_name(info: zipfile.ZipInfo) -> str:
@@ -32,7 +33,7 @@ def source_rows(archive_path: Path) -> tuple[dict[str, dict[str, Any]], dict[str
         for info in archive.infolist():
             name = archive_name(info)
             parts = name.split('/')
-            if len(parts) != 2 or not name.endswith('.json'):
+            if len(parts) != 2 or parts[0] in EXCLUDED_TOPICS or not name.endswith('.json'):
                 continue
             try:
                 payload = json.loads(archive.read(info))
@@ -114,6 +115,17 @@ def create_table(connection: sqlite3.Connection) -> None:
         connection.executemany('INSERT OR IGNORE INTO t_file_keyword_topic(id,keyword_id,topic,sort_no) VALUES (?,?,?,?)', [(f'{keyword_id}:{index}', keyword_id, topic, index) for index, topic in enumerate(topics)])
 
 
+def remove_excluded_topics(connection: sqlite3.Connection) -> None:
+    for resource_id, topic in connection.execute('SELECT id,topic FROM t_file_detail').fetchall():
+        kept = [item for item in topic.split(',') if item not in EXCLUDED_TOPICS]
+        if len(kept) == len(topic.split(',')):
+            continue
+        if kept:
+            connection.execute('UPDATE t_file_detail SET topic=? WHERE id=?', (','.join(kept), resource_id))
+        else:
+            connection.execute('DELETE FROM t_file_detail WHERE id=?', (resource_id,))
+
+
 def import_archive(archive_path: Path, db_path: Path, dry_run: bool = False) -> dict[str, int]:
     rows, summary = rows_for_import(archive_path)
     if dry_run:
@@ -122,6 +134,7 @@ def import_archive(archive_path: Path, db_path: Path, dry_run: bool = False) -> 
     columns = tuple(rows[0]) if rows else ()
     with sqlite3.connect(db_path) as connection:
         create_table(connection)
+        remove_excluded_topics(connection)
         if rows:
             names = ','.join(columns)
             values = ','.join(f':{column}' for column in columns)

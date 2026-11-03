@@ -28,6 +28,22 @@ class ImportFeizhuZipTest(unittest.TestCase):
                 row = connection.execute('SELECT topic,eu,url,pwd,haspwd,valid,file_list FROM t_file_detail').fetchone()
             self.assertEqual(('外汇,期货', 'eu-1', 'https://pan.baidu.com/s/x', '1234', '1', '1', '[{"filename": "a.pdf"}]'), row)
 
+    def test_excludes_empire_topics_without_losing_other_topic_hits(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            archive_path, db_path = root / 'resources.zip', root / 'resources.db'
+            def resource(resource_id): return {'id': resource_id, 'eu': resource_id, 'type': 'baidu'}
+            def detail(resource_id): return {'id': resource_id, 'filename': resource_id, 'url': 'https://pan.baidu.com', 'valid': 1}
+            with zipfile.ZipFile(archive_path, 'w') as archive:
+                archive.writestr('帝国时代/1.json', json.dumps({'resources': [{'res': resource('only-empire')}, {'res': resource('shared')}]}))
+                archive.writestr('外汇/1.json', json.dumps({'resources': [{'res': resource('shared')}]}))
+                archive.writestr('detail/only-empire.json', json.dumps(detail('only-empire')))
+                archive.writestr('detail/shared.json', json.dumps(detail('shared')))
+
+            import_archive(archive_path, db_path)
+            with sqlite3.connect(db_path) as connection:
+                self.assertEqual([('shared', '外汇')], connection.execute('SELECT id,topic FROM t_file_detail').fetchall())
+
 
 if __name__ == '__main__':
     unittest.main()
