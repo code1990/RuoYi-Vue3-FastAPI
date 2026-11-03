@@ -1,9 +1,6 @@
 from typing import Annotated
 
 from fastapi import Query, Response
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from common.aspect.db_seesion import DBSessionDependency
 from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel
@@ -16,15 +13,13 @@ file_detail_controller = APIRouterPro(prefix='/feizhu/file-details', order_num=4
 
 @file_detail_controller.get('/options', response_model=DataResponseModel[FileDetailOptionsModel], summary='查询文件明细筛选项')
 async def get_file_detail_options(
-    db: Annotated[AsyncSession, DBSessionDependency()],
     keyword_ids: Annotated[str | None, Query(alias='keywordIds', max_length=2048)] = None,
 ) -> Response:
-    return ResponseUtil.success(data=await FileDetailService.options(db, keyword_ids))
+    return ResponseUtil.success(data=await FileDetailService.options(keyword_ids))
 
 
 @file_detail_controller.get('', response_model=DataResponseModel[FileDetailPageModel], summary='查询文件明细')
 async def get_file_details(
-    db: Annotated[AsyncSession, DBSessionDependency()],
     page_num: Annotated[int, Query(alias='pageNum', ge=1)] = 1,
     page_size: Annotated[int, Query(alias='pageSize', ge=1, le=100)] = 20,
     keyword_ids: Annotated[str | None, Query(alias='keywordIds', max_length=2048)] = None,
@@ -36,4 +31,4 @@ async def get_file_details(
     haspwd: Annotated[str | None, Query(max_length=255)] = None,
     keyword: Annotated[str | None, Query(max_length=255)] = None,
 ) -> Response:
-    return ResponseUtil.success(data=await FileDetailService.page(db, page_num, page_size, keyword_ids, topics, exts, category, resource_type, valid, haspwd, keyword))
+    return ResponseUtil.success(data=await FileDetailService.page(page_num, page_size, keyword_ids, topics, exts, category, resource_type, valid, haspwd, keyword))
