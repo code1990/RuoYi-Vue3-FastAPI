@@ -21,7 +21,8 @@ class FileDetailService:
             topics = sorted({topic for (value,) in connection.execute('SELECT DISTINCT topic FROM t_file_detail') for topic in cls.split_values(value)})
 
             def values(column: str) -> list:
-                return [row[0] for row in connection.execute(f"SELECT DISTINCT {column} FROM t_file_detail WHERE {column} IS NOT NULL AND {column} <> '' ORDER BY {column}")]
+                result = [row[0] for row in connection.execute(f"SELECT DISTINCT {column} FROM t_file_detail WHERE {column} IS NOT NULL AND {column} <> '' ORDER BY {column}")]
+                return [value for value in result if column != 'ext' or not any('\u4e00' <= char <= '\u9fff' for char in str(value))]
 
             return FileDetailOptionsModel(keywords=[], topics=topics, exts=values('ext'), categories=values('category'), types=values('type'), valids=values('valid'), haspwds=values('haspwd'))
 

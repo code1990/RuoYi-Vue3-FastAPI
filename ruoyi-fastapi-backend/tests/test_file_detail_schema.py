@@ -23,10 +23,12 @@ def test_file_detail_reads_sqlite_and_matches_one_topic_in_a_multi_topic_row():
             connection.executescript('''
                 CREATE TABLE t_file_detail (id TEXT, topic TEXT, filename TEXT, size TEXT, ext TEXT, category INTEGER, type TEXT, url TEXT, pwd TEXT, haspwd TEXT, valid TEXT, ctime TEXT, utime TEXT);
                 INSERT INTO t_file_detail VALUES ('1', '外汇,期货', '期货入门', '1', 'pdf', 6, 'baidu', 'https://pan.baidu.com/s/1', '', '0', '1', '2026-01-01 00:00:00', '2026-01-02 00:00:00');
+                INSERT INTO t_file_detail VALUES ('2', '外汇', '异常', '1', '资源违规提示', 6, 'baidu', 'https://pan.baidu.com/s/2', '', '0', '1', '2026-01-01 00:00:00', '2026-01-02 00:00:00');
             ''')
         with patch('module_feizhu.service.file_detail_service.RESOURCE_DB_PATH', path):
             options = asyncio.run(FileDetailService.options(None))
             page = asyncio.run(FileDetailService.page(1, 20, None, '期货', None, None, None, '1', None, None))
         assert options.keywords == []
         assert options.topics == ['外汇', '期货']
+        assert options.exts == ['pdf']
         assert (page.total, page.rows[0].id, page.rows[0].topic) == (1, '1', '外汇,期货')
