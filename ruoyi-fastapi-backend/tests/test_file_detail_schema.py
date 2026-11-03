@@ -26,13 +26,17 @@ def test_file_detail_reads_sqlite_and_matches_one_topic_in_a_multi_topic_row():
                 CREATE TABLE t_file_keyword_topic (id TEXT, keyword_id TEXT, topic TEXT, sort_no INTEGER);
                 INSERT INTO t_file_detail VALUES ('1', '外汇,期货', '期货入门', '1', 'pdf', 6, 'baidu', 'https://pan.baidu.com/s/1', '', '0', '1', '2026-01-01 00:00:00', '2026-01-02 00:00:00');
                 INSERT INTO t_file_detail VALUES ('2', '外汇', '异常', '1', '资源违规提示', 6, 'baidu', 'https://pan.baidu.com/s/2', '', '0', '1', '2026-01-01 00:00:00', '2026-01-02 00:00:00');
+                INSERT INTO t_file_detail VALUES ('3', 'MQL5', '脚本', '1', 'mq5', 4, 'baidu', 'https://pan.baidu.com/s/3', '', '0', '1', '2026-01-01 00:00:00', '2026-01-02 00:00:00');
                 INSERT INTO t_file_keyword VALUES ('forex', '外汇', 0);
                 INSERT INTO t_file_keyword_topic VALUES ('forex:0', 'forex', '外汇', 0);
+                INSERT INTO t_file_keyword_topic VALUES ('forex:1', 'forex', 'MQL', 1);
             ''')
         with patch('module_feizhu.service.file_detail_service.RESOURCE_DB_PATH', path):
             options = asyncio.run(FileDetailService.options('forex'))
             page = asyncio.run(FileDetailService.page(1, 20, 'forex', '期货', None, None, None, '1', None, None))
+            expanded_page = asyncio.run(FileDetailService.page(1, 20, 'forex', None, None, None, None, '1', None, None))
         assert options.keywords[0].name == '外汇'
-        assert options.topics == ['外汇']
-        assert options.exts == ['pdf']
+        assert options.topics == ['MQL5', '外汇']
+        assert options.exts == ['mq5', 'pdf']
         assert (page.total, page.rows[0].id, page.rows[0].topic) == (1, '1', '外汇,期货')
+        assert expanded_page.total == 3

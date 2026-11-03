@@ -20,8 +20,8 @@ class FileDetailService:
         with sqlite3.connect(RESOURCE_DB_PATH) as connection:
             keywords = [{'id': row[0], 'name': row[1]} for row in connection.execute('SELECT id,keyword FROM t_file_keyword ORDER BY sort_no,keyword')]
             selected = cls.split_values(keyword_ids)
-            allowed = {row[0] for row in connection.execute('SELECT topic FROM t_file_keyword_topic WHERE keyword_id IN (' + ','.join('?' for _ in selected) + ')', selected)} if selected else None
-            topics = sorted({topic for (value,) in connection.execute('SELECT DISTINCT topic FROM t_file_detail') for topic in cls.split_values(value) if allowed is None or topic in allowed})
+            allowed = [row[0] for row in connection.execute('SELECT topic FROM t_file_keyword_topic WHERE keyword_id IN (' + ','.join('?' for _ in selected) + ')', selected)] if selected else None
+            topics = sorted({topic for (value,) in connection.execute('SELECT DISTINCT topic FROM t_file_detail') for topic in cls.split_values(value) if allowed is None or any(term.lower() in topic.lower() for term in allowed)})
 
             def values(column: str) -> list:
                 result = [row[0] for row in connection.execute(f"SELECT DISTINCT {column} FROM t_file_detail WHERE {column} IS NOT NULL AND {column} <> '' ORDER BY {column}")]
@@ -44,8 +44,8 @@ class FileDetailService:
                 expanded = [row[0] for row in connection.execute('SELECT topic FROM t_file_keyword_topic WHERE keyword_id IN (' + ','.join('?' for _ in keyword_values) + ')', keyword_values)]
             if not expanded:
                 return FileDetailPageModel(rows=[], total=0, page_num=page_num, page_size=page_size)
-            conditions.append('(' + ' OR '.join("instr(',' || topic || ',', ',' || ? || ',') > 0" for _ in expanded) + ')')
-            params.extend(expanded)
+            conditions.append('(' + ' OR '.join('topic LIKE ?' for _ in expanded) + ')')
+            params.extend(f'%{topic}%' for topic in expanded)
         values = cls.split_values(topics)
         if values:
             conditions.append('(' + ' OR '.join("instr(',' || topic || ',', ',' || ? || ',') > 0" for _ in values) + ')')
