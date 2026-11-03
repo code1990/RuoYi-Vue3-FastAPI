@@ -6,10 +6,10 @@
       <div class="filter-list">
         <FilterRow label="主题"><el-check-tag :checked="!filters.topics.length" @change="setAll('topics')">不限</el-check-tag><el-check-tag v-for="item in options.topics" :key="item" :checked="filters.topics.includes(item)" @change="toggle('topics', item)">{{ item }}</el-check-tag></FilterRow>
         <FilterRow label="文件类型"><el-check-tag :checked="!filters.exts.length" @change="setAll('exts')">不限</el-check-tag><el-check-tag v-for="item in options.exts" :key="item" :checked="filters.exts.includes(item)" @change="toggle('exts', item)">{{ item }}</el-check-tag></FilterRow>
-        <FilterRow v-if="showMore" label="资源类别"><el-check-tag :checked="filters.category === null" @change="setOne('category', null)">不限</el-check-tag><el-check-tag v-for="item in options.categories" :key="item" :checked="filters.category === item" @change="setOne('category', item)">{{ item }}</el-check-tag></FilterRow>
-        <FilterRow v-if="showMore" label="链接类型"><el-check-tag :checked="!filters.resourceType" @change="setOne('resourceType', '')">不限</el-check-tag><el-check-tag v-for="item in options.types" :key="item" :checked="filters.resourceType === item" @change="setOne('resourceType', item)">{{ item }}</el-check-tag></FilterRow>
-        <FilterRow v-if="showMore" label="资源状态"><el-check-tag :checked="!filters.valid" @change="setOne('valid', '')">不限</el-check-tag><el-check-tag v-for="item in options.valids" :key="item" :checked="filters.valid === item" @change="setOne('valid', item)">{{ item }}</el-check-tag></FilterRow>
-        <FilterRow v-if="showMore" label="提取码"><el-check-tag :checked="!filters.haspwd" @change="setOne('haspwd', '')">不限</el-check-tag><el-check-tag v-for="item in options.haspwds" :key="item" :checked="filters.haspwd === item" @change="setOne('haspwd', item)">{{ item }}</el-check-tag></FilterRow>
+        <FilterRow v-if="showMore" label="资源类别"><el-check-tag :checked="filters.category === null" @change="setOne('category', null)">不限</el-check-tag><el-check-tag v-for="item in options.categories" :key="item" :checked="filters.category === item" @change="setOne('category', item)">{{ categoryLabel(item) }}</el-check-tag></FilterRow>
+        <FilterRow v-if="showMore" label="链接类型"><el-check-tag :checked="!filters.resourceType" @change="setOne('resourceType', '')">不限</el-check-tag><el-check-tag v-for="item in options.types" :key="item" :checked="filters.resourceType === item" @change="setOne('resourceType', item)">{{ typeLabel(item) }}</el-check-tag></FilterRow>
+        <FilterRow v-if="showMore" label="资源状态"><el-check-tag :checked="!filters.valid" @change="setOne('valid', '')">不限</el-check-tag><el-check-tag v-for="item in options.valids" :key="item" :checked="filters.valid === item" @change="setOne('valid', item)">{{ validLabel(item) }}</el-check-tag></FilterRow>
+        <FilterRow v-if="showMore" label="提取码"><el-check-tag :checked="!filters.haspwd" @change="setOne('haspwd', '')">不限</el-check-tag><el-check-tag v-for="item in options.haspwds" :key="item" :checked="filters.haspwd === item" @change="setOne('haspwd', item)">{{ haspwdLabel(item) }}</el-check-tag></FilterRow>
       </div>
       <div class="more-row"><el-button link type="primary" @click="showMore = !showMore">{{ showMore ? '收起筛选' : '更多筛选' }}<el-icon><ArrowUp v-if="showMore" /><ArrowDown v-else /></el-icon></el-button></div>
     </el-card>
@@ -24,6 +24,10 @@ import { ElMessage } from 'element-plus'
 import { getFileDetailOptions, listFileDetails } from '@/api/feizhu/fileDetail'
 
 const FilterRow = (_, { slots }) => h('div', { class: 'filter-row' }, [h('strong', { class: 'filter-label' }, _.label), h('div', { class: 'filter-values' }, slots.default())])
+const categoryLabel = value => ({ 0: '其他', 1: '视频', 2: '音频', 3: '图片', 4: '文档', 5: '程序', 6: '其他/目录', 7: '种子' }[value] || '其他')
+const typeLabel = value => ({ baidu: '百度网盘' }[value] || value)
+const validLabel = value => value === '1' ? '有效' : '无效'
+const haspwdLabel = value => value === '1' ? '有提取码' : '无提取码'
 const loading = ref(false), rows = ref([]), total = ref(0), showMore = ref(false)
 const options = reactive({ keywords: [], topics: [], exts: [], categories: [], types: [], valids: [], haspwds: [] })
 const filters = reactive({ pageNum: 1, pageSize: 20, keywordIds: [], topics: [], exts: [], category: null, resourceType: '', valid: '', haspwd: '', keyword: '' })
@@ -31,8 +35,8 @@ const activeFilters = computed(() => [
   ...filters.keywordIds.map(id => ({ key: `keyword-${id}`, field: 'keywordIds', value: id, label: `关键字：${options.keywords.find(item => item.id === id)?.name || id}` })),
   ...filters.topics.map(value => ({ key: `topic-${value}`, field: 'topics', value, label: `主题：${value}` })),
   ...filters.exts.map(value => ({ key: `ext-${value}`, field: 'exts', value, label: `类型：${value}` })),
-  ...(filters.category === null ? [] : [{ key: 'category', field: 'category', label: `类别：${filters.category}` }]),
-  ...(['resourceType', 'valid', 'haspwd', 'keyword'].filter(field => filters[field]).map(field => ({ key: field, field, label: `${{ resourceType: '链接类型', valid: '资源状态', haspwd: '提取码', keyword: '搜索' }[field]}：${filters[field]}` })))
+  ...(filters.category === null ? [] : [{ key: 'category', field: 'category', label: `类别：${categoryLabel(filters.category)}` }]),
+  ...(['resourceType', 'valid', 'haspwd', 'keyword'].filter(field => filters[field]).map(field => ({ key: field, field, label: `${{ resourceType: '链接类型', valid: '资源状态', haspwd: '提取码', keyword: '搜索' }[field]}：${field === 'resourceType' ? typeLabel(filters[field]) : field === 'valid' ? validLabel(filters[field]) : field === 'haspwd' ? haspwdLabel(filters[field]) : filters[field]}` })))
 ])
 const params = () => ({ ...filters, keywordIds: filters.keywordIds.join(',') || undefined, topics: filters.topics.join(',') || undefined, exts: filters.exts.join(',') || undefined, category: filters.category ?? undefined, resourceType: filters.resourceType || undefined, valid: filters.valid || undefined, haspwd: filters.haspwd || undefined, keyword: filters.keyword || undefined })
 async function loadOptions() { Object.assign(options, (await getFileDetailOptions({ keywordIds: filters.keywordIds.join(',') || undefined })).data || {}) }
