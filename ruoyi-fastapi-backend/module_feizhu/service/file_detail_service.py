@@ -14,27 +14,38 @@ class FileDetailService:
         return [item.strip() for item in (value or '').split(',') if item.strip()]
 
     @classmethod
-    async def options(cls, _keyword_ids: str | None) -> FileDetailOptionsModel:
+    async def options(cls, keyword_ids: str | None) -> FileDetailOptionsModel:
         if not RESOURCE_DB_PATH.exists():
             return FileDetailOptionsModel(keywords=[], topics=[], exts=[], categories=[], types=[], valids=[], haspwds=[])
         with sqlite3.connect(RESOURCE_DB_PATH) as connection:
-            topics = sorted({topic for (value,) in connection.execute('SELECT DISTINCT topic FROM t_file_detail') for topic in cls.split_values(value)})
+            keywords = [{'id': row[0], 'name': row[1]} for row in connection.execute('SELECT id,keyword FROM t_file_keyword ORDER BY sort_no,keyword')]
+            selected = cls.split_values(keyword_ids)
+            allowed = {row[0] for row in connection.execute('SELECT topic FROM t_file_keyword_topic WHERE keyword_id IN (' + ','.join('?' for _ in selected) + ')', selected)} if selected else None
+            topics = sorted({topic for (value,) in connection.execute('SELECT DISTINCT topic FROM t_file_detail') for topic in cls.split_values(value) if allowed is None or topic in allowed})
 
             def values(column: str) -> list:
                 result = [row[0] for row in connection.execute(f"SELECT DISTINCT {column} FROM t_file_detail WHERE {column} IS NOT NULL AND {column} <> '' ORDER BY {column}")]
                 return [value for value in result if column != 'ext' or not any('\u4e00' <= char <= '\u9fff' for char in str(value))]
 
-            return FileDetailOptionsModel(keywords=[], topics=topics, exts=values('ext'), categories=values('category'), types=values('type'), valids=values('valid'), haspwds=values('haspwd'))
+            return FileDetailOptionsModel(keywords=keywords, topics=topics, exts=values('ext'), categories=values('category'), types=values('type'), valids=values('valid'), haspwds=values('haspwd'))
 
     @classmethod
     async def page(
-        cls, page_num: int, page_size: int, _keyword_ids: str | None, topics: str | None,
+        cls, page_num: int, page_size: int, keyword_ids: str | None, topics: str | None,
         exts: str | None, category: int | None, resource_type: str | None, valid: str | None,
         haspwd: str | None, keyword: str | None,
     ) -> FileDetailPageModel:
         if not RESOURCE_DB_PATH.exists():
             return FileDetailPageModel(rows=[], total=0, page_num=page_num, page_size=page_size)
         conditions, params = [], []
+        keyword_values = cls.split_values(keyword_ids)
+        if keyword_values:
+            with sqlite3.connect(RESOURCE_DB_PATH) as connection:
+                expanded = [row[0] for row in connection.execute('SELECT topic FROM t_file_keyword_topic WHERE keyword_id IN (' + ','.join('?' for _ in keyword_values) + ')', keyword_values)]
+            if not expanded:
+                return FileDetailPageModel(rows=[], total=0, page_num=page_num, page_size=page_size)
+            conditions.append('(' + ' OR '.join("instr(',' || topic || ',', ',' || ? || ',') > 0" for _ in expanded) + ')')
+            params.extend(expanded)
         values = cls.split_values(topics)
         if values:
             conditions.append('(' + ' OR '.join("instr(',' || topic || ',', ',' || ? || ',') > 0" for _ in values) + ')')

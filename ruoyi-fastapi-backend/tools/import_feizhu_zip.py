@@ -12,6 +12,7 @@ from typing import Any
 
 
 DEFAULT_DB_PATH = Path('/root/data/disk/ruoyi-fastapi/feizhu_resources.db')
+KEYWORD_TOPICS = {'forex': ('外汇', ('外汇', 'Forex', 'FX', 'MT4', 'MT5', 'MetaTrader', 'MQL', 'MQL4', 'MQL5', '外汇EA', 'MT4 EA', 'MT5 EA', '外汇指标', 'MT4指标', 'MT5指标', '外汇策略', '外汇回测', '外汇VPS'))}
 
 
 def archive_name(info: zipfile.ZipInfo) -> str:
@@ -105,6 +106,11 @@ def create_table(connection: sqlite3.Connection) -> None:
             create_time TEXT, update_time TEXT
         )
     ''')
+    connection.execute('CREATE TABLE IF NOT EXISTS t_file_keyword (id TEXT PRIMARY KEY, keyword TEXT NOT NULL UNIQUE, sort_no INTEGER NOT NULL DEFAULT 0)')
+    connection.execute('CREATE TABLE IF NOT EXISTS t_file_keyword_topic (id TEXT PRIMARY KEY, keyword_id TEXT NOT NULL, topic TEXT NOT NULL, sort_no INTEGER NOT NULL DEFAULT 0, UNIQUE(keyword_id, topic))')
+    for keyword_id, (keyword, topics) in KEYWORD_TOPICS.items():
+        connection.execute('INSERT OR IGNORE INTO t_file_keyword(id,keyword,sort_no) VALUES (?,?,?)', (keyword_id, keyword, 0))
+        connection.executemany('INSERT OR IGNORE INTO t_file_keyword_topic(id,keyword_id,topic,sort_no) VALUES (?,?,?,?)', [(f'{keyword_id}:{index}', keyword_id, topic, index) for index, topic in enumerate(topics)])
 
 
 def import_archive(archive_path: Path, db_path: Path, dry_run: bool = False) -> dict[str, int]:
