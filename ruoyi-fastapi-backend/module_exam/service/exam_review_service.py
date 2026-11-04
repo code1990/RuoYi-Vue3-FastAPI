@@ -10,21 +10,26 @@ from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCar
 
 class ExamReviewService:
     LEARNING_INTERVAL = timedelta(minutes=10)
+    MIN_ATTEMPT_SECONDS = 60
 
     @staticmethod
     def _today_deadline(now: datetime) -> datetime:
         return datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
 
+    @classmethod
+    def _attempt_seconds(cls, difficulty: int) -> int:
+        return max(cls.MIN_ATTEMPT_SECONDS, max(1, difficulty) * 20)
+
     @staticmethod
-    def _today_task(review_total: int, review_completed: int, learning_total: int, learning_completed: int) -> dict:
-        remaining_rounds = max(0, review_total - review_completed) + max(0, learning_total - learning_completed)
+    def _today_task(review_total: int, review_completed: int, learning_total: int, learning_completed: int, learning_remaining_rounds: int, review_remaining_seconds: int, learning_remaining_seconds: int) -> dict:
+        remaining_rounds = max(0, review_total - review_completed) + learning_remaining_rounds
         return {
             'reviewTotal': review_total,
             'reviewCompleted': review_completed,
             'learningTotal': learning_total,
             'learningCompleted': learning_completed,
             'remainingRounds': remaining_rounds,
-            'estimatedSeconds': remaining_rounds * 5,
+            'estimatedSeconds': review_remaining_seconds + learning_remaining_seconds,
         }
 
     @staticmethod
@@ -41,15 +46,17 @@ class ExamReviewService:
         now = datetime.now(); today = now.date(); year = year or today.year
         today_start = datetime.combine(today, datetime.min.time())
         tomorrow_start = cls._today_deadline(now)
-        due = await db.scalar(select(func.count()).select_from(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time < tomorrow_start)) or 0
+        due_difficulties = (await db.scalars(select(ExamCard.difficulty).join(ExamCardReview, ExamCardReview.card_id == ExamCard.card_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time < tomorrow_start))).all()
+        due = len(due_difficulties)
         review_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
             ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round > 1,
             ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
             ExamCardReview.next_review_time >= tomorrow_start,
         )) or 0
-        learning_pending = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
-            ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning'
-        )) or 0
+        learning_rows = (await db.execute(select(ExamCardReview.required_repetitions, ExamCardReview.completed_repetitions, ExamCard.difficulty).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning'))).all()
+        learning_pending = len(learning_rows)
+        learning_remaining_rounds = sum(max(0, required - completed) for required, completed, _difficulty in learning_rows)
+        learning_remaining_seconds = sum(max(0, required - completed) * cls._attempt_seconds(difficulty) for required, completed, difficulty in learning_rows)
         learning_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
             ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round == 1,
             ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
@@ -67,7 +74,7 @@ class ExamReviewService:
             'dueCount': due,
             'newAvailable': new_count,
             'completedToday': completed_today,
-            'todayTask': cls._today_task(due + review_completed, review_completed, learning_total, learning_done),
+            'todayTask': cls._today_task(due + review_completed, review_completed, learning_total, learning_done, learning_remaining_rounds, sum(cls._attempt_seconds(difficulty) for difficulty in due_difficulties), learning_remaining_seconds),
             'heatmap': heatmap,
             'plannedReviews': planned_reviews,
         }

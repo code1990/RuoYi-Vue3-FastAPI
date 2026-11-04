@@ -22,15 +22,21 @@ def test_daily_question_counts_new_and_reviewed_cards_without_duplicate_ratings(
     ]
 
 
-def test_today_task_uses_five_seconds_per_remaining_card_round():
-    assert ExamReviewService._today_task(6, 2, 5, 1) == {
+def test_today_task_counts_remaining_learning_attempts_and_difficulty_time():
+    assert ExamReviewService._today_task(6, 2, 5, 1, 11, 240, 840) == {
         'reviewTotal': 6,
         'reviewCompleted': 2,
         'learningTotal': 5,
         'learningCompleted': 1,
-        'remainingRounds': 8,
-        'estimatedSeconds': 40,
+        'remainingRounds': 15,
+        'estimatedSeconds': 1080,
     }
+
+
+def test_attempt_seconds_has_a_one_minute_minimum_and_scales_with_difficulty():
+    assert ExamReviewService._attempt_seconds(1) == 60
+    assert ExamReviewService._attempt_seconds(3) == 60
+    assert ExamReviewService._attempt_seconds(6) == 120
 
 
 def test_due_reviews_pause_new_learning_task():

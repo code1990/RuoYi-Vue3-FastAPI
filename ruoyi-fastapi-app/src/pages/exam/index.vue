@@ -1,6 +1,6 @@
 <template>
   <view class="page">
-    <view class="today-task">今日：复习 {{ task.reviewCompleted || 0 }}/{{ task.reviewTotal || 0 }}｜{{ task.reviewCompleted < task.reviewTotal ? '学习暂缓' : `学习 ${task.learningCompleted || 0}/${task.learningTotal || 0}` }}｜剩 {{ task.remainingRounds || 0 }} 轮·{{ estimatedTime }}</view>
+    <view class="today-task">今日：复习 {{ task.reviewCompleted || 0 }}/{{ task.reviewTotal || 0 }}｜{{ task.reviewCompleted < task.reviewTotal ? '学习暂缓' : `学习 ${task.learningCompleted || 0}/${task.learningTotal || 0}` }}｜剩 {{ task.remainingRounds || 0 }} 次作答·约 {{ estimatedTime }}</view>
     <view v-if="card" class="card"><text class="progress">本题 {{ card.progress.completed }} / {{ card.progress.required }} 次有效回忆</text><text class="question">{{ card.question }}</text><view v-if="showAnswer"><view class="points"><text v-for="point in keyPoints" :key="point">{{ point }}</text></view><view v-if="card.aiSummary" class="summary"><view v-for="section in summarySections" :key="section.title" class="summary-section"><text class="summary-title">{{ section.title }}：</text><text class="summary-content">{{ section.content }}</text></view></view></view></view>
     <view v-else class="empty">暂无待复习卡片，明天再来看看。</view>
     <view v-if="card" class="bottom-panel"><button v-if="!showAnswer" class="reveal" @click="showAnswer=true">显示答案</button><view v-else class="actions"><button class="again" @click="rate('again')">重来</button><button class="hard" @click="rate('hard')">困难</button><button class="good" @click="rate('good')">良好</button><button class="easy" @click="rate('easy')">简单</button></view></view>
@@ -14,7 +14,7 @@ import { getNextReviewCard, getReviewOverview, rateReviewCard } from '@/api/exam
 
 const card = ref(null)
 const task = ref({})
-const estimatedTime = computed(() => { const seconds = task.value.estimatedSeconds || 0; return seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)} 分${seconds % 60 ? `${seconds % 60} 秒` : ''}` })
+const estimatedTime = computed(() => { const seconds = task.value.estimatedSeconds || 0; const minutes = Math.floor(seconds / 60); return seconds < 60 ? `${seconds} 秒` : minutes < 60 ? `${minutes} 分${seconds % 60 ? `${seconds % 60} 秒` : ''}` : `${Math.floor(minutes / 60)} 小时${minutes % 60 ? `${minutes % 60} 分` : ''}` })
 const showAnswer = ref(false)
 const summarySections = computed(() => ['结论', '要点', '补充'].map(title => {
   const content = String(card.value?.aiSummary || '').match(new RegExp(`${title}：([\\s\\S]*?)(?=结论：|要点：|补充：|$)`))?.[1]?.trim() || ''
