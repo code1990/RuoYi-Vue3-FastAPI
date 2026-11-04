@@ -1,13 +1,10 @@
-from datetime import date, datetime, timedelta
-from types import SimpleNamespace
+from datetime import date, datetime
 
 from module_exam.service.exam_review_service import ExamReviewService
 
 
-def test_review_repetitions_stay_normal_for_four_rounds_then_decrease_to_three():
-    review = SimpleNamespace(required_repetitions=5)
-
-    assert [ExamReviewService._review_required(SimpleNamespace(**review.__dict__, review_round=round_)) for round_ in range(1, 9)] == [5, 5, 5, 5, 4, 3, 3, 3]
+def test_today_deadline_includes_all_reviews_due_before_midnight():
+    assert ExamReviewService._today_deadline(datetime(2026, 11, 4, 7, 30)) == datetime(2026, 11, 5)
 
 
 def test_daily_question_counts_new_and_reviewed_cards_without_duplicate_ratings():

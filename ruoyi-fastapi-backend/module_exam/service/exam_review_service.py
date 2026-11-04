@@ -2,13 +2,19 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from math import ceil
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCardReviewLog, ExamCategory
 
 
 class ExamReviewService:
+    LEARNING_INTERVAL = timedelta(minutes=10)
+
+    @staticmethod
+    def _today_deadline(now: datetime) -> datetime:
+        return datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
+
     @staticmethod
     def _today_task(review_total: int, review_completed: int, learning_total: int, learning_completed: int) -> dict:
         remaining_rounds = max(0, review_total - review_completed) + max(0, learning_total - learning_completed)
@@ -26,24 +32,20 @@ class ExamReviewService:
         return (0, 0) if due else (pending + completed, completed)
 
     @staticmethod
-    def _review_required(review: ExamCardReview) -> int:
-        return max(3, review.required_repetitions - max(0, (review.review_round or 1) - 4))
-
-    @staticmethod
     def _card(row: ExamCard, review: ExamCardReview | None = None) -> dict:
-        required = ExamReviewService._review_required(review) if review and review.state == 'review' else review.required_repetitions if review else max(4, row.difficulty + 2)
+        required = 1 if review and review.state == 'review' else review.required_repetitions if review else max(4, row.difficulty + 2)
         return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': required, 'phase': review.state if review else 'learning', 'round': review.review_round if review and review.state == 'review' else None}}
 
     @classmethod
     async def overview(cls, db: AsyncSession, user_id: int, year: int | None = None) -> dict:
         now = datetime.now(); today = now.date(); year = year or today.year
-        due = await db.scalar(select(func.count()).select_from(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now)) or 0
         today_start = datetime.combine(today, datetime.min.time())
-        tomorrow_start = today_start + timedelta(days=1)
+        tomorrow_start = cls._today_deadline(now)
+        due = await db.scalar(select(func.count()).select_from(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time < tomorrow_start)) or 0
         review_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
             ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round > 1,
             ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
-            ExamCardReview.next_review_time > now,
+            ExamCardReview.next_review_time >= tomorrow_start,
         )) or 0
         learning_pending = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
             ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning'
@@ -51,7 +53,7 @@ class ExamReviewService:
         learning_completed = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
             ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.review_round == 1,
             ExamCardReview.last_review_time >= today_start, ExamCardReview.last_review_time < tomorrow_start,
-            ExamCardReview.next_review_time > now,
+            ExamCardReview.next_review_time >= tomorrow_start,
         )) or 0
         new_count = await db.scalar(select(func.count()).select_from(ExamCard).where(ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))) or 0
         start, end = date(year, 1, 1), date(year + 1, 1, 1)
@@ -166,10 +168,11 @@ class ExamReviewService:
     @classmethod
     async def next_card(cls, db: AsyncSession, user_id: int) -> dict | None:
         now = datetime.now()
-        review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time <= now).order_by(ExamCardReview.next_review_time))
+        today_deadline = cls._today_deadline(now)
+        review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'review', ExamCardReview.next_review_time < today_deadline).order_by(ExamCardReview.next_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
-        review = await db.scalar(select(ExamCardReview).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCardReview.learning_batch, ExamCardReview.last_review_time))
+        review = await db.scalar(select(ExamCardReview).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions, or_(ExamCardReview.next_review_time.is_(None), ExamCardReview.next_review_time <= now)).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCardReview.learning_batch, ExamCardReview.last_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
         batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch)).where(ExamCardReview.user_id == user_id)) or 0) + 1
@@ -200,18 +203,18 @@ class ExamReviewService:
             else: review.completed_repetitions += 1
             if review.completed_repetitions >= review.required_repetitions:
                 review.state, review.completed_repetitions, review.review_round, review.interval_days, review.next_review_time = 'review', 0, 1, 1, now + timedelta(days=1)
+            else:
+                review.next_review_time = now + cls.LEARNING_INTERVAL
         elif rating == 'again':
-            review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, None
+            review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, now + cls.LEARNING_INTERVAL
         else:
-            review.completed_repetitions += 1
-            if review.completed_repetitions >= cls._review_required(review):
-                factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
-                review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
-                review.next_review_time = now + timedelta(days=review.interval_days)
-                review.completed_repetitions = 0
-                review.review_round += 1
+            factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
+            review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
+            review.next_review_time = now + timedelta(days=review.interval_days)
+            review.completed_repetitions = 0
+            review.review_round += 1
         review.last_review_time = now; db.add(ExamCardReviewLog(user_id=user_id, card_id=card_id, rating=rating, reviewed_time=now))
-        required = cls._review_required(review) if review.state == 'review' else review.required_repetitions
+        required = 1 if review.state == 'review' else review.required_repetitions
         result = {'state': review.state, 'completed': review.completed_repetitions, 'required': required, 'reviewRound': review.review_round, 'nextReviewTime': review.next_review_time}
         await db.commit()
         return result
