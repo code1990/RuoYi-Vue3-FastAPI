@@ -11,6 +11,7 @@ from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCar
 class ExamReviewService:
     LEARNING_INTERVAL = timedelta(minutes=10)
     MIN_ATTEMPT_SECONDS = 60
+    DAILY_NEW_CARD_LIMIT = 10
 
     @staticmethod
     def _today_deadline(now: datetime) -> datetime:
@@ -35,6 +36,10 @@ class ExamReviewService:
     @staticmethod
     def _learning_task(due: int, pending: int, completed: int) -> tuple[int, int]:
         return (0, 0) if due else (pending + completed, completed)
+
+    @classmethod
+    def _new_card_limit(cls, started_today: int) -> int:
+        return max(0, cls.DAILY_NEW_CARD_LIMIT - started_today)
 
     @staticmethod
     def _card(row: ExamCard, review: ExamCardReview | None = None) -> dict:
@@ -182,10 +187,17 @@ class ExamReviewService:
         review = await db.scalar(select(ExamCardReview).join(ExamCard, ExamCard.card_id == ExamCardReview.card_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(ExamCardReview.user_id == user_id, ExamCardReview.state == 'learning', ExamCardReview.completed_repetitions < ExamCardReview.required_repetitions, or_(ExamCardReview.next_review_time.is_(None), ExamCardReview.next_review_time <= now)).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCardReview.learning_batch, ExamCardReview.last_review_time))
         if review:
             return cls._card(await db.get(ExamCard, review.card_id), review)
+        started_today = await db.scalar(select(func.count()).select_from(ExamCardReview).where(
+            ExamCardReview.user_id == user_id,
+            ExamCardReview.create_time >= datetime.combine(now.date(), datetime.min.time()),
+        )) or 0
+        new_card_limit = cls._new_card_limit(started_today)
+        if not new_card_limit:
+            return None
         batch = (await db.scalar(select(func.max(ExamCardReview.learning_batch)).where(ExamCardReview.user_id == user_id)) or 0) + 1
         available_cards = (ExamCard.review_enabled.is_(True), ExamCard.status == 'published', ~ExamCard.card_id.in_(select(ExamCardReview.card_id).where(ExamCardReview.user_id == user_id)))
         category_id = await db.scalar(select(ExamCard.category_id).join(ExamCategory, ExamCategory.category_id == ExamCard.category_id).where(*available_cards).order_by(ExamCategory.sort_no, ExamCategory.category_id, ExamCard.sort_no, ExamCard.card_id).limit(1))
-        cards = (await db.scalars(select(ExamCard).where(*available_cards, ExamCard.category_id == category_id).order_by(ExamCard.sort_no, ExamCard.card_id).limit(5))).all()
+        cards = (await db.scalars(select(ExamCard).where(*available_cards, ExamCard.category_id == category_id).order_by(ExamCard.sort_no, ExamCard.card_id).limit(new_card_limit))).all()
         if not cards:
             return None
         first_card_id = cards[0].card_id
