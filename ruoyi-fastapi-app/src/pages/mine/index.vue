@@ -14,9 +14,10 @@ const entries = [
   { title: "个人", icon: "i-mdi-account-circle-outline", tone: "orange", url: "/pages/account/index" },
   { title: "资金", icon: "i-mdi-currency-usd", tone: "green", url: "/pages/dde/index" },
   { title: "融券", icon: "i-mdi-chart-timeline-variant", tone: "blue", url: "/pages/margin/index" },
+  { title: "合约关联", icon: "i-mdi-link-variant", tone: "blue", url: "/pages/index", tab: true, market: "relation" },
   { title: "复习", icon: "i-mdi-school-outline", tone: "purple", url: "/pages/review/index" }
 ];
-function open(item) { (item.tab ? uni.switchTab : uni.navigateTo)({ url: item.url }); }
+function open(item) { if (item.market) uni.setStorageSync("market-tab", item.market); (item.tab ? uni.switchTab : uni.navigateTo)({ url: item.url }); }
 </script>
 
 <style scoped>

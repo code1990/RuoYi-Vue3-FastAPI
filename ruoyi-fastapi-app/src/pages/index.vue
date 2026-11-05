@@ -32,7 +32,7 @@ function sort(key) { if (sortKey.value === key) sortDesc.value = !sortDesc.value
 async function refresh() { if (refreshing) return; refreshing = true; try { if (selectedMarket.value === "relation") return await refreshRelations(); await trading.refreshQuotes(); flashing.value = false; const code = trading.selectedQuote?.code; if (!code || !(await trading.getTradingStatus(code).catch(() => ({ tradable: false }))).tradable) return; await nextTick(); flashing.value = true; clearTimeout(flashTimer); flashTimer = setTimeout(() => { flashing.value = false; }, 450); } catch {} finally { refreshing = false; } }
 function startPolling() { stopPolling(); refresh(); pollTimer = setInterval(refresh, 5000); }
 function stopPolling() { clearInterval(pollTimer); clearTimeout(flashTimer); }
-onShow(startPolling); onHide(stopPolling); onBeforeUnmount(stopPolling);
+onShow(() => { const market = uni.getStorageSync("market-tab"); if (market === "relation") { uni.removeStorageSync("market-tab"); selectedMarket.value = market; } startPolling(); }); onHide(stopPolling); onBeforeUnmount(stopPolling);
 </script>
 
 <style scoped>
