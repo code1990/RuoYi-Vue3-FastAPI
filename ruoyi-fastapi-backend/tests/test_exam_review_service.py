@@ -68,7 +68,7 @@ def test_new_cards_are_limited_to_ten_per_day():
 
 
 @pytest.mark.asyncio
-async def test_due_review_requires_relearning_before_next_long_term_review(exam_db_session, monkeypatch):
+async def test_due_review_requires_repetitions_before_next_long_term_review(exam_db_session, monkeypatch):
     card = ExamCard(card_id=1, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
     review = ExamCardReview(review_id=1, user_id=1, card_id=1, state='review', required_repetitions=5, review_round=1, interval_days=1, next_review_time=datetime.now() - timedelta(days=1))
     exam_db_session.add_all([card, review])
@@ -78,7 +78,7 @@ async def test_due_review_requires_relearning_before_next_long_term_review(exam_
 
     first = await ExamReviewService.rate(exam_db_session, 1, 1, 'good')
 
-    assert first['state'] == 'learning'
+    assert first['state'] == 'review'
     assert first['completed'] == 1
     assert first['required'] == 5
     for _ in range(4):
