@@ -12,6 +12,7 @@ class ExamReviewService:
     LEARNING_INTERVAL = timedelta(minutes=10)
     MIN_ATTEMPT_SECONDS = 60
     DAILY_NEW_CARD_LIMIT = 10
+    MIN_REPETITIONS = 5
 
     @staticmethod
     def _today_deadline(now: datetime) -> datetime:
@@ -41,10 +42,15 @@ class ExamReviewService:
     def _new_card_limit(cls, started_today: int) -> int:
         return max(0, cls.DAILY_NEW_CARD_LIMIT - started_today)
 
+    @classmethod
+    def _required_repetitions(cls, difficulty: int) -> int:
+        return max(cls.MIN_REPETITIONS, difficulty + 2)
+
     @staticmethod
     def _card(row: ExamCard, review: ExamCardReview | None = None) -> dict:
-        required = 1 if review and review.state == 'review' else review.required_repetitions if review else max(4, row.difficulty + 2)
-        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': required, 'phase': review.state if review else 'learning', 'round': review.review_round if review and review.state == 'review' else None}}
+        required = 1 if review and review.state == 'review' else review.required_repetitions if review else ExamReviewService._required_repetitions(row.difficulty)
+        phase = 'relearning' if review and review.state == 'learning' and review.review_round else review.state if review else 'learning'
+        return {'cardId': row.card_id, 'categoryId': row.category_id, 'question': row.question, 'aiSummary': row.ai_summary, 'keyPoints': row.key_points, 'tags': row.tags, 'difficulty': row.difficulty, 'progress': {'completed': review.completed_repetitions if review else 0, 'required': required, 'phase': phase, 'round': review.review_round if review and review.review_round else None}}
 
     @classmethod
     async def overview(cls, db: AsyncSession, user_id: int, year: int | None = None) -> dict:
@@ -202,7 +208,7 @@ class ExamReviewService:
             return None
         first_card_id = cards[0].card_id
         for card in cards:
-            db.add(ExamCardReview(user_id=user_id, card_id=card.card_id, state='learning', learning_batch=batch, required_repetitions=max(4, card.difficulty + 2), completed_repetitions=0, interval_days=1))
+            db.add(ExamCardReview(user_id=user_id, card_id=card.card_id, state='learning', learning_batch=batch, required_repetitions=cls._required_repetitions(card.difficulty), completed_repetitions=0, interval_days=1))
         await db.commit()
         return cls._card(await db.get(ExamCard, first_card_id))
 
@@ -214,24 +220,29 @@ class ExamReviewService:
         now = datetime.now()
         review = await db.scalar(select(ExamCardReview).where(ExamCardReview.user_id == user_id, ExamCardReview.card_id == card_id))
         if not review:
-            review = ExamCardReview(user_id=user_id, card_id=card_id, state='learning', required_repetitions=max(4, card.difficulty + 2), completed_repetitions=0, interval_days=1); db.add(review)
+            review = ExamCardReview(user_id=user_id, card_id=card_id, state='learning', required_repetitions=cls._required_repetitions(card.difficulty), completed_repetitions=0, interval_days=1); db.add(review)
             if rating == 'hard': review.required_repetitions += 1
             if rating == 'again': review.required_repetitions += 2
         if review.state == 'learning':
             if rating == 'again': review.required_repetitions = min(10, review.required_repetitions + 1)
             else: review.completed_repetitions += 1
             if review.completed_repetitions >= review.required_repetitions:
-                review.state, review.completed_repetitions, review.review_round, review.interval_days, review.next_review_time = 'review', 0, 1, 1, now + timedelta(days=1)
+                if review.review_round:
+                    review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'review', 0, review.review_round + 1, now + timedelta(days=review.interval_days)
+                else:
+                    review.state, review.completed_repetitions, review.review_round, review.interval_days, review.next_review_time = 'review', 0, 1, 1, now + timedelta(days=1)
             else:
                 review.next_review_time = now + cls.LEARNING_INTERVAL
-        elif rating == 'again':
-            review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, now + cls.LEARNING_INTERVAL
         else:
-            factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
-            review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
-            review.next_review_time = now + timedelta(days=review.interval_days)
-            review.completed_repetitions = 0
-            review.review_round += 1
+            review.state = 'learning'
+            review.required_repetitions = max(review.required_repetitions, cls._required_repetitions(card.difficulty))
+            if rating == 'again':
+                review.interval_days, review.completed_repetitions = 1, 0
+            else:
+                factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
+                review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
+                review.completed_repetitions = 1
+            review.next_review_time = now + cls.LEARNING_INTERVAL
         review.last_review_time = now; db.add(ExamCardReviewLog(user_id=user_id, card_id=card_id, rating=rating, reviewed_time=now))
         required = 1 if review.state == 'review' else review.required_repetitions
         result = {'state': review.state, 'completed': review.completed_repetitions, 'required': required, 'reviewRound': review.review_round, 'nextReviewTime': review.next_review_time}

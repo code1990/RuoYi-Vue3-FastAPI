@@ -1,6 +1,23 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
+import pytest
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCardReviewLog
+from module_exam.service import exam_review_service
 from module_exam.service.exam_review_service import ExamReviewService
+
+
+@pytest_asyncio.fixture
+async def exam_db_session():
+    engine = create_async_engine('sqlite+aiosqlite:///:memory:')
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with engine.begin() as conn:
+        await conn.run_sync(ExamCard.metadata.create_all)
+    async with session_factory() as session:
+        yield session
+    await engine.dispose()
 
 
 def test_today_deadline_includes_all_reviews_due_before_midnight():
@@ -48,3 +65,25 @@ def test_new_cards_are_limited_to_ten_per_day():
     assert ExamReviewService._new_card_limit(0) == 10
     assert ExamReviewService._new_card_limit(6) == 4
     assert ExamReviewService._new_card_limit(10) == 0
+
+
+@pytest.mark.asyncio
+async def test_due_review_requires_relearning_before_next_long_term_review(exam_db_session, monkeypatch):
+    card = ExamCard(card_id=1, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
+    review = ExamCardReview(review_id=1, user_id=1, card_id=1, state='review', required_repetitions=5, review_round=1, interval_days=1, next_review_time=datetime.now() - timedelta(days=1))
+    exam_db_session.add_all([card, review])
+    await exam_db_session.commit()
+    log_ids = iter(range(1, 6))
+    monkeypatch.setattr(exam_review_service, 'ExamCardReviewLog', lambda **kwargs: ExamCardReviewLog(log_id=next(log_ids), **kwargs))
+
+    first = await ExamReviewService.rate(exam_db_session, 1, 1, 'good')
+
+    assert first['state'] == 'learning'
+    assert first['completed'] == 1
+    assert first['required'] == 5
+    for _ in range(4):
+        result = await ExamReviewService.rate(exam_db_session, 1, 1, 'good')
+
+    assert result['state'] == 'review'
+    assert result['reviewRound'] == 2
+    assert result['nextReviewTime'] > datetime.now() + timedelta(days=1)
