@@ -2,9 +2,12 @@ from datetime import date, datetime, timedelta
 
 import pytest
 import pytest_asyncio
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from module_exam.entity.do.exam_card_do import ExamCard, ExamCardReview, ExamCardReviewLog
+from exceptions.exception import ServiceException
+from module_exam.entity.do.exam_card_do import ExamCard, ExamCardAiSummaryVersion, ExamCardReview, ExamCardReviewLog
+from module_exam.service.exam_card_service import ExamCardService
 from module_exam.service import exam_review_service
 from module_exam.service.exam_review_service import ExamReviewService
 
@@ -87,3 +90,44 @@ async def test_due_review_requires_repetitions_before_next_long_term_review(exam
     assert result['state'] == 'review'
     assert result['reviewRound'] == 2
     assert result['nextReviewTime'] > datetime.now() + timedelta(days=1)
+
+
+@pytest.mark.asyncio
+async def test_ai_summary_versions_only_change_mobile_summary_when_activated(exam_db_session):
+    card = ExamCard(
+        card_id=2,
+        category_id=1,
+        question='q',
+        answer='reference',
+        ai_summary='v1',
+        active_ai_summary_version_id=1,
+    )
+    original = ExamCardAiSummaryVersion(
+        summary_version_id=1,
+        card_id=2,
+        version_no=1,
+        title='原始总结',
+        ai_summary='v1',
+    )
+    exam_db_session.add_all([card, original])
+    await exam_db_session.commit()
+
+    version = await ExamCardService.add_ai_summary_version(exam_db_session, 2, '原理推导版', 'v2')
+
+    assert version['version_no'] == 2
+    assert (await exam_db_session.get(ExamCard, 2)).ai_summary == 'v1'
+    await ExamCardService.activate_ai_summary_version(exam_db_session, 2, version['summary_version_id'])
+    updated_card = await exam_db_session.get(ExamCard, 2)
+
+    assert updated_card.active_ai_summary_version_id == version['summary_version_id']
+    assert updated_card.ai_summary == 'v2'
+    assert await exam_db_session.scalar(select(func.count()).select_from(ExamCardAiSummaryVersion)) == 2
+
+
+@pytest.mark.asyncio
+async def test_ai_summary_version_rejects_whitespace_content(exam_db_session):
+    exam_db_session.add(ExamCard(card_id=3, category_id=1, question='q', answer='a'))
+    await exam_db_session.commit()
+
+    with pytest.raises(ServiceException):
+        await ExamCardService.add_ai_summary_version(exam_db_session, 3, ' ', ' ')

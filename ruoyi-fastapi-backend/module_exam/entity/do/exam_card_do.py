@@ -53,6 +53,7 @@ class ExamCard(Base):
     question = Column(String(500), nullable=False)
     answer = Column(Text, nullable=False)
     ai_summary = Column(Text, nullable=False, default='')
+    active_ai_summary_version_id = Column(BigInteger, nullable=True)
     key_points = Column(Text, nullable=False, default='')
     tags = Column(String(500), nullable=False, default='')
     card_type = Column(String(32), nullable=False, default='concept')
@@ -60,5 +61,18 @@ class ExamCard(Base):
     status = Column(String(16), nullable=False, default='published')
     review_enabled = Column(Boolean, nullable=False, default=False)
     sort_no = Column(Integer, nullable=False, default=0)
+    create_time = Column(DateTime, nullable=False, default=datetime.now)
+    update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
+
+
+class ExamCardAiSummaryVersion(Base):
+    __tablename__ = 'exam_card_ai_summary_version'
+    __table_args__ = (UniqueConstraint('card_id', 'version_no', name='uk_exam_card_ai_summary_version_card_version'),)
+
+    summary_version_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True, autoincrement=True)
+    card_id = Column(BigInteger, nullable=False, index=True)
+    version_no = Column(Integer, nullable=False)
+    title = Column(String(100), nullable=False)
+    ai_summary = Column(Text, nullable=False)
     create_time = Column(DateTime, nullable=False, default=datetime.now)
     update_time = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)

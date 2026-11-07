@@ -28,15 +28,32 @@
         <el-table-column label="标签" min-width="160"><template #default="{ row }"><div class="tags"><el-tag v-for="tag in tags(row)" :key="tag" size="small" type="info">{{ tag }}</el-tag></div></template></el-table-column>
         <el-table-column label="类型" width="92"><template #default="{ row }"><el-tag size="small">{{ typeLabel(row.card_type) }}</el-tag></template></el-table-column>
         <el-table-column label="难度" width="76"><template #default="{ row }">{{ row.difficulty }}</template></el-table-column>
+        <el-table-column label="AI 总结方案" width="130" fixed="right"><template #default="{ row }"><el-button link type="primary" @click="openSummaryVersions(row)" v-hasPermi="['exam:card:edit']">管理</el-button></template></el-table-column>
       </el-table>
       <el-empty v-if="!loading && !cards.length" description="暂无匹配的知识卡片" />
     </el-card>
+    <el-dialog v-model="summaryDialog.open" :title="summaryDialog.card ? `AI 总结方案：${summaryDialog.card.question}` : 'AI 总结方案'" width="760px" append-to-body destroy-on-close>
+      <el-table :data="summaryDialog.versions" border>
+        <el-table-column label="版本" width="80"><template #default="{ row }">v{{ row.version_no }}</template></el-table-column>
+        <el-table-column prop="title" label="方案名称" width="160" show-overflow-tooltip />
+        <el-table-column label="总结内容" min-width="300"><template #default="{ row }"><div class="summary-version-content">{{ row.ai_summary }}</div></template></el-table-column>
+        <el-table-column label="状态" width="88"><template #default="{ row }"><el-tag v-if="row.summary_version_id === summaryDialog.activeId" type="success">当前</el-tag><el-tag v-else type="info">未启用</el-tag></template></el-table-column>
+        <el-table-column label="操作" width="88"><template #default="{ row }"><el-button v-if="row.summary_version_id !== summaryDialog.activeId" link type="primary" @click="activateSummaryVersion(row)">设为当前</el-button></template></el-table-column>
+      </el-table>
+      <el-divider content-position="left">新增学习方案</el-divider>
+      <el-form :model="summaryForm" label-width="82px">
+        <el-form-item label="方案名称" required><el-input v-model="summaryForm.title" maxlength="100" show-word-limit placeholder="例如：1 分钟面试版" /></el-form-item>
+        <el-form-item label="AI 总结" required><el-input v-model="summaryForm.aiSummary" type="textarea" :rows="6" maxlength="300" show-word-limit placeholder="最多 300 字；保存后需手动设为当前才会在移动端显示。" /></el-form-item>
+        <el-form-item><el-button type="primary" :loading="summaryDialog.saving" @click="addSummaryVersion">保存为新方案</el-button></el-form-item>
+      </el-form>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="ExamJavaCards">
 import { ref, computed, onMounted } from 'vue'
-import { getExamReviewOverview, listExamCards, listExamCategories } from '@/api/exam/card'
+import { ElMessage } from 'element-plus'
+import { activateExamCardAiSummaryVersion, addExamCardAiSummaryVersion, getExamReviewOverview, listExamCardAiSummaryVersions, listExamCards, listExamCategories } from '@/api/exam/card'
 
 const categories = ref([])
 const allCards = ref([])
@@ -46,6 +63,8 @@ const keyword = ref('')
 const selectedType = ref('')
 const reviewOverview = ref({})
 const selectedYear = ref(new Date().getFullYear())
+const summaryDialog = ref({ open: false, card: null, versions: [], activeId: null, saving: false })
+const summaryForm = ref({ title: '', aiSummary: '' })
 const years = computed(() => Array.from({ length: 4 }, (_, index) => new Date().getFullYear() - index))
 const formatDate = day => `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
 const heatmapDays = computed(() => { const map = Object.fromEntries((reviewOverview.value.heatmap || []).map(item => [item.date, item.count])); const planned = Object.fromEntries((reviewOverview.value.plannedReviews || []).map(item => [item.date, item.count])); const first = new Date(selectedYear.value, 0, 1); first.setDate(first.getDate() - first.getDay()); const last = new Date(selectedYear.value, 11, 31); last.setDate(last.getDate() + 6 - last.getDay()); const days = []; for (const day = new Date(first); day <= last; day.setDate(day.getDate() + 1)) days.push({ date: formatDate(day), count: day.getFullYear() === selectedYear.value ? map[formatDate(day)] || 0 : null, planned: day.getFullYear() === selectedYear.value ? planned[formatDate(day)] || 0 : null }); return days })
@@ -73,6 +92,38 @@ function toggleCategory(categoryId) {
   selectedCategoryIds.value = selectedCategoryIds.value.includes(categoryId)
     ? selectedCategoryIds.value.filter(id => id !== categoryId)
     : [...selectedCategoryIds.value, categoryId]
+}
+
+async function loadSummaryVersions() {
+  const response = await listExamCardAiSummaryVersions(summaryDialog.value.card.card_id)
+  summaryDialog.value.versions = response.data?.versions || []
+  summaryDialog.value.activeId = response.data?.active_summary_version_id || null
+}
+
+async function openSummaryVersions(card) {
+  summaryDialog.value = { open: true, card, versions: [], activeId: null, saving: false }
+  summaryForm.value = { title: '', aiSummary: '' }
+  try { await loadSummaryVersions() } catch { ElMessage.error('AI 总结方案加载失败') }
+}
+
+async function addSummaryVersion() {
+  const title = summaryForm.value.title.trim()
+  const aiSummary = summaryForm.value.aiSummary.trim()
+  if (!title || !aiSummary) return ElMessage.warning('请填写方案名称和 AI 总结')
+  summaryDialog.value.saving = true
+  try {
+    await addExamCardAiSummaryVersion(summaryDialog.value.card.card_id, { title, aiSummary })
+    summaryForm.value = { title: '', aiSummary: '' }
+    await loadSummaryVersions()
+    ElMessage.success('已保存为新方案，设为当前后才会在移动端显示')
+  } finally { summaryDialog.value.saving = false }
+}
+
+async function activateSummaryVersion(version) {
+  await activateExamCardAiSummaryVersion(summaryDialog.value.card.card_id, version.summary_version_id)
+  summaryDialog.value.activeId = version.summary_version_id
+  summaryDialog.value.card.ai_summary = version.ai_summary
+  ElMessage.success('已设为当前 AI 总结')
 }
 
 async function loadHeatmap(year) { selectedYear.value = year; reviewOverview.value = (await getExamReviewOverview(year)).data || {} }
@@ -104,4 +155,5 @@ onMounted(async () => {
 .keyword-input { max-width: 420px; }
 .type-select { width: 140px; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.summary-version-content { white-space: pre-wrap; line-height: 1.55; }
 </style>
