@@ -13,7 +13,11 @@
         <el-empty v-if="!versions.length" description="暂无 AI 总结方案" />
         <div v-for="version in versions" :key="version.summary_version_id" :class="['version-card', { active: version.summary_version_id === activeId }]">
           <div class="version-header"><span><b>v{{ version.version_no }}</b> · {{ version.title }}</span><div><el-tag v-if="version.summary_version_id === activeId" type="success">当前启用</el-tag><el-button v-else link type="primary" @click="activateVersion(version)" v-hasPermi="['exam:card:edit']">启用</el-button></div></div>
-          <div class="content">{{ version.ai_summary }}</div>
+          <div v-for="section in summarySections(version.ai_summary)" :key="section.title" class="summary-section">
+            <div class="summary-title">{{ section.title }}</div>
+            <div v-if="section.title === '要点'" class="content summary-points">{{ section.content.replace(/；/g, '；\n') }}</div>
+            <div v-else class="content">{{ section.content }}</div>
+          </div>
         </div>
       </el-card>
       <el-card shadow="never" class="section" v-hasPermi="['exam:card:edit']"><template #header>新增版本</template>
@@ -55,6 +59,14 @@ const card = computed(() => candidates.value[cardIndex.value] || null)
 const activeVersion = computed(() => versions.value.find(item => item.summary_version_id === activeId.value) || null)
 const categoryNames = computed(() => Object.fromEntries(categories.value.map(item => [item.category_id, item.name])))
 const categoryName = categoryId => categoryNames.value[categoryId] || '未分类'
+const summarySections = summary => {
+  const text = String(summary || '').trim()
+  const sections = ['结论', '要点', '补充'].map(title => ({
+    title,
+    content: text.match(new RegExp(`${title}：([\\s\\S]*?)(?=结论：|要点：|补充：|$)`))?.[1]?.trim() || '',
+  })).filter(section => section.content)
+  return sections.length ? sections : [{ title: 'AI 总结', content: text }]
+}
 
 async function loadVersions() {
   if (!card.value) return
@@ -111,5 +123,5 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-tools,.section-header,.version-header { display:flex; align-items:center; gap:12px; }.page-tools { margin-bottom:16px; }.position { color:#606266; }.navigation { margin-left:auto; display:flex; gap:8px; }.section { margin-bottom:16px; }.section-header,.version-header { justify-content:space-between; }.question { font-size:18px; font-weight:600; line-height:1.7; }.content { white-space:pre-wrap; line-height:1.7; color:#303133; }.version-card { border:1px solid #dcdfe6; border-radius:6px; padding:14px; margin-top:12px; }.version-card.active { border-color:#67c23a; background:#f0f9eb; }.new-version-form { max-width:760px; }
+.page-tools,.section-header,.version-header { display:flex; align-items:center; gap:12px; }.page-tools { margin-bottom:16px; }.position { color:#606266; }.navigation { margin-left:auto; display:flex; gap:8px; }.section { margin-bottom:16px; }.section-header,.version-header { justify-content:space-between; }.question { font-size:18px; font-weight:600; line-height:1.7; }.content { white-space:pre-wrap; line-height:1.7; color:#303133; }.version-card { border:1px solid #dcdfe6; border-radius:6px; padding:14px; margin-top:12px; }.version-card.active { border-color:#67c23a; background:#f0f9eb; }.summary-section { margin-top:18px; }.summary-title { margin-bottom:6px; color:#1f4c7c; font-weight:700; }.summary-points { color:#303133; line-height:1.8; }.new-version-form { max-width:760px; }
 </style>
