@@ -168,6 +168,20 @@ export const constantRoutes = [
 
 export const dynamicRoutes = [
   {
+    path: '/exam/card-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['exam:card:list'],
+    children: [
+      {
+        path: ':cardId(\\d+)',
+        component: () => import('@/views/exam/card-detail.vue'),
+        name: 'ExamCardDetail',
+        meta: { title: '题库详情', activeMenu: '/exam/java-cards' }
+      }
+    ]
+  },
+  {
     path: '/system/user-auth',
     component: Layout,
     hidden: true,

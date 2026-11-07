@@ -84,9 +84,15 @@ class ExamCardService:
                 ai_summary=ai_summary,
             )
             db.add(version)
+            await db.flush()
+            card.active_ai_summary_version_id = version.summary_version_id
+            card.ai_summary = version.ai_summary
             await db.commit()
             await db.refresh(version)
-            return cls._summary_version(version)
+            return {
+                **cls._summary_version(version),
+                'active_summary_version_id': version.summary_version_id,
+            }
         except Exception:
             await db.rollback()
             raise

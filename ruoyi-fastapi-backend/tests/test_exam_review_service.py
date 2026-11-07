@@ -93,7 +93,7 @@ async def test_due_review_requires_repetitions_before_next_long_term_review(exam
 
 
 @pytest.mark.asyncio
-async def test_ai_summary_versions_only_change_mobile_summary_when_activated(exam_db_session):
+async def test_new_ai_summary_version_is_immediately_activated(exam_db_session):
     card = ExamCard(
         card_id=2,
         category_id=1,
@@ -115,8 +115,7 @@ async def test_ai_summary_versions_only_change_mobile_summary_when_activated(exa
     version = await ExamCardService.add_ai_summary_version(exam_db_session, 2, '原理推导版', 'v2')
 
     assert version['version_no'] == 2
-    assert (await exam_db_session.get(ExamCard, 2)).ai_summary == 'v1'
-    await ExamCardService.activate_ai_summary_version(exam_db_session, 2, version['summary_version_id'])
+    assert version['active_summary_version_id'] == version['summary_version_id']
     updated_card = await exam_db_session.get(ExamCard, 2)
 
     assert updated_card.active_ai_summary_version_id == version['summary_version_id']
