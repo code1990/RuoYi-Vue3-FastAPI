@@ -44,6 +44,10 @@ export default defineConfig(({ mode, command }) => {
       port: 5173,
       host: true,
       open: false,
+      watch: {
+        usePolling: true,
+        interval: 100
+      },
       proxy: {
         // https://cn.vitejs.dev/config/#server-proxy
         '/dev-api': {
