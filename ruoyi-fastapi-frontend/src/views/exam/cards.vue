@@ -92,7 +92,7 @@ function openCardDetail(card) {
 }
 
 function restoreFilters() {
-  selectedCategoryIds.value = String(route.query.categoryIds || '').split(',').map(Number).filter(Number.isInteger)
+  selectedCategoryIds.value = String(route.query.categoryIds || '').split(',').map(Number).filter(categoryId => Number.isInteger(categoryId) && categoryId > 0)
   selectedType.value = typeof route.query.type === 'string' ? route.query.type : ''
   keyword.value = typeof route.query.keyword === 'string' ? route.query.keyword : ''
 }

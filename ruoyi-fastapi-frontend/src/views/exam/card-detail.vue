@@ -40,7 +40,7 @@ const activeId = ref(null)
 const form = ref({ title: '', aiSummary: '' })
 const candidateIds = ref([])
 const filters = computed(() => ({
-  categoryIds: String(route.query.categoryIds || '').split(',').map(Number).filter(Number.isInteger),
+  categoryIds: String(route.query.categoryIds || '').split(',').map(Number).filter(categoryId => Number.isInteger(categoryId) && categoryId > 0),
   type: typeof route.query.type === 'string' ? route.query.type : '',
   keyword: typeof route.query.keyword === 'string' ? route.query.keyword.trim().toLowerCase() : '',
 }))
