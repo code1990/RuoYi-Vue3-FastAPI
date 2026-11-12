@@ -265,11 +265,15 @@ class ExamReviewService:
         elif rating == 'again':
             review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, now + timedelta(days=1)
         else:
-            factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
-            review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
-            review.next_review_time = now + timedelta(days=review.interval_days)
-            review.completed_repetitions = 0
-            review.review_round += 1
+            review.completed_repetitions += 1
+            if review.completed_repetitions >= cls._review_required(review):
+                factor = {'hard': 1.2, 'good': 2.5, 'easy': 3.5}[rating]
+                review.interval_days = min(180, max(1, round((review.interval_days or 1) * factor)))
+                review.next_review_time = now + timedelta(days=review.interval_days)
+                review.completed_repetitions = 0
+                review.review_round += 1
+            else:
+                review.next_review_time = now + timedelta(days=1)
         review.last_review_time = now; db.add(ExamCardReviewLog(user_id=user_id, card_id=card_id, rating=rating, reviewed_time=now))
         required = cls._review_required(review) if review.state == 'review' else review.required_repetitions
         result = {'state': review.state, 'completed': review.completed_repetitions, 'required': required, 'reviewRound': review.review_round, 'nextReviewTime': review.next_review_time}
