@@ -89,7 +89,7 @@ async def test_new_card_is_a_pretest_and_prefers_a_different_category(exam_db_se
 
 
 @pytest.mark.asyncio
-async def test_due_review_requires_spaced_retrievals_before_next_interval(exam_db_session, monkeypatch):
+async def test_due_review_is_scheduled_after_one_retrieval(exam_db_session, monkeypatch):
     card = ExamCard(card_id=1, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
     review = ExamCardReview(review_id=1, user_id=1, card_id=1, state='review', required_repetitions=5, review_round=1, interval_days=1, next_review_time=datetime.now() - timedelta(days=1))
     exam_db_session.add_all([card, review])
@@ -99,10 +99,9 @@ async def test_due_review_requires_spaced_retrievals_before_next_interval(exam_d
     first = await ExamReviewService.rate(exam_db_session, 1, 1, 'good')
 
     assert first['state'] == 'review'
-    assert first['completed'] == 1
-    assert first['required'] == 5
-    assert first['reviewRound'] == 1
-    assert first['nextReviewTime'].date() == date.today() + timedelta(days=1)
+    assert first['completed'] == 0
+    assert first['reviewRound'] == 2
+    assert first['nextReviewTime'] > datetime.now() + timedelta(days=1)
 
 
 @pytest.mark.asyncio
