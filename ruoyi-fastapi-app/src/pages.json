@@ -54,7 +54,7 @@
     {
       "path": "pages/mine/index",
       "style": {
-        "navigationBarTitleText": "商城"
+        "navigationBarTitleText": "工具"
       }
     },
     {
@@ -182,7 +182,7 @@
         "pagePath": "pages/mine/index",
         "iconPath": "static/images/tabbar/mall.png",
         "selectedIconPath": "static/images/tabbar/mall_.png",
-        "text": "商城"
+        "text": "工具"
       }
     ]
   },
