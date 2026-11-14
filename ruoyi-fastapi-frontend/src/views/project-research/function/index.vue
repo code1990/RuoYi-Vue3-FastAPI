@@ -34,14 +34,14 @@ function buildOverlay(name, indicator, data) {
   const points = [], areas = [], lines = []
   indicator.forEach((item, index) => {
     if (name === 'swing_highs_lows' && item.level != null && item.highLow) points.push({ value: item.highLow > 0 ? '高点' : '低点', coord: [index, item.level], symbol: 'triangle', symbolRotate: item.highLow > 0 ? 0 : 180, itemStyle: { color: item.highLow > 0 ? '#dc2626' : '#16a34a' } })
-    if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null) areas.push([{ coord: [index, item.bottom] }, { coord: [Math.min(item.mitigatedIndex ?? last, last), item.top] }])
+    if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null) areas.push([{ xAxis: index, yAxis: item.bottom }, { xAxis: Math.min(item.mitigatedIndex ?? last, last), yAxis: item.top }])
     if (name === 'bos_choch' && item.level != null && (item.bos || item.choch)) points.push({ value: item.bos ? 'BOS' : 'CHOCH', coord: [index, item.level], itemStyle: { color: item.bos ? '#2563eb' : '#f59e0b' } })
-    if (name === 'liquidity' && item.level != null) lines.push([{ coord: [index, item.level] }, { coord: [Math.min(item.end ?? last, last), item.level] }])
+    if (name === 'liquidity' && item.level != null) lines.push([{ xAxis: index, yAxis: item.level }, { xAxis: Math.min(item.end ?? last, last), yAxis: item.level }])
     if (name === 'previous_high_low') {
-      if (item.previousHigh) lines.push([{ coord: [index, item.previousHigh] }, { coord: [last, item.previousHigh] }])
-      if (item.previousLow) lines.push([{ coord: [index, item.previousLow] }, { coord: [last, item.previousLow] }])
+      if (item.previousHigh) lines.push([{ xAxis: index, yAxis: item.previousHigh }, { xAxis: last, yAxis: item.previousHigh }])
+      if (item.previousLow) lines.push([{ xAxis: index, yAxis: item.previousLow }, { xAxis: last, yAxis: item.previousLow }])
     }
-    if (name === 'sessions' && item.active && item.high && item.low) areas.push([{ coord: [index, item.low] }, { coord: [Math.min(index + 1, last), item.high] }])
+    if (name === 'sessions' && item.active && item.high && item.low) areas.push([{ xAxis: index, yAxis: item.low }, { xAxis: Math.min(index + 1, last), yAxis: item.high }])
   })
   return { markPoint: points.length ? { data: points } : undefined, markArea: areas.length ? { itemStyle: { color: 'rgba(59, 130, 246, 0.12)' }, data: areas } : undefined, markLine: lines.length ? { symbol: 'none', data: lines } : undefined }
 }
