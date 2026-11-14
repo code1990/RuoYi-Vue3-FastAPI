@@ -28,6 +28,7 @@ class FuncModel(BaseModel):
     project_id: int | None = None
     func_name: str | None = None
     func_desc: str | None = None
+    logic: str | None = None
     language: str | None = None
     func_type: str | None = None
     func_code: str | None = None

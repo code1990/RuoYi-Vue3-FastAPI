@@ -28,6 +28,7 @@ class FuncManage(Base):
     project_id = Column(BigInteger, ForeignKey('project_manage.id'), nullable=False, index=True)
     func_name = Column(String(100), nullable=False)
     func_desc = Column(String(500))
+    logic = Column(Text)
     language = Column(String(20), nullable=False)
     func_type = Column(String(20), nullable=False)
     func_code = Column(Text, nullable=False)
