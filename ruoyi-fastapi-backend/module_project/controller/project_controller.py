@@ -127,7 +127,19 @@ async def function_visual_data(
             }
             for row in csv.DictReader(file)
         ]
-    return ResponseUtil.success(data={'source': 'static', 'symbol': 'EURUSD', 'timeframe': '15m', 'rows': rows})
+    data = {'source': 'static', 'symbol': 'EURUSD', 'timeframe': '15m', 'rows': rows}
+    if function.func_name == 'retracements':
+        result_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / 'retracements_result_data.csv'
+        with result_path.open(encoding='utf-8') as file:
+            data['indicator'] = [
+                {
+                    'direction': int(row['Direction']),
+                    'currentRetracement': float(row['CurrentRetracement%']),
+                    'deepestRetracement': float(row['DeepestRetracement%']),
+                }
+                for row in csv.DictReader(file)
+            ][:len(rows)]
+    return ResponseUtil.success(data=data)
 
 
 @function_controller.get('/{id}', response_model=DataResponseModel[FuncModel], dependencies=[UserInterfaceAuthDependency('function:manage:list')])

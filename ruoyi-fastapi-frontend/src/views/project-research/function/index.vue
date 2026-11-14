@@ -28,7 +28,35 @@ function openEdit(row) { Object.assign(form, row); chooseProjects().then(() => {
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateFunction : addFunction)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除函数“${row.funcName}”吗？`).then(() => delFunction(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
 function openVisual(row) { visualRow.value = row; visualSource.value = 'static'; visualDialog.value = true; nextTick(loadVisual) }
-function loadVisual() { if (!visualDialog.value) return; getFunctionVisualData(visualRow.value.id, visualSource.value).then(res => { const data = res.data.rows; chart ||= echarts.init(chartRef.value); chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: data.map(item => item.time), axisLabel: { show: false } }, yAxis: { scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: data.map(item => [item.open, item.close, item.low, item.high]) }] }, true) }) }
+function loadVisual() {
+  if (!visualDialog.value) return
+  getFunctionVisualData(visualRow.value.id, visualSource.value).then(res => {
+    const data = res.data.rows
+    const indicator = res.data.indicator
+    chart ||= echarts.init(chartRef.value)
+    const times = data.map(item => item.time)
+    const candles = data.map(item => [item.open, item.close, item.low, item.high])
+    if (visualRow.value.funcName !== 'retracements' || !indicator) {
+      chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles }] }, true)
+      return
+    }
+    const directionMarks = indicator.map((item, index) => index > 0 && item.direction && item.direction !== indicator[index - 1].direction ? { value: item.direction === 1 ? '多头' : '空头', coord: [index, data[index].close], itemStyle: { color: item.direction === 1 ? '#16a34a' : '#dc2626' } } : null).filter(Boolean)
+    chart.setOption({
+      animation: false,
+      tooltip: { trigger: 'axis' },
+      legend: { top: 0, data: ['EURUSD', '当前回撤%', '最大回撤%'] },
+      grid: [{ left: 48, right: 20, top: 32, height: '57%' }, { left: 48, right: 20, top: '68%', height: '22%' }],
+      dataZoom: [{ type: 'inside', xAxisIndex: [0, 1] }, { type: 'slider', xAxisIndex: [0, 1] }],
+      xAxis: [{ type: 'category', data: times, axisLabel: { show: false } }, { type: 'category', gridIndex: 1, data: times, axisLabel: { show: false } }],
+      yAxis: [{ scale: true }, { gridIndex: 1, name: '%', scale: true }],
+      series: [
+        { name: 'EURUSD', type: 'candlestick', data: candles, markPoint: { symbol: 'triangle', symbolSize: 16, label: { show: true, position: 'top' }, data: directionMarks } },
+        { name: '当前回撤%', type: 'line', xAxisIndex: 1, yAxisIndex: 1, showSymbol: false, data: indicator.map(item => item.currentRetracement) },
+        { name: '最大回撤%', type: 'line', xAxisIndex: 1, yAxisIndex: 1, showSymbol: false, data: indicator.map(item => item.deepestRetracement) },
+      ],
+    }, true)
+  })
+}
 load()
 </script>
 
