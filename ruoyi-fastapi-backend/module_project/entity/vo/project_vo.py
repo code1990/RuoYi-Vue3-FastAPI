@@ -45,3 +45,20 @@ class FuncModel(BaseModel):
 class FuncPageQuery(FuncModel):
     page_num: int = 1
     page_size: int = 10
+
+
+class CombinationModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    project_id: int | None = None
+    combination_name: str | None = None
+    research_direction: str | None = None
+    description: str | None = None
+    function_ids: list[int] | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class CombinationPageQuery(CombinationModel):
+    page_num: int = 1
+    page_size: int = 10

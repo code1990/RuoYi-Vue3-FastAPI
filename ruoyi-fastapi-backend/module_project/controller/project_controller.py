@@ -11,8 +11,8 @@ from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel, PageResponseModel, ResponseBaseModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
-from module_project.entity.do.project_do import FuncManage, ProjectManage
-from module_project.entity.vo.project_vo import FuncModel, FuncPageQuery, ProjectModel, ProjectPageQuery
+from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage
+from module_project.entity.vo.project_vo import CombinationModel, CombinationPageQuery, FuncModel, FuncPageQuery, ProjectModel, ProjectPageQuery
 from common.aspect.pre_auth import CurrentUserDependency
 from utils.page_util import PageUtil
 from utils.response_util import ResponseUtil
@@ -20,6 +20,7 @@ from utils.response_util import ResponseUtil
 
 project_controller = APIRouterPro(prefix='/project/manage', order_num=20, tags=['项目研究-项目管理'], dependencies=[PreAuthDependency()])
 function_controller = APIRouterPro(prefix='/function/manage', order_num=21, tags=['项目研究-函数管理'], dependencies=[PreAuthDependency()])
+combination_controller = APIRouterPro(prefix='/function/combination', order_num=22, tags=['项目研究-函数组合管理'], dependencies=[PreAuthDependency()])
 
 
 async def _save(db: AsyncSession, model, data: dict, user: CurrentUserModel, is_new: bool):
@@ -103,3 +104,34 @@ async def function_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSessio
 @function_controller.get('/{id}', response_model=DataResponseModel[FuncModel], dependencies=[UserInterfaceAuthDependency('function:manage:list')])
 async def function_detail(id: int, db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
     return ResponseUtil.success(data=(await db.get(FuncManage, id)))
+
+
+@combination_controller.get('/list', response_model=PageResponseModel[CombinationModel], dependencies=[UserInterfaceAuthDependency('function:combination:list')])
+async def combination_list(query: Annotated[CombinationPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(FuncCombinationManage).where(FuncCombinationManage.combination_name.like(f'%{query.combination_name}%') if query.combination_name else True).order_by(FuncCombinationManage.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@combination_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:combination:add')])
+async def combination_add(data: CombinationModel, db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    db.add(FuncCombinationManage(**data.model_dump(exclude_unset=True, exclude={'id'})))
+    await db.commit()
+    return ResponseUtil.success(msg='新增成功')
+
+
+@combination_controller.put('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:combination:edit')])
+async def combination_edit(data: CombinationModel, db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    row = await db.get(FuncCombinationManage, data.id)
+    if not row:
+        return ResponseUtil.failure(msg='组合不存在')
+    for key, value in data.model_dump(exclude_unset=True, exclude={'id'}).items():
+        setattr(row, key, value)
+    await db.commit()
+    return ResponseUtil.success(msg='更新成功')
+
+
+@combination_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:combination:remove')])
+async def combination_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(FuncCombinationManage).where(FuncCombinationManage.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='删除成功')

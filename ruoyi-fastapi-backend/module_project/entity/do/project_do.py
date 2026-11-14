@@ -40,3 +40,17 @@ class FuncManage(Base):
     created_by = Column(String(50))
     create_time = Column(DateTime, default=datetime.now)
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class FuncCombinationManage(Base):
+    __tablename__ = 'func_combination_manage'
+    __table_args__ = (UniqueConstraint('project_id', 'combination_name', name='uk_func_combination_project_name'),)
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    project_id = Column(BigInteger, ForeignKey('project_manage.id'), nullable=False, index=True)
+    combination_name = Column(String(200), nullable=False)
+    research_direction = Column(String(50))
+    description = Column(String(500))
+    function_ids = Column(JSON)
+    create_time = Column(DateTime, default=datetime.now)
+    update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
