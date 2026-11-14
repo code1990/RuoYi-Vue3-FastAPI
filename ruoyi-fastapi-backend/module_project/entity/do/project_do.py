@@ -14,6 +14,7 @@ class ProjectManage(Base):
     repo_url = Column(String(500))
     description = Column(String(500))
     language = Column(String(20))
+    research_direction = Column(String(50))
     version = Column(String(100))
     created_by = Column(String(50))
     create_time = Column(DateTime, default=datetime.now)

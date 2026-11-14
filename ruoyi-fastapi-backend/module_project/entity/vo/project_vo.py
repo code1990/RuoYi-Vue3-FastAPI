@@ -11,6 +11,7 @@ class ProjectModel(BaseModel):
     repo_url: str | None = None
     description: str | None = None
     language: str | None = None
+    research_direction: str | None = None
     version: str | None = None
     created_by: str | None = None
     create_time: datetime | None = None
