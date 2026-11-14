@@ -1,4 +1,6 @@
 from datetime import datetime
+import csv
+from pathlib import Path as FilePath
 from typing import Annotated
 
 from fastapi import Path, Query, Request, Response
@@ -99,6 +101,33 @@ async def function_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSessio
     await db.execute(delete(FuncManage).where(FuncManage.id.in_([int(i) for i in ids.split(',')])))
     await db.commit()
     return ResponseUtil.success(msg='删除成功')
+
+
+@function_controller.get('/{id}/visual-data', dependencies=[UserInterfaceAuthDependency('function:manage:list')])
+async def function_visual_data(
+    id: int,
+    db: Annotated[AsyncSession, DBSessionDependency()],
+    source: Annotated[str, Query()] = 'static',
+) -> Response:
+    if source == 'real':
+        return ResponseUtil.failure(msg='真实行情接口尚未配置')
+    function = await db.get(FuncManage, id)
+    if not function:
+        return ResponseUtil.failure(msg='函数不存在')
+    csv_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / 'EURUSD_15M.csv'
+    with csv_path.open(encoding='utf-8') as file:
+        rows = [
+            {
+                'time': row['Date'],
+                'open': float(row['Open']),
+                'high': float(row['High']),
+                'low': float(row['Low']),
+                'close': float(row['Close']),
+                'volume': float(row['Volume']),
+            }
+            for row in csv.DictReader(file)
+        ]
+    return ResponseUtil.success(data={'source': 'static', 'symbol': 'EURUSD', 'timeframe': '15m', 'rows': rows})
 
 
 @function_controller.get('/{id}', response_model=DataResponseModel[FuncModel], dependencies=[UserInterfaceAuthDependency('function:manage:list')])
