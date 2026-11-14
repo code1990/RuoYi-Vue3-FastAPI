@@ -29,6 +29,22 @@ function save() { formRef.value.validate(valid => { if (!valid) return; (form.id
 function remove(row) { proxy.$modal.confirm(`确认删除函数“${row.funcName}”吗？`).then(() => delFunction(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
 function openVisual(row) { visualRow.value = row; visualSource.value = 'static'; visualDialog.value = true; nextTick(loadVisual) }
 function closeVisual() { chart?.dispose(); chart = null }
+function buildOverlay(name, indicator, data) {
+  const last = data.length - 1
+  const points = [], areas = [], lines = []
+  indicator.forEach((item, index) => {
+    if (name === 'swing_highs_lows' && item.level != null && item.highLow) points.push({ value: item.highLow > 0 ? '高点' : '低点', coord: [index, item.level], symbol: 'triangle', symbolRotate: item.highLow > 0 ? 0 : 180, itemStyle: { color: item.highLow > 0 ? '#dc2626' : '#16a34a' } })
+    if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null) areas.push([{ coord: [index, item.bottom] }, { coord: [Math.min(item.mitigatedIndex ?? last, last), item.top] }])
+    if (name === 'bos_choch' && item.level != null && (item.bos || item.choch)) points.push({ value: item.bos ? 'BOS' : 'CHOCH', coord: [index, item.level], itemStyle: { color: item.bos ? '#2563eb' : '#f59e0b' } })
+    if (name === 'liquidity' && item.level != null) lines.push([{ coord: [index, item.level] }, { coord: [Math.min(item.end ?? last, last), item.level] }])
+    if (name === 'previous_high_low') {
+      if (item.previousHigh) lines.push([{ coord: [index, item.previousHigh] }, { coord: [last, item.previousHigh] }])
+      if (item.previousLow) lines.push([{ coord: [index, item.previousLow] }, { coord: [last, item.previousLow] }])
+    }
+    if (name === 'sessions' && item.active && item.high && item.low) areas.push([{ coord: [index, item.low] }, { coord: [Math.min(index + 1, last), item.high] }])
+  })
+  return { markPoint: points.length ? { data: points } : undefined, markArea: areas.length ? { itemStyle: { color: 'rgba(59, 130, 246, 0.12)' }, data: areas } : undefined, markLine: lines.length ? { symbol: 'none', data: lines } : undefined }
+}
 function loadVisual() {
   if (!visualDialog.value) return
   getFunctionVisualData(visualRow.value.id, visualSource.value).then(res => {
@@ -38,7 +54,8 @@ function loadVisual() {
     const times = data.map(item => item.time)
     const candles = data.map(item => [item.open, item.close, item.low, item.high])
     if (visualRow.value.funcName !== 'retracements' || !indicator) {
-      chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles }] }, true)
+      const overlay = indicator ? buildOverlay(visualRow.value.funcName, indicator, data) : {}
+      chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
       return
     }
     const directionMarks = indicator.map((item, index) => index > 0 && item.direction && item.direction !== indicator[index - 1].direction ? { value: item.direction === 1 ? '多头' : '空头', coord: [index, data[index].close], itemStyle: { color: item.direction === 1 ? '#16a34a' : '#dc2626' } } : null).filter(Boolean)

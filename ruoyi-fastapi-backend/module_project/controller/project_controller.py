@@ -128,17 +128,28 @@ async def function_visual_data(
             for row in csv.DictReader(file)
         ]
     data = {'source': 'static', 'symbol': 'EURUSD', 'timeframe': '15m', 'rows': rows}
-    if function.func_name == 'retracements':
-        result_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / 'retracements_result_data.csv'
+    indicator_files = {
+        'swing_highs_lows': ('swing_highs_lows_result_data.csv', {'HighLow': 'highLow', 'Level': 'level'}),
+        'fvg': ('fvg_result_data.csv', {'FVG': 'fvg', 'Top': 'top', 'Bottom': 'bottom', 'MitigatedIndex': 'mitigatedIndex'}),
+        'bos_choch': ('bos_choch_result_data.csv', {'BOS': 'bos', 'CHOCH': 'choch', 'Level': 'level', 'BrokenIndex': 'brokenIndex'}),
+        'ob': ('ob_result_data.csv', {'OB': 'ob', 'Top': 'top', 'Bottom': 'bottom', 'OBVolume': 'obVolume', 'MitigatedIndex': 'mitigatedIndex', 'Percentage': 'percentage'}),
+        'liquidity': ('liquidity_result_data.csv', {'Liquidity': 'liquidity', 'Level': 'level', 'End': 'end', 'Swept': 'swept'}),
+        'previous_high_low': ('previous_high_low_result_data_1D.csv', {'PreviousHigh': 'previousHigh', 'PreviousLow': 'previousLow', 'BrokenHigh': 'brokenHigh', 'BrokenLow': 'brokenLow'}),
+        'sessions': ('sessions_result_data.csv', {'Active': 'active', 'High': 'high', 'Low': 'low'}),
+        'retracements': ('retracements_result_data.csv', {'Direction': 'direction', 'CurrentRetracement%': 'currentRetracement', 'DeepestRetracement%': 'deepestRetracement'}),
+    }
+    if function.func_name in indicator_files:
+        result_file, fields = indicator_files[function.func_name]
+        result_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / result_file
         with result_path.open(encoding='utf-8') as file:
-            data['indicator'] = [
-                {
-                    'direction': int(row['Direction']),
-                    'currentRetracement': float(row['CurrentRetracement%']),
-                    'deepestRetracement': float(row['DeepestRetracement%']),
-                }
-                for row in csv.DictReader(file)
-            ][:len(rows)]
+            indicator = []
+            for row in csv.DictReader(file):
+                item = {}
+                for source, target in fields.items():
+                    value = row[source].strip()
+                    item[target] = float(value) if value else None
+                indicator.append(item)
+        data['indicator'] = indicator[:len(rows)]
     return ResponseUtil.success(data=data)
 
 
