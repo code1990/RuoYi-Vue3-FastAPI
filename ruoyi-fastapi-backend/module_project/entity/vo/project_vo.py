@@ -31,6 +31,7 @@ class FuncModel(BaseModel):
     func_desc: str | None = None
     logic: str | None = None
     visual_enabled: bool = False
+    visual_summary: str | None = None
     language: str | None = None
     func_type: str | None = None
     func_code: str | None = None

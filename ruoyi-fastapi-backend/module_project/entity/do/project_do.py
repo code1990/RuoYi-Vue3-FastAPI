@@ -31,6 +31,7 @@ class FuncManage(Base):
     func_desc = Column(String(500))
     logic = Column(Text)
     visual_enabled = Column(Boolean, nullable=False, default=False, server_default='0')
+    visual_summary = Column(String(200))
     language = Column(String(20), nullable=False)
     func_type = Column(String(20), nullable=False)
     func_code = Column(Text, nullable=False)
