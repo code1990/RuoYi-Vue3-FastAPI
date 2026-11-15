@@ -92,6 +92,23 @@ class BacktestPageQuery(BacktestModel):
     page_size: int = 10
 
 
+class StrategyModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    combination_id: int | None = None
+    strategy_name: str | None = None
+    description: str | None = None
+    status: str | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class StrategyPageQuery(StrategyModel):
+    page_num: int = 1
+    page_size: int = 10
+
+
 class SimAccountModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
     id: int | None = None

@@ -79,6 +79,18 @@ class ResearchBacktest(Base):
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
+class ResearchStrategy(Base):
+    __tablename__ = 'research_strategy'
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    combination_id = Column(BigInteger, ForeignKey('func_combination_manage.id'), nullable=False, index=True)
+    strategy_name = Column(String(200), nullable=False)
+    description = Column(String(500))
+    status = Column(String(20), nullable=False, default='enabled')
+    created_by = Column(String(50))
+    create_time = Column(DateTime, default=datetime.now)
+    update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
 class ResearchSimAccount(Base):
     __tablename__ = 'research_sim_account'
     id = Column(BigInteger, primary_key=True, autoincrement=True)

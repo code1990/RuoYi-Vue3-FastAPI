@@ -13,9 +13,9 @@ from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel, PageResponseModel, ResponseBaseModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
-from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage, ResearchBacktest, ResearchReview, ResearchSimAccount
+from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage, ResearchBacktest, ResearchReview, ResearchSimAccount, ResearchStrategy
 from module_project.entity.vo.project_vo import (BacktestModel, BacktestPageQuery, CombinationModel, CombinationPageQuery, FuncModel,
-                                                  FuncPageQuery, ProjectModel, ProjectPageQuery, ReviewModel, ReviewPageQuery,
+                                                  FuncPageQuery, ProjectModel, ProjectPageQuery, ReviewModel, ReviewPageQuery, StrategyModel, StrategyPageQuery,
                                                   SimAccountModel, SimAccountPageQuery)
 from common.aspect.pre_auth import CurrentUserDependency
 from utils.page_util import PageUtil
@@ -26,6 +26,7 @@ project_controller = APIRouterPro(prefix='/project/manage', order_num=20, tags=[
 function_controller = APIRouterPro(prefix='/function/manage', order_num=21, tags=['项目研究-函数管理'], dependencies=[PreAuthDependency()])
 combination_controller = APIRouterPro(prefix='/function/combination', order_num=22, tags=['项目研究-函数组合管理'], dependencies=[PreAuthDependency()])
 backtest_controller = APIRouterPro(prefix='/research/backtest', order_num=23, tags=['项目研究-回测'], dependencies=[PreAuthDependency()])
+strategy_controller = APIRouterPro(prefix='/research/strategy', order_num=23, tags=['项目研究-交易策略'], dependencies=[PreAuthDependency()])
 simulation_controller = APIRouterPro(prefix='/research/simulation', order_num=24, tags=['项目研究-模拟交易'], dependencies=[PreAuthDependency()])
 review_controller = APIRouterPro(prefix='/research/review', order_num=25, tags=['项目研究-复盘'], dependencies=[PreAuthDependency()])
 
@@ -202,6 +203,25 @@ async def combination_edit(data: CombinationModel, db: Annotated[AsyncSession, D
 @combination_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:combination:remove')])
 async def combination_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
     await db.execute(delete(FuncCombinationManage).where(FuncCombinationManage.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='删除成功')
+
+
+@strategy_controller.get('/list', response_model=PageResponseModel[StrategyModel], dependencies=[UserInterfaceAuthDependency('research:strategy:list')])
+async def strategy_list(query: Annotated[StrategyPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(ResearchStrategy).where(ResearchStrategy.strategy_name.like(f'%{query.strategy_name}%') if query.strategy_name else True).order_by(ResearchStrategy.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@strategy_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:strategy:add')])
+async def strategy_add(data: StrategyModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    await _save(db, ResearchStrategy, data.model_dump(exclude_unset=True), user, True)
+    return ResponseUtil.success(msg='策略已创建')
+
+
+@strategy_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:strategy:remove')])
+async def strategy_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(ResearchStrategy).where(ResearchStrategy.id.in_([int(i) for i in ids.split(',')])))
     await db.commit()
     return ResponseUtil.success(msg='删除成功')
 
