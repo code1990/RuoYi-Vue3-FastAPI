@@ -39,11 +39,11 @@ function buildOverlay(name, indicator, data) {
     if (name === 'swing_highs_lows' && item.highLow && data[index]) points.push({ value: item.highLow > 0 ? '高点' : '低点', coord: [index, item.highLow > 0 ? data[index].high : data[index].low], symbol: 'triangle', symbolRotate: item.highLow > 0 ? 0 : 180, itemStyle: { color: item.highLow > 0 ? '#dc2626' : '#16a34a' } })
     // shortcut: static zone prices use another price scale, so anchor the zone to current candles until results are recalculated.
     if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null && data[index]) areas.push([{ xAxis: index, yAxis: data[index].low }, { xAxis: Math.min(item.mitigatedIndex ?? last, last), yAxis: data[index].high }])
-    if (name === 'bos_choch' && item.level != null && (item.bos || item.choch)) points.push({ value: item.bos ? 'BOS' : 'CHOCH', coord: [index, item.level], itemStyle: { color: item.bos ? '#2563eb' : '#f59e0b' } })
-    if (name === 'liquidity' && item.level != null) lines.push([{ xAxis: index, yAxis: item.level }, { xAxis: Math.min(item.end ?? last, last), yAxis: item.level }])
+    if (name === 'bos_choch' && item.level != null && (item.bos || item.choch) && data[index]) points.push({ value: item.bos ? 'BOS' : 'CHOCH', coord: [index, (item.bos || item.choch) > 0 ? data[index].high : data[index].low], itemStyle: { color: item.bos ? '#2563eb' : '#f59e0b' } })
+    if (name === 'liquidity' && item.level != null && data[index]) lines.push([{ xAxis: index, yAxis: item.liquidity > 0 ? data[index].high : data[index].low }, { xAxis: Math.min(item.end ?? last, last), yAxis: item.liquidity > 0 ? data[index].high : data[index].low }])
     if (name === 'previous_high_low') {
-      if (item.previousHigh) lines.push([{ xAxis: index, yAxis: item.previousHigh }, { xAxis: last, yAxis: item.previousHigh }])
-      if (item.previousLow) lines.push([{ xAxis: index, yAxis: item.previousLow }, { xAxis: last, yAxis: item.previousLow }])
+      if (item.previousHigh && data[index]) lines.push([{ xAxis: index, yAxis: data[index].high }, { xAxis: last, yAxis: data[index].high }])
+      if (item.previousLow && data[index]) lines.push([{ xAxis: index, yAxis: data[index].low }, { xAxis: last, yAxis: data[index].low }])
     }
     // shortcut: static session prices use another price scale, so anchor the zone to the current candle.
     if (name === 'sessions' && item.active && data[index]) areas.push([{ xAxis: index, yAxis: data[index].low }, { xAxis: Math.min(index + 1, last), yAxis: data[index].high }])
@@ -61,7 +61,7 @@ function loadVisual() {
     const candles = data.map(item => [item.open, item.close, item.low, item.high])
     if (visualRow.value.funcName !== 'retracements' || !indicator) {
       const overlay = indicator ? buildOverlay(visualRow.value.funcName, indicator, data) : {}
-      const indicatorValues = ['swing_highs_lows', 'fvg', 'ob', 'sessions'].includes(visualRow.value.funcName) ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
+      const indicatorValues = ['swing_highs_lows', 'fvg', 'ob', 'sessions', 'previous_high_low', 'liquidity', 'bos_choch'].includes(visualRow.value.funcName) ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
       const priceValues = candles.flatMap(item => item.slice(2))
       chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { min: Math.min(...priceValues, ...indicatorValues), max: Math.max(...priceValues, ...indicatorValues), scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
       chart.resize()
