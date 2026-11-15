@@ -13,8 +13,10 @@ from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel, PageResponseModel, ResponseBaseModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
-from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage
-from module_project.entity.vo.project_vo import CombinationModel, CombinationPageQuery, FuncModel, FuncPageQuery, ProjectModel, ProjectPageQuery
+from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage, ResearchBacktest, ResearchReview, ResearchSimAccount
+from module_project.entity.vo.project_vo import (BacktestModel, BacktestPageQuery, CombinationModel, CombinationPageQuery, FuncModel,
+                                                  FuncPageQuery, ProjectModel, ProjectPageQuery, ReviewModel, ReviewPageQuery,
+                                                  SimAccountModel, SimAccountPageQuery)
 from common.aspect.pre_auth import CurrentUserDependency
 from utils.page_util import PageUtil
 from utils.response_util import ResponseUtil
@@ -23,6 +25,9 @@ from utils.response_util import ResponseUtil
 project_controller = APIRouterPro(prefix='/project/manage', order_num=20, tags=['项目研究-项目管理'], dependencies=[PreAuthDependency()])
 function_controller = APIRouterPro(prefix='/function/manage', order_num=21, tags=['项目研究-函数管理'], dependencies=[PreAuthDependency()])
 combination_controller = APIRouterPro(prefix='/function/combination', order_num=22, tags=['项目研究-函数组合管理'], dependencies=[PreAuthDependency()])
+backtest_controller = APIRouterPro(prefix='/research/backtest', order_num=23, tags=['项目研究-回测'], dependencies=[PreAuthDependency()])
+simulation_controller = APIRouterPro(prefix='/research/simulation', order_num=24, tags=['项目研究-模拟交易'], dependencies=[PreAuthDependency()])
+review_controller = APIRouterPro(prefix='/research/review', order_num=25, tags=['项目研究-复盘'], dependencies=[PreAuthDependency()])
 
 
 async def _save(db: AsyncSession, model, data: dict, user: CurrentUserModel, is_new: bool):
@@ -197,5 +202,64 @@ async def combination_edit(data: CombinationModel, db: Annotated[AsyncSession, D
 @combination_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:combination:remove')])
 async def combination_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
     await db.execute(delete(FuncCombinationManage).where(FuncCombinationManage.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='删除成功')
+
+
+@backtest_controller.get('/list', response_model=PageResponseModel[BacktestModel], dependencies=[UserInterfaceAuthDependency('research:backtest:list')])
+async def backtest_list(query: Annotated[BacktestPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(ResearchBacktest).where(ResearchBacktest.name.like(f'%{query.name}%') if query.name else True).order_by(ResearchBacktest.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@backtest_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:backtest:add')])
+async def backtest_add(data: BacktestModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    await _save(db, ResearchBacktest, data.model_dump(exclude_unset=True), user, True)
+    return ResponseUtil.success(msg='回测任务已创建')
+
+
+@backtest_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:backtest:remove')])
+async def backtest_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(ResearchBacktest).where(ResearchBacktest.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='删除成功')
+
+
+@simulation_controller.get('/list', response_model=PageResponseModel[SimAccountModel], dependencies=[UserInterfaceAuthDependency('research:simulation:list')])
+async def simulation_list(query: Annotated[SimAccountPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(ResearchSimAccount).where(ResearchSimAccount.account_name.like(f'%{query.account_name}%') if query.account_name else True).order_by(ResearchSimAccount.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@simulation_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:simulation:add')])
+async def simulation_add(data: SimAccountModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    payload = data.model_dump(exclude_unset=True)
+    payload.setdefault('available_balance', payload.get('initial_balance', 100000))
+    await _save(db, ResearchSimAccount, payload, user, True)
+    return ResponseUtil.success(msg='模拟账户已创建')
+
+
+@simulation_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:simulation:remove')])
+async def simulation_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(ResearchSimAccount).where(ResearchSimAccount.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='删除成功')
+
+
+@review_controller.get('/list', response_model=PageResponseModel[ReviewModel], dependencies=[UserInterfaceAuthDependency('research:review:list')])
+async def review_list(query: Annotated[ReviewPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(ResearchReview).order_by(ResearchReview.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@review_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:review:add')])
+async def review_add(data: ReviewModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    await _save(db, ResearchReview, data.model_dump(exclude_unset=True), user, True)
+    return ResponseUtil.success(msg='复盘已保存')
+
+
+@review_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:review:remove')])
+async def review_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(ResearchReview).where(ResearchReview.id.in_([int(i) for i in ids.split(',')])))
     await db.commit()
     return ResponseUtil.success(msg='删除成功')

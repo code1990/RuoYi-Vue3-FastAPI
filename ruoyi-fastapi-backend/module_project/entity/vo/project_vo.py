@@ -64,3 +64,66 @@ class CombinationModel(BaseModel):
 class CombinationPageQuery(CombinationModel):
     page_num: int = 1
     page_size: int = 10
+
+
+class BacktestModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    combination_id: int | None = None
+    name: str | None = None
+    symbol: str | None = None
+    timeframe: str | None = None
+    start_time: datetime | None = None
+    end_time: datetime | None = None
+    initial_capital: float | None = None
+    status: str | None = None
+    total_return: float | None = None
+    win_rate: float | None = None
+    max_drawdown: float | None = None
+    trade_count: int | None = None
+    result_data: dict | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class BacktestPageQuery(BacktestModel):
+    page_num: int = 1
+    page_size: int = 10
+
+
+class SimAccountModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    account_name: str | None = None
+    initial_balance: float | None = None
+    available_balance: float | None = None
+    total_pnl: float | None = None
+    status: str | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class SimAccountPageQuery(SimAccountModel):
+    page_num: int = 1
+    page_size: int = 10
+
+
+class ReviewModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    source_type: str | None = None
+    source_id: int | None = None
+    rating: str | None = None
+    reason: str | None = None
+    lesson: str | None = None
+    tags: str | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class ReviewPageQuery(ReviewModel):
+    page_num: int = 1
+    page_size: int = 10
