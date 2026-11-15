@@ -18,6 +18,7 @@ const { proxy } = getCurrentInstance()
 const loading = ref(false), dialog = ref(false), total = ref(0), rows = ref([]), projects = ref([]), formRef = ref()
 const visualDialog = ref(false), visualSource = ref('static'), visualRow = ref({}), chartRef = ref()
 let chart
+const legacyVisualFunctions = new Set(['swing_highs_lows', 'fvg', 'bos_choch', 'ob', 'liquidity', 'previous_high_low', 'sessions', 'retracements'])
 const query = reactive({ pageNum: 1, pageSize: 10, funcName: undefined })
 const form = reactive({})
 const rules = { projectId: [{ required: true, message: '请选择项目', trigger: 'change' }], funcName: [{ required: true, message: '函数名称不能为空', trigger: 'blur' }], language: [{ required: true, message: '编程语言不能为空', trigger: 'blur' }], funcCode: [{ required: true, message: '函数源码不能为空', trigger: 'blur' }] }
@@ -27,7 +28,7 @@ function openAdd() { Object.assign(form, { id: undefined, projectId: undefined, 
 function openEdit(row) { Object.assign(form, row); chooseProjects().then(() => { dialog.value = true }) }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateFunction : addFunction)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除函数“${row.funcName}”吗？`).then(() => delFunction(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
-function canVisualize(row) { return row.visualEnabled === true || row.visualEnabled === 1 || row.visualEnabled === '1' }
+function canVisualize(row) { return row.visualEnabled == null ? legacyVisualFunctions.has(row.funcName) : row.visualEnabled === true || row.visualEnabled === 1 || row.visualEnabled === '1' }
 function openVisual(row) { visualRow.value = row; visualSource.value = 'static'; visualDialog.value = true }
 function closeVisual() { chart?.dispose(); chart = null }
 function buildOverlay(name, indicator, data) {
