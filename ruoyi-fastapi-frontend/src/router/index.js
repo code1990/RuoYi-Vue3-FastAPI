@@ -56,6 +56,12 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/project-research/function-combination/chart',
+    component: Layout,
+    hidden: true,
+    children: [{ path: '', component: () => import('@/views/project-research/combination/chart.vue'), name: 'FunctionCombinationChart', meta: { title: '综合图表', activeMenu: '/project-research/function-combination' } }]
+  },
+  {
     path: '/feizhu/keyword-topics',
     component: Layout,
     hidden: true,
