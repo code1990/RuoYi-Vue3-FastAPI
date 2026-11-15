@@ -37,7 +37,8 @@ function buildOverlay(name, indicator, data) {
   indicator.forEach((item, index) => {
     // shortcut: static swing levels use another price scale, so anchor markers to the current candle until results are recalculated.
     if (name === 'swing_highs_lows' && item.highLow && data[index]) points.push({ value: item.highLow > 0 ? '高点' : '低点', coord: [index, item.highLow > 0 ? data[index].high : data[index].low], symbol: 'triangle', symbolRotate: item.highLow > 0 ? 0 : 180, itemStyle: { color: item.highLow > 0 ? '#dc2626' : '#16a34a' } })
-    if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null) areas.push([{ xAxis: index, yAxis: item.bottom }, { xAxis: Math.min(item.mitigatedIndex ?? last, last), yAxis: item.top }])
+    // shortcut: static zone prices use another price scale, so anchor the zone to current candles until results are recalculated.
+    if (['fvg', 'ob'].includes(name) && item.top != null && item.bottom != null && data[index]) areas.push([{ xAxis: index, yAxis: data[index].low }, { xAxis: Math.min(item.mitigatedIndex ?? last, last), yAxis: data[index].high }])
     if (name === 'bos_choch' && item.level != null && (item.bos || item.choch)) points.push({ value: item.bos ? 'BOS' : 'CHOCH', coord: [index, item.level], itemStyle: { color: item.bos ? '#2563eb' : '#f59e0b' } })
     if (name === 'liquidity' && item.level != null) lines.push([{ xAxis: index, yAxis: item.level }, { xAxis: Math.min(item.end ?? last, last), yAxis: item.level }])
     if (name === 'previous_high_low') {
@@ -59,7 +60,7 @@ function loadVisual() {
     const candles = data.map(item => [item.open, item.close, item.low, item.high])
     if (visualRow.value.funcName !== 'retracements' || !indicator) {
       const overlay = indicator ? buildOverlay(visualRow.value.funcName, indicator, data) : {}
-      const indicatorValues = visualRow.value.funcName === 'swing_highs_lows' ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
+      const indicatorValues = ['swing_highs_lows', 'fvg', 'ob'].includes(visualRow.value.funcName) ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
       const priceValues = candles.flatMap(item => item.slice(2))
       chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { min: Math.min(...priceValues, ...indicatorValues), max: Math.max(...priceValues, ...indicatorValues), scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
       chart.resize()
