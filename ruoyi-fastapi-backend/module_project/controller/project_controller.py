@@ -108,6 +108,7 @@ async def function_visual_data(
     id: int,
     db: Annotated[AsyncSession, DBSessionDependency()],
     source: Annotated[str, Query()] = 'static',
+    func_name: Annotated[str | None, Query()] = None,
 ) -> Response:
     if source == 'real':
         return ResponseUtil.failure(msg='真实行情接口尚未配置')
@@ -138,8 +139,9 @@ async def function_visual_data(
         'sessions': ('sessions_result_data.csv', {'Active': 'active', 'High': 'high', 'Low': 'low'}),
         'retracements': ('retracements_result_data.csv', {'Direction': 'direction', 'CurrentRetracement%': 'currentRetracement', 'DeepestRetracement%': 'deepestRetracement'}),
     }
-    if function.func_name in indicator_files:
-        result_file, fields = indicator_files[function.func_name]
+    visual_func_name = func_name or function.func_name
+    if visual_func_name in indicator_files:
+        result_file, fields = indicator_files[visual_func_name]
         result_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / result_file
         with result_path.open(encoding='utf-8') as file:
             indicator = []

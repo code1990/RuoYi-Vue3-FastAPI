@@ -5,7 +5,7 @@
     <el-table v-loading="loading" :data="rows" class="mt12"><el-table-column prop="funcName" label="函数名称" width="180" show-overflow-tooltip /><el-table-column prop="language" label="语言" width="110" /><el-table-column prop="funcType" label="类型" width="110" /><el-table-column prop="funcDesc" label="功能描述" show-overflow-tooltip /><el-table-column label="操作" width="210"><template #default="{ row }"><el-button link type="success" @click="openVisual(row)">可视化</el-button><el-button link type="primary" @click="openEdit(row)" v-hasPermi="['function:manage:edit']">编辑</el-button><el-button link type="danger" @click="remove(row)" v-hasPermi="['function:manage:remove']">删除</el-button></template></el-table-column></el-table>
     <pagination v-show="total" :total="total" v-model:page="query.pageNum" v-model:limit="query.pageSize" @pagination="load" />
     <el-dialog v-model="dialog" :title="form.id ? '编辑函数' : '新增函数'" width="760px"><el-form ref="formRef" :model="form" :rules="rules" label-width="90px"><el-form-item label="所属项目" prop="projectId"><el-select v-model="form.projectId" style="width:100%"><el-option v-for="item in projects" :key="item.id" :label="item.projectName" :value="item.id" /></el-select></el-form-item><el-form-item label="函数名称" prop="funcName"><el-input v-model="form.funcName" /></el-form-item><el-form-item label="编程语言" prop="language"><el-input v-model="form.language" placeholder="Python / JavaScript" /></el-form-item><el-form-item label="类型"><el-select v-model="form.funcType"><el-option label="Function" value="Function" /><el-option label="Method" value="Method" /></el-select></el-form-item><el-form-item label="文件路径"><el-input v-model="form.filePath" /></el-form-item><el-form-item label="功能描述"><el-input v-model="form.funcDesc" /></el-form-item><el-form-item label="逻辑说明"><el-input v-model="form.logic" type="textarea" :rows="8" /></el-form-item><el-form-item label="函数源码" prop="funcCode"><el-input v-model="form.funcCode" type="textarea" :rows="16" spellcheck="false" /></el-form-item></el-form><template #footer><el-button @click="dialog=false">取消</el-button><el-button type="primary" @click="save">保存</el-button></template></el-dialog>
-    <el-dialog v-model="visualDialog" :title="`${visualRow.funcName || ''} - 可视化展示`" width="1100px" destroy-on-close @closed="closeVisual"><div class="visual-toolbar"><span>数据源</span><el-select v-model="visualSource" size="small" style="width:180px" @change="loadVisual"><el-option label="项目静态测试数据" value="static" /><el-option label="真实行情接口（待接入）" value="real" disabled /></el-select><span class="source-tip">EURUSD · 15分钟</span></div><el-row :gutter="16"><el-col :span="17"><div ref="chartRef" class="chart-box" /></el-col><el-col :span="7"><el-descriptions :column="1" border size="small"><el-descriptions-item label="函数">{{ visualRow.funcName }}</el-descriptions-item><el-descriptions-item label="功能">{{ visualRow.funcDesc }}</el-descriptions-item><el-descriptions-item label="逻辑"><div class="logic-text">{{ visualRow.logic }}</div></el-descriptions-item></el-descriptions></el-col></el-row></el-dialog>
+    <el-dialog v-model="visualDialog" :title="`${visualRow.funcName || ''} - 可视化展示`" width="1100px" destroy-on-close @opened="loadVisual" @closed="closeVisual"><div class="visual-toolbar"><span>数据源</span><el-select v-model="visualSource" size="small" style="width:180px" @change="loadVisual"><el-option label="项目静态测试数据" value="static" /><el-option label="真实行情接口（待接入）" value="real" disabled /></el-select><span class="source-tip">EURUSD · 15分钟</span></div><el-row :gutter="16"><el-col :span="17"><div ref="chartRef" class="chart-box" /></el-col><el-col :span="7"><el-descriptions :column="1" border size="small"><el-descriptions-item label="函数">{{ visualRow.funcName }}</el-descriptions-item><el-descriptions-item label="功能">{{ visualRow.funcDesc }}</el-descriptions-item><el-descriptions-item label="逻辑"><div class="logic-text">{{ visualRow.logic }}</div></el-descriptions-item></el-descriptions></el-col></el-row></el-dialog>
   </div>
 </template>
 
@@ -27,7 +27,7 @@ function openAdd() { Object.assign(form, { id: undefined, projectId: undefined, 
 function openEdit(row) { Object.assign(form, row); chooseProjects().then(() => { dialog.value = true }) }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateFunction : addFunction)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除函数“${row.funcName}”吗？`).then(() => delFunction(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
-function openVisual(row) { visualRow.value = row; visualSource.value = 'static'; visualDialog.value = true; nextTick(loadVisual) }
+function openVisual(row) { visualRow.value = row; visualSource.value = 'static'; visualDialog.value = true }
 function closeVisual() { chart?.dispose(); chart = null }
 function buildOverlay(name, indicator, data) {
   const last = data.length - 1
@@ -43,19 +43,23 @@ function buildOverlay(name, indicator, data) {
     }
     if (name === 'sessions' && item.active && item.high && item.low) areas.push([{ xAxis: index, yAxis: item.low }, { xAxis: Math.min(index + 1, last), yAxis: item.high }])
   })
-  return { markPoint: points.length ? { data: points } : undefined, markArea: areas.length ? { itemStyle: { color: 'rgba(59, 130, 246, 0.12)' }, data: areas } : undefined, markLine: lines.length ? { symbol: 'none', data: lines } : undefined }
+  return { markPoint: points.length ? { symbolSize: 16, label: { show: true, position: 'top' }, data: points } : undefined, markArea: areas.length ? { itemStyle: { color: 'rgba(59, 130, 246, 0.12)' }, data: areas } : undefined, markLine: lines.length ? { symbol: 'none', data: lines } : undefined }
 }
 function loadVisual() {
   if (!visualDialog.value) return
-  getFunctionVisualData(visualRow.value.id, visualSource.value).then(res => {
+  getFunctionVisualData(visualRow.value.id, visualRow.value.funcName, visualSource.value).then(res => {
     const data = res.data.rows
     const indicator = res.data.indicator
+    if (!chartRef.value) return
     chart ||= echarts.init(chartRef.value)
     const times = data.map(item => item.time)
     const candles = data.map(item => [item.open, item.close, item.low, item.high])
     if (visualRow.value.funcName !== 'retracements' || !indicator) {
       const overlay = indicator ? buildOverlay(visualRow.value.funcName, indicator, data) : {}
-      chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
+      const indicatorValues = indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
+      const priceValues = candles.flatMap(item => item.slice(2))
+      chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { min: Math.min(...priceValues, ...indicatorValues), max: Math.max(...priceValues, ...indicatorValues), scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
+      chart.resize()
       return
     }
     const directionMarks = indicator.map((item, index) => index > 0 && item.direction && item.direction !== indicator[index - 1].direction ? { value: item.direction === 1 ? '多头' : '空头', coord: [index, data[index].close], itemStyle: { color: item.direction === 1 ? '#16a34a' : '#dc2626' } } : null).filter(Boolean)
@@ -73,6 +77,7 @@ function loadVisual() {
         { name: '最大回撤%', type: 'line', xAxisIndex: 1, yAxisIndex: 1, showSymbol: false, data: indicator.map(item => item.deepestRetracement) },
       ],
     }, true)
+    chart.resize()
   })
 }
 load()
