@@ -45,7 +45,8 @@ function buildOverlay(name, indicator, data) {
       if (item.previousHigh) lines.push([{ xAxis: index, yAxis: item.previousHigh }, { xAxis: last, yAxis: item.previousHigh }])
       if (item.previousLow) lines.push([{ xAxis: index, yAxis: item.previousLow }, { xAxis: last, yAxis: item.previousLow }])
     }
-    if (name === 'sessions' && item.active && item.high && item.low) areas.push([{ xAxis: index, yAxis: item.low }, { xAxis: Math.min(index + 1, last), yAxis: item.high }])
+    // shortcut: static session prices use another price scale, so anchor the zone to the current candle.
+    if (name === 'sessions' && item.active && data[index]) areas.push([{ xAxis: index, yAxis: data[index].low }, { xAxis: Math.min(index + 1, last), yAxis: data[index].high }])
   })
   return { markPoint: points.length ? { symbolSize: 16, label: { show: true, position: 'top' }, data: points } : undefined, markArea: areas.length ? { itemStyle: { color: 'rgba(59, 130, 246, 0.12)' }, data: areas } : undefined, markLine: lines.length ? { symbol: 'none', data: lines } : undefined }
 }
@@ -60,7 +61,7 @@ function loadVisual() {
     const candles = data.map(item => [item.open, item.close, item.low, item.high])
     if (visualRow.value.funcName !== 'retracements' || !indicator) {
       const overlay = indicator ? buildOverlay(visualRow.value.funcName, indicator, data) : {}
-      const indicatorValues = ['swing_highs_lows', 'fvg', 'ob'].includes(visualRow.value.funcName) ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
+      const indicatorValues = ['swing_highs_lows', 'fvg', 'ob', 'sessions'].includes(visualRow.value.funcName) ? [] : indicator?.flatMap(item => ['level', 'top', 'bottom', 'previousHigh', 'previousLow', 'high', 'low'].map(key => item[key])).filter(value => Number.isFinite(value) && value !== 0) || []
       const priceValues = candles.flatMap(item => item.slice(2))
       chart.setOption({ animation: false, tooltip: { trigger: 'axis' }, dataZoom: [{ type: 'inside' }, { type: 'slider' }], xAxis: { type: 'category', data: times, axisLabel: { show: false } }, yAxis: { min: Math.min(...priceValues, ...indicatorValues), max: Math.max(...priceValues, ...indicatorValues), scale: true }, series: [{ name: 'EURUSD', type: 'candlestick', data: candles, ...overlay }] }, true)
       chart.resize()
