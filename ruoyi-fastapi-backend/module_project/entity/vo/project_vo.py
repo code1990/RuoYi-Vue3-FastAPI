@@ -12,6 +12,8 @@ class ProjectModel(BaseModel):
     description: str | None = None
     language: str | None = None
     research_direction: str | None = None
+    star: int | None = None
+    symbol_adaptation: str | None = None
     version: str | None = None
     created_by: str | None = None
     create_time: datetime | None = None

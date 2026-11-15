@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, Integer, JSON, Numeric, String, Text, UniqueConstraint
 
 from config.database import Base
 
@@ -15,6 +15,8 @@ class ProjectManage(Base):
     description = Column(String(500))
     language = Column(String(20))
     research_direction = Column(String(50))
+    star = Column(Integer, nullable=False, default=0, server_default='0')
+    symbol_adaptation = Column(String(500))
     version = Column(String(100))
     created_by = Column(String(50))
     create_time = Column(DateTime, default=datetime.now)
