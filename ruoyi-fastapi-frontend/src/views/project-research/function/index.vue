@@ -53,6 +53,7 @@ function buildOverlay(name, indicator, data) {
 function loadVisual() {
   if (!visualDialog.value) return
   getFunctionVisualData(visualRow.value.id, visualRow.value.funcName, visualSource.value).then(res => {
+    visualRow.value = { ...visualRow.value, funcName: res.data.funcName ?? visualRow.value.funcName, visualEnabled: res.data.visualEnabled ?? visualRow.value.visualEnabled, visualSummary: res.data.visualSummary ?? visualRow.value.visualSummary }
     const data = res.data.rows
     const indicator = res.data.indicator
     if (!chartRef.value) return

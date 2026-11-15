@@ -130,7 +130,15 @@ async def function_visual_data(
             }
             for row in csv.DictReader(file)
         ]
-    data = {'source': 'static', 'symbol': 'EURUSD', 'timeframe': '15m', 'rows': rows}
+    data = {
+        'source': 'static',
+        'symbol': 'EURUSD',
+        'timeframe': '15m',
+        'funcName': function.func_name,
+        'visualEnabled': function.visual_enabled,
+        'visualSummary': function.visual_summary,
+        'rows': rows,
+    }
     indicator_files = {
         'swing_highs_lows': ('swing_highs_lows_result_data.csv', {'HighLow': 'highLow', 'Level': 'level'}),
         'fvg': ('fvg_result_data.csv', {'FVG': 'fvg', 'Top': 'top', 'Bottom': 'bottom', 'MitigatedIndex': 'mitigatedIndex'}),
