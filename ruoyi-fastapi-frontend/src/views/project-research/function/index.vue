@@ -22,7 +22,7 @@ const legacyVisualFunctions = new Set(['swing_highs_lows', 'fvg', 'bos_choch', '
 const query = reactive({ pageNum: 1, pageSize: 10, funcName: undefined })
 const form = reactive({})
 const rules = { projectId: [{ required: true, message: '请选择项目', trigger: 'change' }], funcName: [{ required: true, message: '函数名称不能为空', trigger: 'blur' }], language: [{ required: true, message: '编程语言不能为空', trigger: 'blur' }], funcCode: [{ required: true, message: '函数源码不能为空', trigger: 'blur' }] }
-function load() { loading.value = true; listFunction(query).then(res => { rows.value = res.rows.map(row => ({ ...row, visualEnabled: row.visualEnabled ?? row.visual_enabled })); total.value = res.total }).finally(() => loading.value = false) }
+function load() { loading.value = true; listFunction(query).then(res => { rows.value = res.rows.map(row => ({ ...row, visualEnabled: row.visualEnabled ?? row.visual_enabled, visualSummary: row.visualSummary ?? row.visual_summary })); total.value = res.total }).finally(() => loading.value = false) }
 function chooseProjects() { return listProject({ pageNum: 1, pageSize: 1000 }).then(res => { projects.value = res.rows }) }
 function openAdd() { Object.assign(form, { id: undefined, projectId: undefined, funcName: '', language: 'Python', funcType: 'Function', visualEnabled: false, visualSummary: '', filePath: '', funcDesc: '', logic: '', funcCode: '' }); chooseProjects().then(() => { dialog.value = true }) }
 function openEdit(row) { Object.assign(form, row); chooseProjects().then(() => { dialog.value = true }) }
