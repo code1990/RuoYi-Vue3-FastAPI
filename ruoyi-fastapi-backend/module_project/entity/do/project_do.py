@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, JSON, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, ForeignKey, JSON, String, Text, UniqueConstraint
 
 from config.database import Base
 
@@ -30,6 +30,7 @@ class FuncManage(Base):
     func_name = Column(String(100), nullable=False)
     func_desc = Column(String(500))
     logic = Column(Text)
+    visual_enabled = Column(Boolean, nullable=False, default=False, server_default='0')
     language = Column(String(20), nullable=False)
     func_type = Column(String(20), nullable=False)
     func_code = Column(Text, nullable=False)

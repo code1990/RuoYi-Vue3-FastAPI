@@ -115,6 +115,8 @@ async def function_visual_data(
     function = await db.get(FuncManage, id)
     if not function:
         return ResponseUtil.failure(msg='函数不存在')
+    if not function.visual_enabled:
+        return ResponseUtil.failure(msg='该函数未配置可视化')
     csv_path = FilePath(__file__).resolve().parents[1] / 'demo_data' / 'EURUSD_15M.csv'
     with csv_path.open(encoding='utf-8') as file:
         rows = [
