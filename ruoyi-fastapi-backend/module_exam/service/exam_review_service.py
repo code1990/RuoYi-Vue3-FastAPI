@@ -303,11 +303,13 @@ class ExamReviewService:
             if rating == 'again': review.required_repetitions += 2
         if review.state == 'learning':
             if rating == 'again': review.required_repetitions = min(10, review.required_repetitions + 1)
-            else: review.completed_repetitions += 1
+            else:
+                review.completed_repetitions += 1
+                if rating == 'hard': review.required_repetitions = min(10, review.required_repetitions + 1)
             if review.completed_repetitions >= review.required_repetitions:
                 review.state, review.completed_repetitions, review.review_round, review.interval_days, review.next_review_time = 'review', 0, 1, 1, now + timedelta(days=1)
             else:
-                review.next_review_time = now + timedelta(days=1)
+                review.next_review_time = None
         elif rating == 'again':
             review.state, review.completed_repetitions, review.review_round, review.next_review_time = 'learning', 0, 0, now + timedelta(days=1)
         else:

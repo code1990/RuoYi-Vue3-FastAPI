@@ -146,7 +146,7 @@ async def test_due_reviews_start_one_batch_of_five(exam_db_session):
 
 
 @pytest.mark.asyncio
-async def test_learning_card_is_not_returned_again_until_tomorrow(exam_db_session, monkeypatch):
+async def test_learning_card_returns_in_the_same_session_until_complete(exam_db_session, monkeypatch):
     card = ExamCard(card_id=4, category_id=1, question='q', answer='a', review_enabled=True)
     review = ExamCardReview(review_id=4, user_id=1, card_id=4, state='learning', required_repetitions=5, completed_repetitions=0)
     exam_db_session.add_all([card, review])
@@ -156,8 +156,22 @@ async def test_learning_card_is_not_returned_again_until_tomorrow(exam_db_sessio
     monkeypatch.setattr(exam_review_service, 'ExamCardReviewLog', ExamCardReviewLog)
 
     assert result['state'] == 'learning'
-    assert result['nextReviewTime'] > datetime.now() + timedelta(hours=23)
-    assert await ExamReviewService.next_card(exam_db_session, 1) is None
+    assert result['nextReviewTime'] is None
+    assert (await ExamReviewService.next_card(exam_db_session, 1))['cardId'] == 4
+
+
+@pytest.mark.asyncio
+async def test_hard_learning_card_needs_one_extra_round(exam_db_session, monkeypatch):
+    card = ExamCard(card_id=14, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
+    review = ExamCardReview(review_id=14, user_id=1, card_id=14, state='learning', required_repetitions=5)
+    exam_db_session.add_all([card, review])
+    await exam_db_session.commit()
+    monkeypatch.setattr(exam_review_service, 'ExamCardReviewLog', lambda **kwargs: ExamCardReviewLog(log_id=14, **kwargs))
+
+    result = await ExamReviewService.rate(exam_db_session, 1, 14, 'hard')
+
+    assert result['completed'] == 1
+    assert result['required'] == 6
 
 
 @pytest.mark.asyncio
