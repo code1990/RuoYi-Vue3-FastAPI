@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" @touchstart="startSwipe" @touchmove="cancelMultiTouchSwipe" @touchend="switchBySwipe" @touchcancel="cancelSwipe">
     <view v-for="item in contracts" :key="item.code" class="chart-card">
       <view class="chart-head"><text>{{ item.name }}</text><text>{{ item.code }}</text></view>
       <!-- #ifdef H5 --><div :id="`relation-chart-${item.key}`" class="chart"></div><!-- #endif -->
@@ -20,8 +20,9 @@ import { registerKdjSignals } from "@/utils/kdj9Signal";
 import { getFutureKline } from "@/api/future/kline";
 import { useTradingStore } from "@/store";
 import { getFutureQuotes } from "@/api/future/paper-trading";
+import { getFutureRelations } from "@/api/future/relation";
 
-const contracts = ref([]); const charts = []; const appCharts = new Map();
+const contracts = ref([]); const relationPairs = ref([]); const relationIndex = ref(0); const charts = []; const appCharts = new Map(); const swipeStart = ref({ x: 0, y: 0 }); let swipeSingleTouch = false;
 function setAppChart(key, element) { if (element) appCharts.set(key, element); else appCharts.delete(key); }
 function returnChartData(callback, payload) {
   // #ifndef H5
@@ -57,7 +58,13 @@ function createChart(item) {
   control.ChartType = "KLine"; control.OnSize(); control.CreateHQChart();
   // #endif
 }
-onLoad(async query => { const store = useTradingStore(); const codes = [query.left, query.right].filter(Boolean); try { await store.refreshQuotes(); } catch {} const responses = await Promise.all(codes.map(code => getFutureQuotes({ scope: /\.(CBOT|CME|NYMEX|COMEX)$/i.test(code) ? "overseas" : "domestic", keyword: code, pageSize: 1 }).catch(() => ({ data: { rows: [] } })))); contracts.value = codes.map((code, index) => { const quote = responses[index].data.rows.find(item => item.contractCode === code) || store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.contractName || quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
+function pairCodes(item) { const left = item.sourceContractCode || item.source_contract_code || item.sourceContract; const right = item.relatedContractCode || item.related_contract_code || item.relatedContract; return left && right ? [left, right] : null; }
+async function loadPair(index) { const pair = relationPairs.value[index]; if (!pair) return; relationIndex.value = index; clearCharts(); contracts.value = pair.map((code, key) => ({ key, code, name: code, error: "" })); const store = useTradingStore(); const responses = await Promise.all(pair.map(code => getFutureQuotes({ scope: /\.(CBOT|CME|NYMEX|COMEX)$/i.test(code) ? "overseas" : "domestic", keyword: code, pageSize: 1 }).catch(() => ({ data: { rows: [] } })))); contracts.value = pair.map((code, key) => { const quote = responses[key].data.rows.find(item => item.contractCode === code) || store.quotes.find(item => item.code === code); return { key, code, name: quote?.contractName || quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); }
+function startSwipe(event) { swipeSingleTouch = event.touches?.length === 1; if (swipeSingleTouch) { const touch = event.touches[0]; swipeStart.value = { x: touch.clientX, y: touch.clientY }; } }
+function cancelMultiTouchSwipe(event) { if (event.touches?.length !== 1) swipeSingleTouch = false; }
+function cancelSwipe() { swipeSingleTouch = false; }
+function switchBySwipe(event) { if (!swipeSingleTouch || event.changedTouches?.length !== 1) return cancelSwipe(); swipeSingleTouch = false; const touch = event.changedTouches[0]; const distance = touch.clientX - swipeStart.value.x; if (Math.abs(distance) <= 60 || Math.abs(distance) <= Math.abs(touch.clientY - swipeStart.value.y) || relationPairs.value.length < 2) return; const next = (relationIndex.value + (distance < 0 ? 1 : -1) + relationPairs.value.length) % relationPairs.value.length; loadPair(next); }
+onLoad(async query => { const store = useTradingStore(); const codes = [query.left, query.right].filter(Boolean); try { await store.refreshQuotes(); } catch {} const rows = (await getFutureRelations().catch(() => ({ data: [] }))).data || []; relationPairs.value = rows.filter(item => ["positive", "inverse"].includes(item.relationType)).map(pairCodes).filter(Boolean); const current = relationPairs.value.findIndex(pair => pair[0] === codes[0] && pair[1] === codes[1]); if (current >= 0) return loadPair(current); const responses = await Promise.all(codes.map(code => getFutureQuotes({ scope: /\.(CBOT|CME|NYMEX|COMEX)$/i.test(code) ? "overseas" : "domestic", keyword: code, pageSize: 1 }).catch(() => ({ data: { rows: [] } })))); contracts.value = codes.map((code, index) => { const quote = responses[index].data.rows.find(item => item.contractCode === code) || store.quotes.find(item => item.code === code); return { key: index, code, name: quote?.contractName || quote?.name || code, error: "" }; }); await nextTick(); contracts.value.forEach(createChart); });
 onBeforeUnmount(clearCharts);
 </script>
 

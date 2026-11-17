@@ -62,6 +62,7 @@ def test_attempt_seconds_has_a_one_minute_minimum_and_scales_with_difficulty():
 def test_due_reviews_pause_new_learning_task():
     assert ExamReviewService._learning_task(54, 5, 0) == (0, 0)
     assert ExamReviewService._learning_task(0, 5, 1) == (6, 1)
+    assert ExamReviewService._learning_task(0, 2, 1, 1) == (4, 1)
 
 
 def test_new_cards_are_limited_to_ten_per_day():
@@ -70,8 +71,14 @@ def test_new_cards_are_limited_to_ten_per_day():
     assert ExamReviewService._new_card_limit(10) == 0
 
 
+def test_review_rounds_keep_the_learning_repetition_requirement():
+    review = ExamCardReview(required_repetitions=5, review_round=8)
+
+    assert ExamReviewService._review_required(review) == 5
+
+
 @pytest.mark.asyncio
-async def test_new_card_is_a_pretest_and_prefers_a_different_category(exam_db_session):
+async def test_new_cards_start_a_single_learning_batch(exam_db_session):
     exam_db_session.add_all([
         ExamCategory(category_id=1, name='first'),
         ExamCategory(category_id=2, name='second'),
@@ -83,9 +90,9 @@ async def test_new_card_is_a_pretest_and_prefers_a_different_category(exam_db_se
 
     card = await ExamReviewService.next_card(exam_db_session, 1)
 
-    assert card['cardId'] == 11
-    assert card['isNew'] is True
-    assert await exam_db_session.scalar(select(func.count()).select_from(ExamCardReview)) == 0
+    assert card['cardId'] == 10
+    reviews = (await exam_db_session.scalars(select(ExamCardReview).order_by(ExamCardReview.card_id))).all()
+    assert [(item.card_id, item.learning_batch) for item in reviews] == [(10, 1), (11, 1)]
 
 
 @pytest.mark.asyncio
@@ -103,6 +110,39 @@ async def test_due_review_requires_spaced_retrievals_before_next_interval(exam_d
     assert first['required'] == 5
     assert first['reviewRound'] == 1
     assert first['nextReviewTime'].date() == date.today() + timedelta(days=1)
+
+
+@pytest.mark.asyncio
+async def test_due_cards_rotate_by_oldest_last_review(exam_db_session):
+    now = datetime.now()
+    exam_db_session.add_all([
+        ExamCategory(category_id=1, name='first'),
+        ExamCard(card_id=6, category_id=1, question='newer', answer='a', review_enabled=True),
+        ExamCard(card_id=7, category_id=1, question='older', answer='a', review_enabled=True),
+        ExamCardReview(review_id=6, user_id=1, card_id=6, state='review', required_repetitions=5, next_review_time=now - timedelta(days=1), last_review_time=now - timedelta(days=1)),
+        ExamCardReview(review_id=7, user_id=1, card_id=7, state='review', required_repetitions=5, next_review_time=now - timedelta(days=1), last_review_time=now - timedelta(days=2)),
+    ])
+    await exam_db_session.commit()
+
+    card = await ExamReviewService.next_card(exam_db_session, 1)
+
+    assert card['cardId'] == 7
+
+
+@pytest.mark.asyncio
+async def test_due_reviews_start_one_batch_of_five(exam_db_session):
+    now = datetime.now()
+    exam_db_session.add(ExamCategory(category_id=3, name='batch'))
+    for card_id in range(20, 26):
+        exam_db_session.add(ExamCard(card_id=card_id, category_id=3, question=str(card_id), answer='a', review_enabled=True))
+        exam_db_session.add(ExamCardReview(review_id=card_id, user_id=1, card_id=card_id, state='review', required_repetitions=5, next_review_time=now - timedelta(days=1)))
+    await exam_db_session.commit()
+
+    card = await ExamReviewService.next_card(exam_db_session, 1)
+
+    assert card['cardId'] == 20
+    learning = (await exam_db_session.scalars(select(ExamCardReview.card_id).where(ExamCardReview.state == 'learning').order_by(ExamCardReview.card_id))).all()
+    assert learning == [20, 21, 22, 23, 24]
 
 
 @pytest.mark.asyncio

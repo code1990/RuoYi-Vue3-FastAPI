@@ -21,7 +21,7 @@ class ExamCategory(Base):
 class ExamCardReview(Base):
     __tablename__ = 'exam_card_review'
     __table_args__ = (UniqueConstraint('user_id', 'card_id', name='uk_exam_card_review_user_card'),)
-    review_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    review_id = Column(BigInteger().with_variant(Integer, 'sqlite'), primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, nullable=False, index=True)
     card_id = Column(BigInteger, nullable=False, index=True)
     state = Column(String(16), nullable=False, default='learning')
