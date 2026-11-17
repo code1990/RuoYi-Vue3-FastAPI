@@ -175,7 +175,7 @@ async def test_hard_learning_card_needs_one_extra_round(exam_db_session, monkeyp
 
 
 @pytest.mark.asyncio
-async def test_hard_learning_card_can_exceed_ten_rounds(exam_db_session, monkeypatch):
+async def test_hard_learning_card_is_capped_at_ten_rounds(exam_db_session, monkeypatch):
     card = ExamCard(card_id=15, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
     review = ExamCardReview(review_id=15, user_id=1, card_id=15, state='learning', required_repetitions=10)
     exam_db_session.add_all([card, review])
@@ -184,7 +184,7 @@ async def test_hard_learning_card_can_exceed_ten_rounds(exam_db_session, monkeyp
 
     result = await ExamReviewService.rate(exam_db_session, 1, 15, 'hard')
 
-    assert result['required'] == 11
+    assert result['required'] == 10
 
 
 @pytest.mark.asyncio
