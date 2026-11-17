@@ -62,7 +62,7 @@ def test_attempt_seconds_has_a_one_minute_minimum_and_scales_with_difficulty():
 def test_due_reviews_pause_new_learning_task():
     assert ExamReviewService._learning_task(54, 5, 0) == (0, 0)
     assert ExamReviewService._learning_task(0, 5, 1) == (6, 1)
-    assert ExamReviewService._learning_task(0, 2, 1, 1) == (4, 1)
+    assert ExamReviewService._learning_task(0, 2, 1, 1) == (4, 2)
 
 
 def test_new_cards_are_limited_to_ten_per_day():

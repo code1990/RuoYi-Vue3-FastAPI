@@ -36,7 +36,7 @@ class ExamReviewService:
 
     @staticmethod
     def _learning_task(due: int, pending: int, completed: int, in_progress: int = 0) -> tuple[int, int]:
-        return (0, 0) if due else (pending + completed + in_progress, completed)
+        return (0, 0) if due else (pending + completed + in_progress, completed + in_progress)
 
     @classmethod
     def _new_card_limit(cls, started_today: int) -> int:
