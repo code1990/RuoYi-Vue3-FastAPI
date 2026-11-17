@@ -175,6 +175,19 @@ async def test_hard_learning_card_needs_one_extra_round(exam_db_session, monkeyp
 
 
 @pytest.mark.asyncio
+async def test_hard_learning_card_can_exceed_ten_rounds(exam_db_session, monkeypatch):
+    card = ExamCard(card_id=15, category_id=1, question='q', answer='a', difficulty=3, review_enabled=True)
+    review = ExamCardReview(review_id=15, user_id=1, card_id=15, state='learning', required_repetitions=10)
+    exam_db_session.add_all([card, review])
+    await exam_db_session.commit()
+    monkeypatch.setattr(exam_review_service, 'ExamCardReviewLog', lambda **kwargs: ExamCardReviewLog(log_id=15, **kwargs))
+
+    result = await ExamReviewService.rate(exam_db_session, 1, 15, 'hard')
+
+    assert result['required'] == 11
+
+
+@pytest.mark.asyncio
 async def test_again_returns_a_review_card_to_learning_tomorrow(exam_db_session, monkeypatch):
     card = ExamCard(card_id=5, category_id=1, question='q', answer='a', review_enabled=True)
     review = ExamCardReview(review_id=5, user_id=1, card_id=5, state='review', required_repetitions=5, review_round=2, next_review_time=datetime.now() - timedelta(days=1))
