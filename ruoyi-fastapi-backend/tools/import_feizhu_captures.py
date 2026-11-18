@@ -9,6 +9,7 @@ from datetime import datetime
 from pathlib import Path
 
 from migrate_feizhu_resource_db import DEFAULT_DB, migrate
+from rebuild_feizhu_resource_relations import rebuild
 
 
 def text_bool(value):
@@ -61,7 +62,8 @@ def import_captures(capture_dir: Path, db_path: Path) -> dict[str, int]:
             if cursor.rowcount:
                 replace_items(connection, resource_id, detail.get('filelist') or [])
                 imported_detail += 1
-    return {'search_rows': imported_search, 'detail_rows': imported_detail}
+    relation_result = rebuild(db_path)
+    return {'search_rows': imported_search, 'detail_rows': imported_detail, 'relations': relation_result['relations']}
 
 
 if __name__ == '__main__':

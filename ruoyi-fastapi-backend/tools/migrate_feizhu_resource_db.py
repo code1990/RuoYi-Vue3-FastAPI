@@ -52,6 +52,21 @@ def migrate(db_path: Path, apply: bool = False, backup_before_apply: bool = True
                     ON t_file_detail_item(resource_id, sort_no);
                 CREATE INDEX IF NOT EXISTS idx_file_detail_type_updatetime
                     ON t_file_detail(type, updatetime DESC, id DESC);
+                CREATE TABLE IF NOT EXISTS t_file_detail_group_relation (
+                    resource_id TEXT NOT NULL,
+                    topic TEXT NOT NULL,
+                    duplicate_group TEXT,
+                    topic_fit REAL NOT NULL DEFAULT 0,
+                    relevance_score REAL NOT NULL DEFAULT 0,
+                    file_similarity REAL NOT NULL DEFAULT 0,
+                    match_type TEXT,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY(resource_id, topic)
+                );
+                CREATE INDEX IF NOT EXISTS idx_file_detail_group_relation_topic_group
+                    ON t_file_detail_group_relation(topic, duplicate_group);
+                CREATE INDEX IF NOT EXISTS idx_file_detail_group_relation_resource
+                    ON t_file_detail_group_relation(resource_id);
             ''')
             connection.execute('UPDATE t_file_detail SET isdir=CASE WHEN category=6 THEN 1 ELSE 0 END WHERE isdir IS NULL')
             connection.execute('UPDATE t_file_detail SET updatetime=COALESCE(updatetime,update_time,utime) WHERE updatetime IS NULL')
