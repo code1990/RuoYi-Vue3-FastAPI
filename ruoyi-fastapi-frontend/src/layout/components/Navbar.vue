@@ -12,8 +12,10 @@
       <template v-if="appStore.device !== 'mobile'">
         <header-search id="header-search" class="right-menu-item" />
 
-        <el-tooltip content="源码地址" effect="dark" placement="bottom">
-          <ruo-yi-git id="ruoyi-git" class="right-menu-item hover-effect" />
+        <el-tooltip content="网盘资源搜索" effect="dark" placement="bottom">
+          <div id="ruoyi-git" class="right-menu-item hover-effect" @click="goResourceSearch">
+            <svg-icon icon-class="search" />
+          </div>
         </el-tooltip>
 
         <el-tooltip content="文档地址" effect="dark" placement="bottom">
@@ -66,7 +68,6 @@ import Hamburger from '@/components/Hamburger'
 import Screenfull from '@/components/Screenfull'
 import SizeSelect from '@/components/SizeSelect'
 import HeaderSearch from '@/components/HeaderSearch'
-import RuoYiGit from '@/components/RuoYi/Git'
 import RuoYiDoc from '@/components/RuoYi/Doc'
 import useAppStore from '@/store/modules/app'
 import useUserStore from '@/store/modules/user'
@@ -75,9 +76,14 @@ import useSettingsStore from '@/store/modules/settings'
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
+const router = useRouter()
 
 function toggleSideBar() {
   appStore.toggleSideBar()
+}
+
+function goResourceSearch() {
+  router.push('/feizhu/resource-search')
 }
 
 function handleCommand(command) {
