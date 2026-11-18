@@ -1,20 +1,23 @@
 <template>
-  <div class="app-container resource-detail-page"><main class="detail-shell"><el-button link class="back-button" @click="back"><el-icon><ArrowLeft /></el-icon>返回搜索结果</el-button><section class="summary-card"><div class="detail-icon"><el-icon><FolderOpened v-if="resource.isdir" /><Document v-else /></el-icon></div><div class="summary-main"><h1>{{ resource.filename }}</h1><div class="metadata"><el-tag size="small" effect="plain">百度网盘</el-tag><span>{{ formatSize(resource.size) }}</span><span>{{ resource.updatetime }}</span><el-tag size="small" :type="resource.valid === 1 ? 'success' : 'info'">{{ resource.valid === 1 ? '资源有效' : '资源状态未知' }}</el-tag></div></div><div class="summary-actions"><el-button v-if="resource.haspwd" @click="copyPwd"><el-icon><CopyDocument /></el-icon>复制提取码</el-button><el-button type="primary" @click="openShare"><el-icon><Link /></el-icon>前往网盘</el-button></div></section><section class="detail-card"><div class="section-heading"><div><h2>目录内容</h2><p>展示本次资源返回的文件目录</p></div><span>{{ resource.filelist.length }} 个条目</span></div><ul class="detail-files"><li v-for="file in resource.filelist" :key="file.filename"><el-icon :class="{ folder: file.isdir }"><FolderOpened v-if="file.isdir" /><Document v-else /></el-icon><span>{{ file.filename }}</span><em v-if="file.size">{{ formatSize(file.size) }}</em></li></ul></section><p class="notice">资源来自公开索引，本页面仅作静态展示演示。</p></main></div>
+  <div class="app-container resource-detail-page"><main class="detail-shell"><el-button link class="back-button" @click="back"><el-icon><ArrowLeft /></el-icon>返回搜索结果</el-button><el-empty v-if="!resource && !loading" description="暂无详情抓取记录" /><template v-else-if="resource"><section v-loading="loading" class="summary-card"><div class="detail-icon"><el-icon><FolderOpened v-if="resource.isdir" /><Document v-else /></el-icon></div><div class="summary-main"><h1>{{ resource.filename }}</h1><div class="metadata"><el-tag size="small" effect="plain">百度网盘</el-tag><span>{{ formatSize(resource.size) }}</span><span>{{ resource.updatetime }}</span><el-tag size="small" :type="resource.valid === 1 ? 'success' : 'info'">{{ resource.valid === 1 ? '资源有效' : '资源状态未知' }}</el-tag></div></div><div class="summary-actions"><el-button v-if="resource.haspwd" @click="copyPwd"><el-icon><CopyDocument /></el-icon>复制提取码</el-button><el-button type="primary" :disabled="!resource.url" @click="openShare"><el-icon><Link /></el-icon>前往网盘</el-button></div></section><section class="detail-card"><div class="section-heading"><div><h2>目录内容</h2><p>展示本次抓取的详情目录</p></div><span>{{ resource.filelist.length }} 个条目</span></div><ul class="detail-files"><li v-for="file in resource.filelist" :key="file.filename"><el-icon :class="{ folder: file.isdir }"><FolderOpened v-if="file.isdir" /><Document v-else /></el-icon><span>{{ file.filename }}</span><em v-if="file.size">{{ formatSize(file.size) }}</em></li></ul></section></template></main></div>
 </template>
 
 <script setup name="FeizhuResourceDetail">
-import { computed } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, CopyDocument, Document, FolderOpened, Link } from '@element-plus/icons-vue'
-import { getDemoResource } from '@/mock/feizhuResources'
+import { getResourceDetail } from '@/api/feizhu/resource'
 
 const route = useRoute(), router = useRouter()
-const resource = computed(() => getDemoResource(typeof route.query.id === 'string' ? route.query.id : ''))
+const resource = ref(null), loading = ref(false)
+async function load() { const id = typeof route.query.id === 'string' ? route.query.id : ''; if (!id) return; loading.value = true; try { resource.value = await getResourceDetail(id) } catch { resource.value = null } finally { loading.value = false } }
 function formatSize(value) { const size = Number(value); if (!Number.isFinite(size) || size <= 0) return '--'; const units = ['B', 'KB', 'MB', 'GB', 'TB']; const index = Math.min(Math.floor(Math.log(size) / Math.log(1024)), units.length - 1); return `${Math.floor(size / 1024 ** index)}${units[index]}` }
 function back() { router.push({ path: '/feizhu/resource-search', query: { kw: route.query.kw || undefined } }) }
-async function copyPwd() { await navigator.clipboard.writeText(resource.value.pwd); ElMessage.success('演示提取码已复制') }
-function openShare() { ElMessage.info('静态演示阶段暂不跳转真实网盘链接') }
+async function copyPwd() { await navigator.clipboard.writeText(resource.value.pwd); ElMessage.success('提取码已复制') }
+function openShare() { window.open(resource.value.url, '_blank', 'noopener,noreferrer') }
+onMounted(load)
+watch(() => route.query.id, load)
 </script>
 
 <style scoped lang="scss">
