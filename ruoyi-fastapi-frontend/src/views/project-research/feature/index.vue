@@ -5,7 +5,7 @@
       <el-form-item label="需求"><el-select v-model="query.requirementId" clearable filterable style="width:260px"><el-option v-for="item in requirements" :key="item.id" :label="`${item.requirementCode} ${item.title}`" :value="item.id" /></el-select></el-form-item>
       <el-form-item><el-button type="primary" @click="load">查询</el-button></el-form-item>
     </el-form>
-    <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['smc:feature:add']">新增功能</el-button>
+    <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:feature:add']">新增功能</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12" border :span-method="spanMethod">
       <el-table-column label="需求" min-width="240">
         <template #default="{ row }">
@@ -20,12 +20,12 @@
       <el-table-column prop="reuseScope" label="可复用范围" min-width="220" show-overflow-tooltip />
       <el-table-column prop="localizationPlan" label="本地化改造" min-width="220" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="110" />
-      <el-table-column label="操作" width="150"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)" v-hasPermi="['smc:feature:edit']">编辑</el-button><el-button link type="danger" @click="remove(row)" v-hasPermi="['smc:feature:remove']">删除</el-button></template></el-table-column>
+      <el-table-column label="操作" width="150"><template #default="{ row }"><el-button link type="primary" @click="openEdit(row)" v-hasPermi="['research:feature:edit']">编辑</el-button><el-button link type="danger" @click="remove(row)" v-hasPermi="['research:feature:remove']">删除</el-button></template></el-table-column>
     </el-table>
     <pagination v-show="total" :total="total" v-model:page="query.pageNum" v-model:limit="query.pageSize" @pagination="load" />
     <el-dialog v-model="dialog" :title="form.id ? '编辑功能' : '新增功能'" width="900px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="110px">
-        <el-row :gutter="12"><el-col :span="12"><el-form-item label="关联需求" prop="requirementId"><el-select v-model="form.requirementId" filterable style="width:100%"><el-option v-for="item in requirements" :key="item.id" :label="`${item.requirementCode} ${item.title}`" :value="item.id" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="功能编号" prop="featureCode"><el-input v-model="form.featureCode" placeholder="FUNC-SMC-001" /></el-form-item></el-col></el-row>
+        <el-row :gutter="12"><el-col :span="12"><el-form-item label="关联需求" prop="requirementId"><el-select v-model="form.requirementId" filterable style="width:100%"><el-option v-for="item in requirements" :key="item.id" :label="`${item.requirementCode} ${item.title}`" :value="item.id" /></el-select></el-form-item></el-col><el-col :span="12"><el-form-item label="功能编号" prop="featureCode"><el-input v-model="form.featureCode" placeholder="FUNC-001" /></el-form-item></el-col></el-row>
         <el-form-item label="功能名称" prop="title"><el-input v-model="form.title" /></el-form-item>
         <el-form-item label="功能逻辑"><el-input v-model="form.logic" type="textarea" :rows="4" /></el-form-item>
         <el-row :gutter="12"><el-col :span="12"><el-form-item label="输入数据"><el-input v-model="form.inputData" type="textarea" :rows="3" /></el-form-item></el-col><el-col :span="12"><el-form-item label="输出结果"><el-input v-model="form.outputData" type="textarea" :rows="3" /></el-form-item></el-col></el-row>
@@ -44,8 +44,8 @@
   </div>
 </template>
 
-<script setup name="SmcFeatureManage">
-import { addSmcFeature, delSmcFeature, listSmcFeatures, updateSmcFeature, listSmcRequirements } from '@/api/project-research/smc'
+<script setup name="ResearchFeatureManage">
+import { addResearchFeature, delResearchFeature, listResearchFeatures, updateResearchFeature, listResearchRequirements } from '@/api/project-research/requirement'
 
 const { proxy } = getCurrentInstance()
 const loading = ref(false), dialog = ref(false), total = ref(0), rows = ref([]), requirements = ref([]), formRef = ref()
@@ -53,8 +53,8 @@ const requirementMap = computed(() => Object.fromEntries(requirements.value.map(
 const query = reactive({ pageNum: 1, pageSize: 10, title: undefined, requirementId: undefined })
 const form = reactive({})
 const rules = { requirementId: [{ required: true, message: '请选择关联需求', trigger: 'change' }], featureCode: [{ required: true, message: '功能编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '功能名称不能为空', trigger: 'blur' }] }
-function loadRequirements() { listSmcRequirements({ pageNum: 1, pageSize: 1000 }).then(res => { requirements.value = res.rows }) }
-function load() { loading.value = true; listSmcFeatures(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
+function loadRequirements() { listResearchRequirements({ pageNum: 1, pageSize: 1000 }).then(res => { requirements.value = res.rows }) }
+function load() { loading.value = true; listResearchFeatures(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
 function spanMethod({ rowIndex, columnIndex }) {
   if (columnIndex !== 0) return [1, 1]
   if (rowIndex && rows.value[rowIndex - 1].requirementId === rows.value[rowIndex].requirementId) return [0, 0]
@@ -62,8 +62,8 @@ function spanMethod({ rowIndex, columnIndex }) {
 }
 function openAdd() { Object.assign(form, { id: undefined, requirementId: undefined, featureCode: '', title: '', logic: '', inputData: '', outputData: '', openSourceProject: '', openSourceFunction: '', openSourceLogic: '', reuseScope: '', localizationGap: '', localizationPlan: '', codeLocation: '', acceptance: '', status: 'draft' }); loadRequirements(); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); loadRequirements(); dialog.value = true }
-function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateSmcFeature : addSmcFeature)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
-function remove(row) { proxy.$modal.confirm(`确认删除功能“${row.title}”吗？`).then(() => delSmcFeature(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
+function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchFeature : addResearchFeature)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
+function remove(row) { proxy.$modal.confirm(`确认删除功能“${row.title}”吗？`).then(() => delResearchFeature(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
 loadRequirements(); load()
 </script>
 

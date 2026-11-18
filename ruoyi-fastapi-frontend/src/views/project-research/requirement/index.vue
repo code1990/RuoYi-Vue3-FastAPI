@@ -4,7 +4,7 @@
       <el-form-item label="需求名称"><el-input v-model="query.title" clearable @keyup.enter="load" /></el-form-item>
       <el-form-item><el-button type="primary" @click="load">查询</el-button></el-form-item>
     </el-form>
-    <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['smc:requirement:add']">新增需求</el-button>
+    <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:requirement:add']">新增需求</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12">
       <el-table-column prop="requirementCode" label="编号" width="140" />
       <el-table-column prop="title" label="需求" min-width="260" show-overflow-tooltip />
@@ -14,8 +14,8 @@
       <el-table-column prop="status" label="状态" width="110" />
       <el-table-column label="操作" width="180">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)" v-hasPermi="['smc:requirement:edit']">编辑</el-button>
-          <el-button link type="danger" @click="remove(row)" v-hasPermi="['smc:requirement:remove']">删除</el-button>
+          <el-button link type="primary" @click="openEdit(row)" v-hasPermi="['research:requirement:edit']">编辑</el-button>
+          <el-button link type="danger" @click="remove(row)" v-hasPermi="['research:requirement:remove']">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -36,19 +36,19 @@
   </div>
 </template>
 
-<script setup name="SmcRequirementManage">
-import { addSmcRequirement, delSmcRequirement, listSmcRequirements, updateSmcRequirement } from '@/api/project-research/smc'
+<script setup name="ResearchRequirementManage">
+import { addResearchRequirement, delResearchRequirement, listResearchRequirements, updateResearchRequirement } from '@/api/project-research/requirement'
 
 const { proxy } = getCurrentInstance()
 const loading = ref(false), dialog = ref(false), total = ref(0), rows = ref([]), formRef = ref()
 const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
 const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求名称不能为空', trigger: 'blur' }] }
-function load() { loading.value = true; listSmcRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
+function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
 function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceNoteId: undefined, problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
-function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateSmcRequirement : addSmcRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
-function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}”吗？`).then(() => delSmcRequirement(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
+function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchRequirement : addResearchRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
+function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}”吗？`).then(() => delResearchRequirement(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
 load()
 </script>
 

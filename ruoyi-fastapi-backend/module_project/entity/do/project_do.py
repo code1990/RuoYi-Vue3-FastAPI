@@ -46,9 +46,9 @@ class FuncManage(Base):
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
-class SmcRequirement(Base):
-    __tablename__ = 'smc_requirement'
-    __table_args__ = (UniqueConstraint('requirement_code', name='uk_smc_requirement_code'),)
+class ResearchRequirement(Base):
+    __tablename__ = 'research_requirement'
+    __table_args__ = (UniqueConstraint('requirement_code', name='uk_research_requirement_code'),)
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     requirement_code = Column(String(30), nullable=False)
@@ -66,12 +66,12 @@ class SmcRequirement(Base):
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
-class SmcFeature(Base):
-    __tablename__ = 'smc_feature'
-    __table_args__ = (UniqueConstraint('feature_code', name='uk_smc_feature_code'),)
+class ResearchFeature(Base):
+    __tablename__ = 'research_feature'
+    __table_args__ = (UniqueConstraint('feature_code', name='uk_research_feature_code'),)
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
-    requirement_id = Column(BigInteger, ForeignKey('smc_requirement.id'), nullable=False, index=True)
+    requirement_id = Column(BigInteger, ForeignKey('research_requirement.id'), nullable=False, index=True)
     feature_code = Column(String(30), nullable=False)
     title = Column(String(500), nullable=False)
     logic = Column(Text)

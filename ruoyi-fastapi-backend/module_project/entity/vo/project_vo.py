@@ -51,7 +51,7 @@ class FuncPageQuery(FuncModel):
     page_size: int = 10
 
 
-class SmcRequirementModel(BaseModel):
+class ResearchRequirementModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
     id: int | None = None
     requirement_code: str | None = Field(default=None, min_length=1, max_length=30)
@@ -69,12 +69,12 @@ class SmcRequirementModel(BaseModel):
     update_time: datetime | None = None
 
 
-class SmcRequirementPageQuery(SmcRequirementModel):
+class ResearchRequirementPageQuery(ResearchRequirementModel):
     page_num: int = 1
     page_size: int = 10
 
 
-class SmcFeatureModel(BaseModel):
+class ResearchFeatureModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
     id: int | None = None
     requirement_id: int | None = None
@@ -98,7 +98,7 @@ class SmcFeatureModel(BaseModel):
     update_time: datetime | None = None
 
 
-class SmcFeaturePageQuery(SmcFeatureModel):
+class ResearchFeaturePageQuery(ResearchFeatureModel):
     page_num: int = 1
     page_size: int = 10
 
