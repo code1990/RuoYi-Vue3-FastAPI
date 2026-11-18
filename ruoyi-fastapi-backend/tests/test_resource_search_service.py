@@ -24,6 +24,7 @@ def test_topic_search_and_detail_share_detail_items():
         assert topics == ['外贸', '报关']
         assert search['total'] == 1
         assert search['resources'][0]['res']['filelist'][0]['filename'] == '外贸实务.pdf'
+        assert search['resources'][0]['res']['available'] is True
         assert detail['filelist'][0]['path'] == '/资料'
 
 

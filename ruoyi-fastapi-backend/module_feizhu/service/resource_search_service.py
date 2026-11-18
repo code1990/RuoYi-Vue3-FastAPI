@@ -75,7 +75,7 @@ class ResourceSearchService:
                 params.append((datetime.now() - timedelta(days=days[time])).strftime('%Y-%m-%d %H:%M:%S'))
             clause = ' WHERE ' + ' AND '.join(where)
             matched = f'''WITH matched AS (
-                SELECT d.id,d.eu,d.filename,d.size,d.isdir,d.ext,d.category,d.user,d.ctime,d.utime,d.updatetime,d.type,{relation_select}
+                SELECT d.id,d.eu,d.filename,d.size,d.isdir,d.ext,d.category,d.user,d.ctime,d.utime,d.updatetime,d.type,d.url,d.valid,{relation_select}
                 FROM t_file_detail d{relation_join}{clause}
             ), ranked AS (
                 SELECT *,ROW_NUMBER() OVER (PARTITION BY COALESCE(duplicate_group,id)
@@ -91,6 +91,7 @@ class ResourceSearchService:
             for row in rows:
                 files = connection.execute('SELECT path,filename,size,ext,isdir FROM t_file_detail_item WHERE resource_id=? ORDER BY sort_no', (row['id'],)).fetchall()
                 res = {key: row[key] for key in row.keys() if row[key] is not None}
+                res['available'] = bool(row['url']) and str(row['valid']).lower() not in ('0', 'false')
                 res['filelist'] = [{key: item[key] for key in item.keys() if item[key] is not None} for item in files]
                 if res.get('size') is not None:
                     res['size'] = str(res['size'])
