@@ -1,7 +1,7 @@
 <template>
   <div class="app-container file-detail-page">
     <el-card shadow="never" class="filter-card">
-      <div class="page-heading"><div><h2>文件明细</h2><p>按关键字、主题和资源属性组合检索</p></div><div class="header-actions"><el-button @click="manageKeywords">管理主题词</el-button><el-input v-model="filters.keyword" clearable placeholder="文件名、主题或链接" class="search-input" @keyup.enter="search"><template #append><el-button icon="Search" @click="search">查询</el-button></template></el-input></div></div>
+      <div class="page-heading"><div><h2>文件明细</h2><p>按关键字、主题和资源属性组合检索</p></div><div class="header-actions"><el-button @click="openResourceSearch">资源搜索演示</el-button><el-button @click="manageKeywords">管理主题词</el-button><el-input v-model="filters.keyword" clearable placeholder="文件名、主题或链接" class="search-input" @keyup.enter="search"><template #append><el-button icon="Search" @click="search">查询</el-button></template></el-input></div></div>
       <div v-if="activeFilters.length" class="selected-row"><strong>已选条件：</strong><el-tag v-for="item in activeFilters" :key="item.key" closable @close="removeFilter(item)">{{ item.label }}</el-tag><el-button link type="primary" @click="reset">清空条件</el-button></div>
       <div class="filter-list">
         <FilterRow label="关键字"><el-check-tag :checked="!filters.keywordIds.length" @change="setAll('keywordIds')">不限</el-check-tag><el-check-tag v-for="item in options.keywords" :key="item.id" :checked="filters.keywordIds.includes(item.id)" @change="toggle('keywordIds', item.id)">{{ item.name }}</el-check-tag></FilterRow>
@@ -52,6 +52,7 @@ function removeFilter(item) { Array.isArray(filters[item.field]) ? filters[item.
 function reset() { Object.assign(filters, { pageNum: 1, keywordIds: [], topics: [], exts: [], category: null, resourceType: '', valid: '', haspwd: '', keyword: '' }); loadOptions().then(load) }
 function search() { apply() }
 function manageKeywords() { router.push('/feizhu/keyword-topics') }
+function openResourceSearch() { router.push('/feizhu/resource-search') }
 function copy(value) { navigator.clipboard.writeText(value).then(() => ElMessage.success('已复制')) }
 function open(url) { window.open(url, '_blank', 'noopener,noreferrer') }
 watch(() => filters.keywordIds.join(','), () => { if (filters.topics.some(topic => !options.topics.includes(topic))) filters.topics = filters.topics.filter(topic => options.topics.includes(topic)) })

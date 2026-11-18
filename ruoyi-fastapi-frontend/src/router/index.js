@@ -75,6 +75,31 @@ export const constantRoutes = [
     ]
   },
   {
+    path: '/feizhu/resource-search',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/feizhu/resource-search.vue'),
+        name: 'FeizhuResourceSearch',
+        meta: { title: '网盘资源搜索', activeMenu: '/file-detail' }
+      }
+    ]
+  },
+  {
+    path: '/feizhu/resource-detail',
+    component: Layout,
+    hidden: true,
+    children: [
+      {
+        path: '',
+        component: () => import('@/views/feizhu/resource-detail.vue'),
+        name: 'FeizhuResourceDetail',
+        meta: { title: '资源详情', activeMenu: '/file-detail' }
+      }
+    ]
+  },
+  {
     path: '/chat',
     component: Layout,
     children: [
