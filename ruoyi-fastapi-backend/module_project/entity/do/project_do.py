@@ -46,6 +46,52 @@ class FuncManage(Base):
     update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
 
 
+class SmcRequirement(Base):
+    __tablename__ = 'smc_requirement'
+    __table_args__ = (UniqueConstraint('requirement_code', name='uk_smc_requirement_code'),)
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    requirement_code = Column(String(30), nullable=False)
+    title = Column(String(500), nullable=False)
+    source_document_id = Column(BigInteger)
+    source_note_id = Column(BigInteger)
+    problem = Column(Text)
+    goal = Column(Text)
+    scope = Column(Text)
+    acceptance = Column(Text)
+    priority = Column(String(10), nullable=False, default='P1', server_default='P1')
+    status = Column(String(30), nullable=False, default='draft', server_default='draft')
+    created_by = Column(String(50))
+    create_time = Column(DateTime, default=datetime.now)
+    update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
+class SmcFeature(Base):
+    __tablename__ = 'smc_feature'
+    __table_args__ = (UniqueConstraint('feature_code', name='uk_smc_feature_code'),)
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    requirement_id = Column(BigInteger, ForeignKey('smc_requirement.id'), nullable=False, index=True)
+    feature_code = Column(String(30), nullable=False)
+    title = Column(String(500), nullable=False)
+    logic = Column(Text)
+    input_data = Column(Text)
+    output_data = Column(Text)
+    open_source_project = Column(String(200))
+    open_source_function = Column(String(200))
+    open_source_logic = Column(Text)
+    reuse_scope = Column(Text)
+    localization_gap = Column(Text)
+    localization_plan = Column(Text)
+    code_location = Column(String(500))
+    acceptance = Column(Text)
+    status = Column(String(30), nullable=False, default='draft', server_default='draft')
+    owner = Column(String(50))
+    created_by = Column(String(50))
+    create_time = Column(DateTime, default=datetime.now)
+    update_time = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+
 class FuncCombinationManage(Base):
     __tablename__ = 'func_combination_manage'
     __table_args__ = (UniqueConstraint('project_id', 'combination_name', name='uk_func_combination_project_name'),)

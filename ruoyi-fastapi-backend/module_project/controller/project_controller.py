@@ -13,10 +13,10 @@ from common.aspect.pre_auth import PreAuthDependency
 from common.router import APIRouterPro
 from common.vo import DataResponseModel, PageResponseModel, ResponseBaseModel
 from module_admin.entity.vo.user_vo import CurrentUserModel
-from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage, ResearchBacktest, ResearchReview, ResearchSimAccount, ResearchStrategy
+from module_project.entity.do.project_do import FuncCombinationManage, FuncManage, ProjectManage, ResearchBacktest, ResearchReview, ResearchSimAccount, ResearchStrategy, SmcFeature, SmcRequirement
 from module_project.entity.vo.project_vo import (BacktestModel, BacktestPageQuery, CombinationModel, CombinationPageQuery, FuncModel,
                                                   FuncPageQuery, ProjectModel, ProjectPageQuery, ReviewModel, ReviewPageQuery, StrategyModel, StrategyPageQuery,
-                                                  SimAccountModel, SimAccountPageQuery)
+                                                  SimAccountModel, SimAccountPageQuery, SmcFeatureModel, SmcFeaturePageQuery, SmcRequirementModel, SmcRequirementPageQuery)
 from common.aspect.pre_auth import CurrentUserDependency
 from utils.page_util import PageUtil
 from utils.response_util import ResponseUtil
@@ -29,6 +29,8 @@ backtest_controller = APIRouterPro(prefix='/research/backtest', order_num=23, ta
 strategy_controller = APIRouterPro(prefix='/research/strategy', order_num=23, tags=['项目研究-交易策略'], dependencies=[PreAuthDependency()])
 simulation_controller = APIRouterPro(prefix='/research/simulation', order_num=24, tags=['项目研究-模拟交易'], dependencies=[PreAuthDependency()])
 review_controller = APIRouterPro(prefix='/research/review', order_num=25, tags=['项目研究-复盘'], dependencies=[PreAuthDependency()])
+smc_requirement_controller = APIRouterPro(prefix='/smc/requirement', order_num=26, tags=['SMC-需求管理'], dependencies=[PreAuthDependency()])
+smc_feature_controller = APIRouterPro(prefix='/smc/feature', order_num=27, tags=['SMC-功能管理'], dependencies=[PreAuthDependency()])
 
 
 async def _save(db: AsyncSession, model, data: dict, user: CurrentUserModel, is_new: bool):
@@ -174,6 +176,73 @@ async def function_visual_data(
 @function_controller.get('/{id}', response_model=DataResponseModel[FuncModel], dependencies=[UserInterfaceAuthDependency('function:manage:list')])
 async def function_detail(id: int, db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
     return ResponseUtil.success(data=(await db.get(FuncManage, id)))
+
+
+@smc_requirement_controller.get('/list', response_model=PageResponseModel[SmcRequirementModel], dependencies=[UserInterfaceAuthDependency('smc:requirement:list')])
+async def smc_requirement_list(query: Annotated[SmcRequirementPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(SmcRequirement).where(SmcRequirement.title.like(f'%{query.title}%') if query.title else True).order_by(SmcRequirement.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@smc_requirement_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:requirement:add')])
+async def smc_requirement_add(data: SmcRequirementModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    if not data.requirement_code or not data.title:
+        return ResponseUtil.failure(msg='需求编号和名称不能为空')
+    await _save(db, SmcRequirement, data.model_dump(exclude_unset=True), user, True)
+    return ResponseUtil.success(msg='需求已创建')
+
+
+@smc_requirement_controller.put('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:requirement:edit')])
+async def smc_requirement_edit(data: SmcRequirementModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    if not await _save(db, SmcRequirement, data.model_dump(exclude_unset=True), user, False):
+        return ResponseUtil.failure(msg='需求不存在')
+    return ResponseUtil.success(msg='需求已更新')
+
+
+@smc_requirement_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:requirement:remove')])
+async def smc_requirement_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    requirement_ids = [int(i) for i in ids.split(',')]
+    linked = (await db.execute(select(func.count()).select_from(SmcFeature).where(SmcFeature.requirement_id.in_(requirement_ids)))).scalar_one()
+    if linked:
+        return ResponseUtil.failure(msg='需求下存在功能，请先删除功能')
+    await db.execute(delete(SmcRequirement).where(SmcRequirement.id.in_(requirement_ids)))
+    await db.commit()
+    return ResponseUtil.success(msg='需求已删除')
+
+
+@smc_feature_controller.get('/list', response_model=PageResponseModel[SmcFeatureModel], dependencies=[UserInterfaceAuthDependency('smc:feature:list')])
+async def smc_feature_list(query: Annotated[SmcFeaturePageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    stmt = select(SmcFeature).where(
+        SmcFeature.title.like(f'%{query.title}%') if query.title else True,
+        SmcFeature.requirement_id == query.requirement_id if query.requirement_id else True,
+    ).order_by(SmcFeature.requirement_id.desc(), SmcFeature.id.desc())
+    return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
+
+
+@smc_feature_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:feature:add')])
+async def smc_feature_add(data: SmcFeatureModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    if not data.requirement_id or not data.feature_code or not data.title:
+        return ResponseUtil.failure(msg='关联需求、功能编号和名称不能为空')
+    if not await db.get(SmcRequirement, data.requirement_id):
+        return ResponseUtil.failure(msg='关联需求不存在')
+    await _save(db, SmcFeature, data.model_dump(exclude_unset=True), user, True)
+    return ResponseUtil.success(msg='功能已创建')
+
+
+@smc_feature_controller.put('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:feature:edit')])
+async def smc_feature_edit(data: SmcFeatureModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
+    if data.requirement_id and not await db.get(SmcRequirement, data.requirement_id):
+        return ResponseUtil.failure(msg='关联需求不存在')
+    if not await _save(db, SmcFeature, data.model_dump(exclude_unset=True), user, False):
+        return ResponseUtil.failure(msg='功能不存在')
+    return ResponseUtil.success(msg='功能已更新')
+
+
+@smc_feature_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('smc:feature:remove')])
+async def smc_feature_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    await db.execute(delete(SmcFeature).where(SmcFeature.id.in_([int(i) for i in ids.split(',')])))
+    await db.commit()
+    return ResponseUtil.success(msg='功能已删除')
 
 
 @combination_controller.get('/list', response_model=PageResponseModel[CombinationModel], dependencies=[UserInterfaceAuthDependency('function:combination:list')])

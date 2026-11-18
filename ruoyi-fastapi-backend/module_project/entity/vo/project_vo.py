@@ -51,6 +51,58 @@ class FuncPageQuery(FuncModel):
     page_size: int = 10
 
 
+class SmcRequirementModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    requirement_code: str | None = Field(default=None, min_length=1, max_length=30)
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    source_document_id: int | None = None
+    source_note_id: int | None = None
+    problem: str | None = None
+    goal: str | None = None
+    scope: str | None = None
+    acceptance: str | None = None
+    priority: str | None = None
+    status: str | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class SmcRequirementPageQuery(SmcRequirementModel):
+    page_num: int = 1
+    page_size: int = 10
+
+
+class SmcFeatureModel(BaseModel):
+    model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
+    id: int | None = None
+    requirement_id: int | None = None
+    feature_code: str | None = Field(default=None, min_length=1, max_length=30)
+    title: str | None = Field(default=None, min_length=1, max_length=500)
+    logic: str | None = None
+    input_data: str | None = None
+    output_data: str | None = None
+    open_source_project: str | None = None
+    open_source_function: str | None = None
+    open_source_logic: str | None = None
+    reuse_scope: str | None = None
+    localization_gap: str | None = None
+    localization_plan: str | None = None
+    code_location: str | None = None
+    acceptance: str | None = None
+    status: str | None = None
+    owner: str | None = None
+    created_by: str | None = None
+    create_time: datetime | None = None
+    update_time: datetime | None = None
+
+
+class SmcFeaturePageQuery(SmcFeatureModel):
+    page_num: int = 1
+    page_size: int = 10
+
+
 class CombinationModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
     id: int | None = None
