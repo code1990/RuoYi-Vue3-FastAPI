@@ -21,8 +21,11 @@ async def search(
     page: Annotated[int, Query(ge=1)] = 1,
     line: Annotated[int, Query(ge=1, le=100)] = 15,
     res_type: Annotated[str | None, Query(alias='resType', max_length=32)] = None,
+    file_type: Annotated[str | None, Query(alias='fileType', max_length=32)] = None,
+    size: Annotated[str | None, Query(max_length=16)] = None,
+    time: Annotated[str | None, Query(max_length=16)] = None,
 ) -> dict:
-    return await ResourceSearchService.search(kw, page, line, res_type)
+    return await ResourceSearchService.search(kw, page, line, res_type, file_type, size, time)
 
 
 @resource_search_controller.get('/detail', summary='本地复刻资源详情')

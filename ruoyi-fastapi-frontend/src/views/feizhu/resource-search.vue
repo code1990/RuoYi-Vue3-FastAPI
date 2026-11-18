@@ -43,7 +43,7 @@ const pageSize = 15, platforms = [{ value: 'baidu', label: '百度网盘' }, { v
 const topicOptions = ref([]), rows = ref([]), total = ref(0), loading = ref(false)
 const hasFilters = computed(() => filters.mode !== 'default' || Boolean(filters.ext || filters.size || filters.time) || filters.source !== 'baidu')
 const pageCount = computed(() => Math.max(Math.ceil(total.value / pageSize), 1))
-async function load() { if (!query.kw) { rows.value = []; total.value = 0; return }; loading.value = true; try { const data = await searchResources({ kw: query.kw, page: query.page, line: pageSize, resType: filters.source || query.resType }); rows.value = data.resources.map(item => item.res); total.value = data.total } finally { loading.value = false } }
+async function load() { if (!query.kw) { rows.value = []; total.value = 0; return }; loading.value = true; try { const data = await searchResources({ kw: query.kw, page: query.page, line: pageSize, resType: filters.source || undefined, fileType: filters.ext || undefined, size: filters.size || undefined, time: filters.time || undefined }); rows.value = data.resources.map(item => item.res); total.value = data.total } finally { loading.value = false } }
 function syncRoute() { router.replace({ query: { kw: query.kw || undefined, page: query.page > 1 ? String(query.page) : undefined, resType: query.resType } }) }
 function search() { query.kw = inputKeyword.value || ''; query.page = 1; syncRoute(); load() }
 function resetPage() { query.page = 1; syncRoute(); load() }
