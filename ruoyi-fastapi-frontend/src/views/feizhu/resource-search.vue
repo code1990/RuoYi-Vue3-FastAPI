@@ -2,7 +2,7 @@
   <div class="app-container resource-search-page">
     <main class="resource-shell">
       <section class="search-hero">
-        <div class="brand-line"><el-icon><CollectionTag /></el-icon><strong>网盘资源搜索</strong><span>静态页面演示</span></div>
+        <div class="brand-line"><el-icon><CollectionTag /></el-icon><strong>网盘资源搜索</strong><span>本地资源库</span></div>
         <div class="search-box"><el-select v-model="inputKeyword" size="large" filterable clearable placeholder="选择或筛选主题" @change="search"><template #prefix><el-icon><Search /></el-icon></template><el-option v-for="topic in topicOptions" :key="topic" :label="topic" :value="topic" /></el-select></div>
       </section>
 
@@ -12,7 +12,7 @@
       </section>
 
       <section ref="resultSection" class="result-section">
-        <div class="result-heading"><div><strong v-if="query.kw">“{{ query.kw }}”的搜索结果</strong><strong v-else>资源搜索</strong><span>共 {{ total.toLocaleString() }} 个结果</span></div><span class="result-hint">当前为静态数据演示</span></div>
+        <div class="result-heading"><div><strong v-if="query.kw">“{{ query.kw }}”的搜索结果</strong><strong v-else>资源搜索</strong><span>共 {{ total.toLocaleString() }} 个结果</span></div><span class="result-hint">已合并相似分享</span></div>
         <el-empty v-if="!query.kw" description="请从上方下拉框选择主题" />
         <el-empty v-else-if="!loading && !rows.length" description="未找到相关资源，可更换主题或清除筛选" />
         <div v-else v-loading="loading" class="resource-list">
