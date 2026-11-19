@@ -58,8 +58,10 @@ class ResearchRequirementModel(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=500)
     source_document_id: int | None = None
     source_document_title: str | None = Field(default=None, max_length=500)
+    source_summary: str | None = None
     source_note_id: int | None = None
     source_note_title: str | None = Field(default=None, max_length=500)
+    note_summary: str | None = None
     core_concepts: str | None = None
     core_viewpoints: str | None = None
     problem: str | None = None

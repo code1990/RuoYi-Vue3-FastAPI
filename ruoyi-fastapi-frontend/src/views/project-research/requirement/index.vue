@@ -9,8 +9,10 @@
       <el-table-column type="expand">
         <template #default="{ row }">
           <el-descriptions :column="1" border class="requirement-detail">
-            <el-descriptions-item label="原文核心">{{ row.coreConcepts || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="课程观点">{{ row.coreViewpoints || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="原文概述">{{ row.sourceSummary || '待根据原文补充' }}</el-descriptions-item>
+            <el-descriptions-item label="笔记摘要">{{ row.noteSummary || '待根据笔记补充' }}</el-descriptions-item>
+            <el-descriptions-item label="原文核心概念">{{ row.coreConcepts || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="原文核心观点（AI总结）">{{ row.coreViewpoints || '-' }}</el-descriptions-item>
             <el-descriptions-item label="要解决的问题">{{ row.problem || row.title }}</el-descriptions-item>
             <el-descriptions-item label="需求目标">{{ row.goal || '-' }}</el-descriptions-item>
             <el-descriptions-item label="使用方式与边界">{{ row.scope || '-' }}</el-descriptions-item>
@@ -51,6 +53,8 @@
         <el-row :gutter="12"><el-col :span="12"><el-form-item label="原文ID"><el-input-number v-model="form.sourceDocumentId" :min="0" /></el-form-item></el-col><el-col :span="12"><el-form-item label="笔记ID"><el-input-number v-model="form.sourceNoteId" :min="0" /></el-form-item></el-col></el-row>
         <el-form-item label="原文标题"><el-input v-model="form.sourceDocumentTitle" placeholder="MinDoc 原文章节标题" /></el-form-item>
         <el-form-item label="笔记标题"><el-input v-model="form.sourceNoteTitle" placeholder="MinDoc AI 笔记标题" /></el-form-item>
+        <el-form-item label="原文概述"><el-input v-model="form.sourceSummary" type="textarea" :rows="3" placeholder="基于原文的内容概述，不写需求或解决方案" /></el-form-item>
+        <el-form-item label="笔记摘要"><el-input v-model="form.noteSummary" type="textarea" :rows="3" placeholder="基于笔记的内容概述" /></el-form-item>
         <el-form-item label="核心概念"><el-input v-model="form.coreConcepts" type="textarea" :rows="3" placeholder="课程中需要统一理解的术语、对象或关系" /></el-form-item>
         <el-form-item label="核心观点"><el-input v-model="form.coreViewpoints" type="textarea" :rows="3" placeholder="课程提出的判断原则、限制或验证方法" /></el-form-item>
         <el-form-item label="问题"><el-input v-model="form.problem" type="textarea" :rows="3" /></el-form-item>
@@ -73,7 +77,7 @@ const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
 const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求问题不能为空', trigger: 'blur' }] }
 function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
-function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceDocumentTitle: '', sourceNoteId: undefined, sourceNoteTitle: '', coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
+function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceDocumentTitle: '', sourceSummary: '', sourceNoteId: undefined, sourceNoteTitle: '', noteSummary: '', coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchRequirement : addResearchRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}”吗？`).then(() => delResearchRequirement(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }

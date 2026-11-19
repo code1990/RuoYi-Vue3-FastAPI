@@ -11,6 +11,8 @@ def test_research_requirement_schema_links_features_to_requirements():
     assert ResearchRequirement.core_viewpoints.type.python_type is str
     assert ResearchRequirement.source_document_title.type.python_type is str
     assert ResearchRequirement.source_note_title.type.python_type is str
+    assert ResearchRequirement.source_summary.type.python_type is str
+    assert ResearchRequirement.note_summary.type.python_type is str
     assert ResearchFeature.__tablename__ == 'research_feature'
     assert ResearchFeature.requirement_id.index is True
     assert ResearchFeature.function_ids.type.__class__.__name__ == 'JSON'
