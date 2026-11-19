@@ -6,6 +6,18 @@
     </el-form>
     <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:requirement:add']">新增需求</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12">
+      <el-table-column type="expand">
+        <template #default="{ row }">
+          <el-descriptions :column="1" border class="requirement-detail">
+            <el-descriptions-item label="原文核心">{{ row.coreConcepts || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="课程观点">{{ row.coreViewpoints || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="要解决的问题">{{ row.problem || row.title }}</el-descriptions-item>
+            <el-descriptions-item label="需求目标">{{ row.goal || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="使用方式与边界">{{ row.scope || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="验收标准">{{ row.acceptance || '-' }}</el-descriptions-item>
+          </el-descriptions>
+        </template>
+      </el-table-column>
       <el-table-column prop="requirementCode" label="编号" width="140" />
       <el-table-column prop="title" label="需求问题" min-width="260" show-overflow-tooltip />
       <el-table-column label="原文" min-width="280" show-overflow-tooltip>
@@ -68,4 +80,4 @@ function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}�
 load()
 </script>
 
-<style scoped>.mt12 { margin-top: 12px; }</style>
+<style scoped>.mt12 { margin-top: 12px; }.requirement-detail :deep(.el-descriptions__content) { white-space: pre-line; line-height: 1.7; }</style>
