@@ -7,6 +7,18 @@
     </el-form>
     <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:feature:add']">新增功能</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12" border :span-method="spanMethod">
+      <el-table-column label="原文" min-width="230">
+        <template #default="{ row }">
+          <div>{{ requirementMap[row.requirementId]?.sourceDocumentTitle || '未关联原文' }}</div>
+          <small>原文 ID：{{ requirementMap[row.requirementId]?.sourceDocumentId || '-' }}</small>
+        </template>
+      </el-table-column>
+      <el-table-column label="笔记" min-width="220">
+        <template #default="{ row }">
+          <div>{{ requirementMap[row.requirementId]?.sourceNoteTitle || '未关联笔记' }}</div>
+          <small>笔记 ID：{{ requirementMap[row.requirementId]?.sourceNoteId || '-' }}</small>
+        </template>
+      </el-table-column>
       <el-table-column label="需求" min-width="240">
         <template #default="{ row }">
           <div>{{ requirementMap[row.requirementId]?.requirementCode || '-' }}</div>
@@ -16,8 +28,8 @@
       <el-table-column prop="featureCode" label="功能编号" width="140" />
       <el-table-column prop="title" label="功能" min-width="220" show-overflow-tooltip />
       <el-table-column prop="logic" label="功能逻辑" min-width="260" show-overflow-tooltip />
-      <el-table-column label="关联函数" min-width="180"><template #default="{ row }"><template v-if="row.functionIds?.length"><el-tag v-for="id in row.functionIds" :key="id" class="function-tag" size="small">{{ functionMap[id]?.funcName || `函数${id}` }}</el-tag></template><span v-else>-</span></template></el-table-column>
-      <el-table-column label="开源实现" min-width="220"><template #default="{ row }"><div>{{ row.openSourceProject || '自研' }}</div><small>{{ row.openSourceFunction }}</small></template></el-table-column>
+      <el-table-column label="开源函数" min-width="220"><template #default="{ row }"><div>{{ row.openSourceFunction || '-' }}</div><small>{{ row.openSourceProject || '未关联开源项目' }}</small></template></el-table-column>
+      <el-table-column label="本地化函数" min-width="180"><template #default="{ row }"><template v-if="row.functionIds?.length"><el-tag v-for="id in row.functionIds" :key="id" class="function-tag" size="small">{{ functionMap[id]?.funcName || `函数${id}` }}</el-tag></template><span v-else>-</span></template></el-table-column>
       <el-table-column prop="reuseScope" label="可复用范围" min-width="220" show-overflow-tooltip />
       <el-table-column prop="localizationPlan" label="本地化改造" min-width="220" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="110" />
@@ -61,7 +73,7 @@ function loadRequirements() { listResearchRequirements({ pageNum: 1, pageSize: 1
 function loadFunctions() { listFunction({ pageNum: 1, pageSize: 1000 }).then(res => { functions.value = res.rows }) }
 function load() { loading.value = true; listResearchFeatures(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
 function spanMethod({ rowIndex, columnIndex }) {
-  if (columnIndex !== 0) return [1, 1]
+  if (columnIndex > 2) return [1, 1]
   if (rowIndex && rows.value[rowIndex - 1].requirementId === rows.value[rowIndex].requirementId) return [0, 0]
   return [rows.value.findIndex((row, index) => index >= rowIndex && row.requirementId !== rows.value[rowIndex].requirementId) - rowIndex || rows.value.length - rowIndex, 1]
 }

@@ -4,7 +4,7 @@ from pathlib import Path as FilePath
 from typing import Annotated
 
 from fastapi import Path, Query, Request, Response
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from common.aspect.db_seesion import DBSessionDependency
@@ -188,7 +188,8 @@ async def function_detail(id: int, db: Annotated[AsyncSession, DBSessionDependen
 
 @research_requirement_controller.get('/list', response_model=PageResponseModel[ResearchRequirementModel], dependencies=[UserInterfaceAuthDependency('research:requirement:list')])
 async def research_requirement_list(query: Annotated[ResearchRequirementPageQuery, Query()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
-    stmt = select(ResearchRequirement).where(ResearchRequirement.title.like(f'%{query.title}%') if query.title else True).order_by(ResearchRequirement.id.desc())
+    keyword = f'%{query.title}%'
+    stmt = select(ResearchRequirement).where(or_(ResearchRequirement.title.like(keyword), ResearchRequirement.source_document_title.like(keyword), ResearchRequirement.source_note_title.like(keyword)) if query.title else True).order_by(ResearchRequirement.id.desc())
     return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
 
 

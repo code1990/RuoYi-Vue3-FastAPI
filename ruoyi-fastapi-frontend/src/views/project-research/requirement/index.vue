@@ -1,15 +1,25 @@
 <template>
   <div class="app-container">
     <el-form :inline="true" :model="query" @submit.prevent>
-      <el-form-item label="需求名称"><el-input v-model="query.title" clearable @keyup.enter="load" /></el-form-item>
+      <el-form-item label="标题"><el-input v-model="query.title" clearable placeholder="需求、原文或笔记标题" @keyup.enter="load" /></el-form-item>
       <el-form-item><el-button type="primary" @click="load">查询</el-button></el-form-item>
     </el-form>
     <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:requirement:add']">新增需求</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12">
       <el-table-column prop="requirementCode" label="编号" width="140" />
-      <el-table-column prop="title" label="需求" min-width="260" show-overflow-tooltip />
-      <el-table-column prop="sourceDocumentId" label="原文ID" width="90" />
-      <el-table-column prop="sourceNoteId" label="笔记ID" width="90" />
+      <el-table-column prop="title" label="需求标题" min-width="220" show-overflow-tooltip />
+      <el-table-column label="原文" min-width="280" show-overflow-tooltip>
+        <template #default="{ row }">
+          <div>{{ row.sourceDocumentTitle || '未填写原文标题' }}</div>
+          <small>原文 ID：{{ row.sourceDocumentId || '-' }}</small>
+        </template>
+      </el-table-column>
+      <el-table-column label="笔记" min-width="260" show-overflow-tooltip>
+        <template #default="{ row }">
+          <div>{{ row.sourceNoteTitle || '未填写笔记标题' }}</div>
+          <small>笔记 ID：{{ row.sourceNoteId || '-' }}</small>
+        </template>
+      </el-table-column>
       <el-table-column prop="coreConcepts" label="核心概念" min-width="220" show-overflow-tooltip />
       <el-table-column prop="coreViewpoints" label="核心观点" min-width="260" show-overflow-tooltip />
       <el-table-column prop="priority" label="优先级" width="90" />
@@ -27,6 +37,8 @@
         <el-form-item label="需求编号" prop="requirementCode"><el-input v-model="form.requirementCode" placeholder="REQ-SMC-001" /></el-form-item>
         <el-form-item label="需求名称" prop="title"><el-input v-model="form.title" /></el-form-item>
         <el-row :gutter="12"><el-col :span="12"><el-form-item label="原文ID"><el-input-number v-model="form.sourceDocumentId" :min="0" /></el-form-item></el-col><el-col :span="12"><el-form-item label="笔记ID"><el-input-number v-model="form.sourceNoteId" :min="0" /></el-form-item></el-col></el-row>
+        <el-form-item label="原文标题"><el-input v-model="form.sourceDocumentTitle" placeholder="MinDoc 原文章节标题" /></el-form-item>
+        <el-form-item label="笔记标题"><el-input v-model="form.sourceNoteTitle" placeholder="MinDoc AI 笔记标题" /></el-form-item>
         <el-form-item label="核心概念"><el-input v-model="form.coreConcepts" type="textarea" :rows="3" placeholder="课程中需要统一理解的术语、对象或关系" /></el-form-item>
         <el-form-item label="核心观点"><el-input v-model="form.coreViewpoints" type="textarea" :rows="3" placeholder="课程提出的判断原则、限制或验证方法" /></el-form-item>
         <el-form-item label="问题"><el-input v-model="form.problem" type="textarea" :rows="3" /></el-form-item>
@@ -49,7 +61,7 @@ const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
 const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求名称不能为空', trigger: 'blur' }] }
 function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
-function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceNoteId: undefined, coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
+function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceDocumentTitle: '', sourceNoteId: undefined, sourceNoteTitle: '', coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchRequirement : addResearchRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}”吗？`).then(() => delResearchRequirement(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }
