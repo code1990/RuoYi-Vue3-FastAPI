@@ -10,6 +10,8 @@
       <el-table-column prop="title" label="需求" min-width="260" show-overflow-tooltip />
       <el-table-column prop="sourceDocumentId" label="原文ID" width="90" />
       <el-table-column prop="sourceNoteId" label="笔记ID" width="90" />
+      <el-table-column prop="coreConcepts" label="核心概念" min-width="220" show-overflow-tooltip />
+      <el-table-column prop="coreViewpoints" label="核心观点" min-width="260" show-overflow-tooltip />
       <el-table-column prop="priority" label="优先级" width="90" />
       <el-table-column prop="status" label="状态" width="110" />
       <el-table-column label="操作" width="180">
@@ -25,6 +27,8 @@
         <el-form-item label="需求编号" prop="requirementCode"><el-input v-model="form.requirementCode" placeholder="REQ-SMC-001" /></el-form-item>
         <el-form-item label="需求名称" prop="title"><el-input v-model="form.title" /></el-form-item>
         <el-row :gutter="12"><el-col :span="12"><el-form-item label="原文ID"><el-input-number v-model="form.sourceDocumentId" :min="0" /></el-form-item></el-col><el-col :span="12"><el-form-item label="笔记ID"><el-input-number v-model="form.sourceNoteId" :min="0" /></el-form-item></el-col></el-row>
+        <el-form-item label="核心概念"><el-input v-model="form.coreConcepts" type="textarea" :rows="3" placeholder="课程中需要统一理解的术语、对象或关系" /></el-form-item>
+        <el-form-item label="核心观点"><el-input v-model="form.coreViewpoints" type="textarea" :rows="3" placeholder="课程提出的判断原则、限制或验证方法" /></el-form-item>
         <el-form-item label="问题"><el-input v-model="form.problem" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="目标"><el-input v-model="form.goal" type="textarea" :rows="3" /></el-form-item>
         <el-form-item label="范围"><el-input v-model="form.scope" type="textarea" :rows="3" /></el-form-item>
@@ -45,7 +49,7 @@ const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
 const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求名称不能为空', trigger: 'blur' }] }
 function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
-function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceNoteId: undefined, problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
+function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceNoteId: undefined, coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchRequirement : addResearchRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
 function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}”吗？`).then(() => delResearchRequirement(row.id)).then(() => { proxy.$modal.msgSuccess('删除成功'); load() }) }

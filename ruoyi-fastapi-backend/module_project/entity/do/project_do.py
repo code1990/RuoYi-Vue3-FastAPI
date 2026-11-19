@@ -55,6 +55,8 @@ class ResearchRequirement(Base):
     title = Column(String(500), nullable=False)
     source_document_id = Column(BigInteger)
     source_note_id = Column(BigInteger)
+    core_concepts = Column(Text)
+    core_viewpoints = Column(Text)
     problem = Column(Text)
     goal = Column(Text)
     scope = Column(Text)
