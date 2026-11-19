@@ -106,7 +106,15 @@ async def function_edit(data: FuncModel, db: Annotated[AsyncSession, DBSessionDe
 
 @function_controller.delete('/{ids}', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('function:manage:remove')])
 async def function_delete(ids: Annotated[str, Path()], db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
-    await db.execute(delete(FuncManage).where(FuncManage.id.in_([int(i) for i in ids.split(',')])))
+    function_ids = [int(i) for i in ids.split(',')]
+    linked = (await db.execute(
+        select(func.count()).select_from(ResearchFeature).where(
+            func.json_overlaps(ResearchFeature.function_ids, func.json_array(*function_ids))
+        )
+    )).scalar_one()
+    if linked:
+        return ResponseUtil.failure(msg='函数已关联功能，请先移除功能中的关联')
+    await db.execute(delete(FuncManage).where(FuncManage.id.in_(function_ids)))
     await db.commit()
     return ResponseUtil.success(msg='删除成功')
 
