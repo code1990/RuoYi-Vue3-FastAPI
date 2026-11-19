@@ -6,20 +6,6 @@
     </el-form>
     <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:requirement:add']">新增需求</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12">
-      <el-table-column type="expand">
-        <template #default="{ row }">
-          <el-descriptions :column="1" border class="requirement-detail">
-            <el-descriptions-item label="原文概述">{{ row.sourceSummary || '待根据原文补充' }}</el-descriptions-item>
-            <el-descriptions-item label="笔记摘要">{{ row.noteSummary || '待根据笔记补充' }}</el-descriptions-item>
-            <el-descriptions-item label="原文核心概念">{{ row.coreConcepts || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="原文核心观点（AI总结）">{{ row.coreViewpoints || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="要解决的问题">{{ row.problem || row.title }}</el-descriptions-item>
-            <el-descriptions-item label="需求目标">{{ row.goal || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="使用方式与边界">{{ row.scope || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="验收标准">{{ row.acceptance || '-' }}</el-descriptions-item>
-          </el-descriptions>
-        </template>
-      </el-table-column>
       <el-table-column prop="requirementCode" label="编号" width="140" />
       <el-table-column prop="title" label="需求问题" min-width="260" show-overflow-tooltip />
       <el-table-column label="原文" min-width="280" show-overflow-tooltip>
@@ -40,6 +26,7 @@
       <el-table-column prop="status" label="状态" width="110" />
       <el-table-column label="操作" width="180">
         <template #default="{ row }">
+          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
           <el-button link type="primary" @click="openEdit(row)" v-hasPermi="['research:requirement:edit']">编辑</el-button>
           <el-button link type="danger" @click="remove(row)" v-hasPermi="['research:requirement:remove']">删除</el-button>
         </template>
@@ -70,13 +57,16 @@
 
 <script setup name="ResearchRequirementManage">
 import { addResearchRequirement, delResearchRequirement, listResearchRequirements, updateResearchRequirement } from '@/api/project-research/requirement'
+import { useRouter } from 'vue-router'
 
 const { proxy } = getCurrentInstance()
+const router = useRouter()
 const loading = ref(false), dialog = ref(false), total = ref(0), rows = ref([]), formRef = ref()
 const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
 const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求问题不能为空', trigger: 'blur' }] }
 function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
+function openDetail(row) { router.push({ name: 'ResearchRequirementDetail', params: { requirementId: row.id } }) }
 function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceDocumentTitle: '', sourceSummary: '', sourceNoteId: undefined, sourceNoteTitle: '', noteSummary: '', coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
 function save() { formRef.value.validate(valid => { if (!valid) return; (form.id ? updateResearchRequirement : addResearchRequirement)(form).then(() => { proxy.$modal.msgSuccess('保存成功'); dialog.value = false; load() }) }) }
@@ -84,4 +74,4 @@ function remove(row) { proxy.$modal.confirm(`确认删除需求“${row.title}�
 load()
 </script>
 
-<style scoped>.mt12 { margin-top: 12px; }.requirement-detail :deep(.el-descriptions__content) { white-space: pre-line; line-height: 1.7; }</style>
+<style scoped>.mt12 { margin-top: 12px; }</style>

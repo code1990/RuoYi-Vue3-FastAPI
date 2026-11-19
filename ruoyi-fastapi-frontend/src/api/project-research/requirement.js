@@ -1,6 +1,7 @@
 import request from '@/utils/request'
 
 export const listResearchRequirements = query => request({ url: '/research/requirement/list', method: 'get', params: query })
+export const getResearchRequirement = id => request({ url: '/research/requirement/' + id, method: 'get' })
 export const addResearchRequirement = data => request({ url: '/research/requirement', method: 'post', data })
 export const updateResearchRequirement = data => request({ url: '/research/requirement', method: 'put', data })
 export const delResearchRequirement = id => request({ url: '/research/requirement/' + id, method: 'delete' })

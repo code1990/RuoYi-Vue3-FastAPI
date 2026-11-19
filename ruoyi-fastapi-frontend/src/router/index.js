@@ -199,6 +199,13 @@ export const constantRoutes = [
 
 export const dynamicRoutes = [
   {
+    path: '/project-research/requirement-detail',
+    component: Layout,
+    hidden: true,
+    permissions: ['research:requirement:list'],
+    children: [{ path: ':requirementId(\\d+)', component: () => import('@/views/project-research/requirement/detail.vue'), name: 'ResearchRequirementDetail', meta: { title: '需求详情', activeMenu: '/project-research/requirement' } }]
+  },
+  {
     path: '/exam/card-detail',
     component: Layout,
     hidden: true,

@@ -193,6 +193,11 @@ async def research_requirement_list(query: Annotated[ResearchRequirementPageQuer
     return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
 
 
+@research_requirement_controller.get('/{id}', response_model=DataResponseModel[ResearchRequirementModel], dependencies=[UserInterfaceAuthDependency('research:requirement:list')])
+async def research_requirement_detail(id: int, db: Annotated[AsyncSession, DBSessionDependency()]) -> Response:
+    return ResponseUtil.success(data=(await db.get(ResearchRequirement, id)))
+
+
 @research_requirement_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:requirement:add')])
 async def research_requirement_add(data: ResearchRequirementModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
     if not data.requirement_code or not data.title:
