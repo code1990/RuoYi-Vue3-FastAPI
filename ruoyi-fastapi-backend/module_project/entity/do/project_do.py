@@ -74,6 +74,7 @@ class ResearchFeature(Base):
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     requirement_id = Column(BigInteger, ForeignKey('research_requirement.id'), nullable=False, index=True)
+    function_ids = Column(JSON)
     feature_code = Column(String(30), nullable=False)
     title = Column(String(500), nullable=False)
     logic = Column(Text)

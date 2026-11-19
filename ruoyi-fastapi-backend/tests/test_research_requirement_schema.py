@@ -8,4 +8,5 @@ def test_research_requirement_schema_links_features_to_requirements():
     assert ResearchRequirement.core_viewpoints.type.python_type is str
     assert ResearchFeature.__tablename__ == 'research_feature'
     assert ResearchFeature.requirement_id.index is True
+    assert ResearchFeature.function_ids.type.__class__.__name__ == 'JSON'
     assert ResearchFeature.__table_args__[0].name == 'uk_research_feature_code'

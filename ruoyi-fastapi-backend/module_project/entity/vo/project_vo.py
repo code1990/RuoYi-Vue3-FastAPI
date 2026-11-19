@@ -80,6 +80,7 @@ class ResearchFeatureModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, from_attributes=True)
     id: int | None = None
     requirement_id: int | None = None
+    function_ids: list[int] | None = None
     feature_code: str | None = Field(default=None, min_length=1, max_length=30)
     title: str | None = Field(default=None, min_length=1, max_length=500)
     logic: str | None = None

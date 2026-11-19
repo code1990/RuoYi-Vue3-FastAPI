@@ -219,12 +219,21 @@ async def research_feature_list(query: Annotated[ResearchFeaturePageQuery, Query
     return ResponseUtil.success(model_content=await PageUtil.paginate(db, stmt, query.page_num, query.page_size, True))
 
 
+async def _function_ids_exist(db: AsyncSession, function_ids: list[int]) -> bool:
+    if not function_ids:
+        return True
+    found = (await db.execute(select(func.count()).select_from(FuncManage).where(FuncManage.id.in_(function_ids)))).scalar_one()
+    return found == len(set(function_ids))
+
+
 @research_feature_controller.post('', response_model=ResponseBaseModel, dependencies=[UserInterfaceAuthDependency('research:feature:add')])
 async def research_feature_add(data: ResearchFeatureModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
     if not data.requirement_id or not data.feature_code or not data.title:
         return ResponseUtil.failure(msg='关联需求、功能编号和名称不能为空')
     if not await db.get(ResearchRequirement, data.requirement_id):
         return ResponseUtil.failure(msg='关联需求不存在')
+    if not await _function_ids_exist(db, data.function_ids or []):
+        return ResponseUtil.failure(msg='关联函数不存在')
     await _save(db, ResearchFeature, data.model_dump(exclude_unset=True), user, True)
     return ResponseUtil.success(msg='功能已创建')
 
@@ -233,6 +242,8 @@ async def research_feature_add(data: ResearchFeatureModel, db: Annotated[AsyncSe
 async def research_feature_edit(data: ResearchFeatureModel, db: Annotated[AsyncSession, DBSessionDependency()], user: Annotated[CurrentUserModel, CurrentUserDependency()]) -> Response:
     if data.requirement_id and not await db.get(ResearchRequirement, data.requirement_id):
         return ResponseUtil.failure(msg='关联需求不存在')
+    if data.function_ids is not None and not await _function_ids_exist(db, data.function_ids):
+        return ResponseUtil.failure(msg='关联函数不存在')
     if not await _save(db, ResearchFeature, data.model_dump(exclude_unset=True), user, False):
         return ResponseUtil.failure(msg='功能不存在')
     return ResponseUtil.success(msg='功能已更新')
