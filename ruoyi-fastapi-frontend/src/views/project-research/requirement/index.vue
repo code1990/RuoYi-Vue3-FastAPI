@@ -7,7 +7,7 @@
     <el-button type="primary" icon="Plus" @click="openAdd" v-hasPermi="['research:requirement:add']">新增需求</el-button>
     <el-table v-loading="loading" :data="rows" class="mt12">
       <el-table-column prop="requirementCode" label="编号" width="140" />
-      <el-table-column prop="title" label="需求标题" min-width="220" show-overflow-tooltip />
+      <el-table-column prop="title" label="需求问题" min-width="260" show-overflow-tooltip />
       <el-table-column label="原文" min-width="280" show-overflow-tooltip>
         <template #default="{ row }">
           <div>{{ row.sourceDocumentTitle || '未填写原文标题' }}</div>
@@ -35,7 +35,7 @@
     <el-dialog v-model="dialog" :title="form.id ? '编辑需求' : '新增需求'" width="720px">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="需求编号" prop="requirementCode"><el-input v-model="form.requirementCode" placeholder="REQ-SMC-001" /></el-form-item>
-        <el-form-item label="需求名称" prop="title"><el-input v-model="form.title" /></el-form-item>
+        <el-form-item label="需求问题" prop="title"><el-input v-model="form.title" placeholder="要解决的矛盾或问题" /></el-form-item>
         <el-row :gutter="12"><el-col :span="12"><el-form-item label="原文ID"><el-input-number v-model="form.sourceDocumentId" :min="0" /></el-form-item></el-col><el-col :span="12"><el-form-item label="笔记ID"><el-input-number v-model="form.sourceNoteId" :min="0" /></el-form-item></el-col></el-row>
         <el-form-item label="原文标题"><el-input v-model="form.sourceDocumentTitle" placeholder="MinDoc 原文章节标题" /></el-form-item>
         <el-form-item label="笔记标题"><el-input v-model="form.sourceNoteTitle" placeholder="MinDoc AI 笔记标题" /></el-form-item>
@@ -59,7 +59,7 @@ const { proxy } = getCurrentInstance()
 const loading = ref(false), dialog = ref(false), total = ref(0), rows = ref([]), formRef = ref()
 const query = reactive({ pageNum: 1, pageSize: 10, title: undefined })
 const form = reactive({})
-const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求名称不能为空', trigger: 'blur' }] }
+const rules = { requirementCode: [{ required: true, message: '需求编号不能为空', trigger: 'blur' }], title: [{ required: true, message: '需求问题不能为空', trigger: 'blur' }] }
 function load() { loading.value = true; listResearchRequirements(query).then(res => { rows.value = res.rows; total.value = res.total }).finally(() => { loading.value = false }) }
 function openAdd() { Object.assign(form, { id: undefined, requirementCode: '', title: '', sourceDocumentId: undefined, sourceDocumentTitle: '', sourceNoteId: undefined, sourceNoteTitle: '', coreConcepts: '', coreViewpoints: '', problem: '', goal: '', scope: '', acceptance: '', priority: 'P1', status: 'draft' }); dialog.value = true }
 function openEdit(row) { Object.assign(form, row); dialog.value = true }
